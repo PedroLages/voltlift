@@ -19,9 +19,9 @@ This document outlines all planned features and improvements for IronPath, organ
 
 ## P0: Critical Features (MVP Blockers)
 
-**Status:** 8/9 completed ✅ | 1 minor fix remaining
+**Status:** ✅ **ALL COMPLETE (9/9)**
 
-**Summary:** Core MVP functionality is **COMPLETE and WORKING**. The app successfully handles workout logging, set tracking, rest timer, workout completion, history storage, and offline functionality. Only remaining task is fixing a non-blocking React warning.
+**Summary:** Core MVP functionality is **100% COMPLETE and WORKING**. The app successfully handles workout logging, set tracking, rest timer, workout completion, history storage, and offline functionality. All React warnings resolved.
 
 ### Core Workout Logging
 - [x] ✅ **Workout session state management** (WORKING)
@@ -69,11 +69,11 @@ This document outlines all planned features and improvements for IronPath, organ
   - **Minor issue:** React render warning (non-blocking)
 
 ### Known Issues to Fix
-- [ ] ⬜ **Fix React component update warning**
-  - Warning: "Cannot update component while rendering different component"
-  - Location: WorkoutLogger.tsx when completing sets
-  - Impact: Minor console warning, doesn't affect functionality
-  - **Action:** Refactor state updates to avoid render-time mutations
+- [x] ✅ **React component update warning** (FIXED)
+  - Was: "Cannot update component (`BottomNav`) while rendering (`WorkoutLogger`)"
+  - Root cause: `addBiometricPoint()` called inside `setBpm()` state setter
+  - Fix: Separated biometric data saving into dedicated useEffect that reacts to `bpm` changes
+  - Result: Zero console warnings, clean render cycle
 
 ---
 

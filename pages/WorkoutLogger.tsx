@@ -88,7 +88,7 @@ const WorkoutLogger = () => {
   // Heart Rate Simulation Logic
   useEffect(() => {
       if (!activeWorkout) return;
-      
+
       const interval = setInterval(() => {
           setBpm(prev => {
               let target = 70; // Resting base
@@ -97,20 +97,25 @@ const WorkoutLogger = () => {
               } else {
                   target = 150; // Lifting active
               }
-              
+
               // Random fluctuation + drift towards target
               const noise = Math.random() * 4 - 2;
               const diff = target - prev;
-              const drift = diff * 0.1; 
+              const drift = diff * 0.1;
               const newBpm = Math.round(prev + drift + noise);
-              
-              addBiometricPoint({ timestamp: Date.now(), heartRate: newBpm });
+
               return newBpm;
           });
       }, 2000); // Update every 2s
 
       return () => clearInterval(interval);
-  }, [activeWorkout, restTimerStart, addBiometricPoint]);
+  }, [activeWorkout, restTimerStart]);
+
+  // Save biometric data separately to avoid state update during render
+  useEffect(() => {
+      if (!activeWorkout) return;
+      addBiometricPoint({ timestamp: Date.now(), heartRate: bpm });
+  }, [bpm, activeWorkout, addBiometricPoint]);
 
   if (!activeWorkout) {
     return (
