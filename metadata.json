@@ -1,0 +1,7 @@
+{
+  "name": "IronPath - Intelligent Hypertrophy",
+  "description": "A premium, mobile-first workout tracker focused on progressive overload and AI-driven training plans.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

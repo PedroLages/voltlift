@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:latest
+    container_name: ironpath-pocketbase
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./pb_data:/pb_data
+      - ./pb_migrations:/pb_migrations
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    environment:
+      # Optional: Set admin credentials on first run
+      # PB_ADMIN_EMAIL: admin@example.com
+      # PB_ADMIN_PASSWORD: your-secure-password
+      TZ: America/Los_Angeles  # Change to your timezone
+
+# Notes for Unraid:
+# 1. Create a new stack in Unraid or use Docker Compose Manager plugin
+# 2. Create the directories: /mnt/user/appdata/ironpath/pb_data and pb_migrations
+# 3. Update volume paths to use Unraid paths:
+#    - /mnt/user/appdata/ironpath/pb_data:/pb_data
+#    - /mnt/user/appdata/ironpath/pb_migrations:/pb_migrations
+# 4. Access admin UI at http://YOUR_UNRAID_IP:8090/_/
+# 5. Create collections on first run (see pb_schema.json)

@@ -1,0 +1,124 @@
+[
+  {
+    "name": "workouts",
+    "type": "base",
+    "schema": [
+      {
+        "name": "user",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "maxSelect": 1
+        }
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "startTime",
+        "type": "number",
+        "required": true
+      },
+      {
+        "name": "endTime",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "status",
+        "type": "select",
+        "required": true,
+        "options": {
+          "values": ["active", "completed", "template"]
+        }
+      },
+      {
+        "name": "sourceTemplateId",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "logs",
+        "type": "json",
+        "required": false
+      },
+      {
+        "name": "biometrics",
+        "type": "json",
+        "required": false
+      }
+    ],
+    "listRule": "@request.auth.id = user",
+    "viewRule": "@request.auth.id = user",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": "@request.auth.id = user",
+    "deleteRule": "@request.auth.id = user"
+  },
+  {
+    "name": "user_settings",
+    "type": "base",
+    "schema": [
+      {
+        "name": "user",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "maxSelect": 1
+        }
+      },
+      {
+        "name": "settings",
+        "type": "json",
+        "required": true
+      }
+    ],
+    "listRule": "@request.auth.id = user",
+    "viewRule": "@request.auth.id = user",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": "@request.auth.id = user",
+    "deleteRule": "@request.auth.id = user",
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_user_settings_user ON user_settings (user)"
+    ]
+  },
+  {
+    "name": "daily_logs",
+    "type": "base",
+    "schema": [
+      {
+        "name": "user",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "maxSelect": 1
+        }
+      },
+      {
+        "name": "date",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "json",
+        "required": true
+      }
+    ],
+    "listRule": "@request.auth.id = user",
+    "viewRule": "@request.auth.id = user",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": "@request.auth.id = user",
+    "deleteRule": "@request.auth.id = user",
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_daily_logs_user_date ON daily_logs (user, date)"
+    ]
+  }
+]
