@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Activity, Flame, ChevronRight, Play, Clock, BarChart2, Timer, Brain, Calendar, Cloud, Moon, Droplets } from 'lucide-react';
+import { TrendingUp, Activity, Flame, ChevronRight, Play, Clock, BarChart2, Timer, Brain, Calendar, Cloud, Moon, Droplets, Dumbbell } from 'lucide-react';
 import { getWorkoutMotivation } from '../services/geminiService';
 import { EXERCISE_LIBRARY } from '../constants';
+import EmptyState from '../components/EmptyState';
 
 const Dashboard = () => {
   const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, syncStatus, logDailyBio, dailyLogs } = useStore();
@@ -275,20 +276,27 @@ const Dashboard = () => {
       {/* Recent Activity Mini-Feed */}
       <section>
           <h2 className="text-sm font-bold text-[#666] uppercase tracking-widest mb-4">Recent Logs</h2>
-          <div className="space-y-2">
-              {history.slice(0, 3).map(h => (
-                  <div key={h.id} className="bg-[#0a0a0a] p-4 border-l-2 border-[#222] flex justify-between items-center">
-                      <div>
-                          <div className="font-bold text-white uppercase italic">{h.name}</div>
-                          <div className="text-[10px] text-[#555] font-mono">{new Date(h.startTime).toLocaleDateString()}</div>
+          {history.length === 0 ? (
+              <EmptyState
+                  icon={Dumbbell}
+                  title="No Training History"
+                  description="Start your first workout to see your training logs and track your progress over time."
+                  actionLabel="Start Workout"
+                  onAction={() => navigate('/lift')}
+              />
+          ) : (
+              <div className="space-y-2">
+                  {history.slice(0, 3).map(h => (
+                      <div key={h.id} className="bg-[#0a0a0a] p-4 border-l-2 border-[#222] flex justify-between items-center">
+                          <div>
+                              <div className="font-bold text-white uppercase italic">{h.name}</div>
+                              <div className="text-[10px] text-[#555] font-mono">{new Date(h.startTime).toLocaleDateString()}</div>
+                          </div>
+                          <div className="text-xs font-bold text-[#444]">{h.logs.length} Exercises</div>
                       </div>
-                      <div className="text-xs font-bold text-[#444]">{h.logs.length} Exercises</div>
-                  </div>
-              ))}
-              {history.length === 0 && (
-                  <div className="text-center py-4 text-[#444] text-xs font-mono uppercase">No history data available.</div>
-              )}
-          </div>
+                  ))}
+              </div>
+          )}
       </section>
 
     </div>

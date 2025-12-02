@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { EXERCISE_LIBRARY } from '../constants';
-import { ArrowLeft, TrendingUp, BarChart2, Calendar, Activity, Zap } from 'lucide-react';
+import { ArrowLeft, TrendingUp, BarChart2, Calendar, Activity, Zap, Dumbbell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BodyHeatmap from '../components/BodyHeatmap';
 import PRHistoryTimeline from '../components/PRHistoryTimeline';
+import EmptyState from '../components/EmptyState';
 
 const Analytics = () => {
   const { history, settings } = useStore();
   const navigate = useNavigate();
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string>(EXERCISE_LIBRARY[0].id);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>(EXERCISE_LIBRARY[0]?.id || 'e1');
 
   // 1. Prepare Data for Charting
   // We want to graph Estimated 1RM over time for the selected exercise.
@@ -138,6 +139,20 @@ const Analytics = () => {
         <h1 className="volt-header text-3xl text-white">ANALYTICS</h1>
       </div>
 
+      {/* Empty State */}
+      {history.length === 0 ? (
+        <div className="mt-16">
+          <EmptyState
+            icon={BarChart2}
+            title="No Analytics Available"
+            description="Complete your first workout to unlock detailed analytics, personal records, strength trends, and muscle recovery tracking. Your fitness data will come to life here."
+            actionLabel="Start Training"
+            onAction={() => navigate('/lift')}
+          />
+        </div>
+      ) : (
+        <div>
+
       {/* Muscle Heatmap Section */}
       <div className="mb-10">
           <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -255,6 +270,9 @@ const Analytics = () => {
               Focus on progressive overload to see this trend line climb.
           </p>
       </div>
+
+        </div>
+      )}
 
     </div>
   );

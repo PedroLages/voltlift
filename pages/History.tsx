@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, ChevronRight, Clock, Box, Filter, X } from 'lucide-react';
+import { Calendar, ChevronRight, Clock, Box, Filter, X, Dumbbell } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
+import EmptyState from '../components/EmptyState';
 
 const History = () => {
   const { history, templates } = useStore();
@@ -192,19 +193,23 @@ const History = () => {
       {/* Workout List */}
       <div className="space-y-4">
         {filteredHistory.length === 0 ? (
-          <div className="text-center py-12 border border-[#222] bg-[#111]">
-              <p className="text-[#444] font-mono uppercase text-sm">
-                {history.length === 0 ? 'No data recorded.' : 'No workouts match your filters.'}
-              </p>
-              {hasActiveFilters && history.length > 0 && (
-                <button
-                  onClick={clearFilters}
-                  className="mt-4 text-primary text-xs font-bold uppercase underline hover:no-underline"
-                >
-                  Clear Filters
-                </button>
-              )}
-          </div>
+          history.length === 0 ? (
+            <EmptyState
+              icon={Dumbbell}
+              title="No Workout History"
+              description="Complete your first workout to start tracking your fitness journey. Your workout logs will appear here for easy review and progress tracking."
+              actionLabel="Start Training"
+              onAction={() => navigate('/lift')}
+            />
+          ) : (
+            <EmptyState
+              icon={Filter}
+              title="No Matching Workouts"
+              description="No workouts match your current filter criteria. Try adjusting your filters or clear them to see all workouts."
+              actionLabel="Clear Filters"
+              onAction={clearFilters}
+            />
+          )
         ) : (
           filteredHistory.map(session => (
             <div 
