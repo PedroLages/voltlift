@@ -119,16 +119,31 @@ const Dashboard = () => {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-4 gap-2">
-        <StatCard icon={<Flame size={18} />} value={workoutsThisWeek} label="SESSIONS" color="text-primary" />
+        {/* Primary Metric - Larger and More Prominent */}
+        <div className="col-span-2 bg-[#111] p-6 border border-primary/30 flex flex-col items-center justify-center text-center shadow-[0_0_20px_rgba(204,255,0,0.1)]">
+          <div className="mb-3 text-primary"><Flame size={24} /></div>
+          <span className="text-5xl font-black italic text-primary leading-none">{workoutsThisWeek}</span>
+          <span className="text-xs font-bold text-white uppercase mt-2 tracking-widest">SESSIONS THIS WEEK</span>
+        </div>
+
         <StatCard icon={<Activity size={18} />} value={history.length} label="TOTAL" color="text-white" />
-        <StatCard icon={<TrendingUp size={18} />} value={`${settings.goal.targetPerWeek}`} label="TARGET" color="text-white" />
-        <button 
+        <button
             onClick={() => navigate('/analytics')}
             className="bg-[#111] p-2 border border-[#333] flex flex-col items-center justify-center text-center hover:bg-[#222] transition-colors"
         >
             <div className="mb-2 text-[#666]"><BarChart2 size={18} /></div>
             <span className="text-[10px] font-bold text-white uppercase tracking-wider">Charts</span>
         </button>
+      </div>
+
+      {/* Secondary Stats */}
+      <div className="grid grid-cols-2 gap-2 -mt-4">
+        <StatCard icon={<TrendingUp size={18} />} value={`${settings.goal.targetPerWeek}`} label="WEEKLY TARGET" color="text-primary" />
+        <div className="bg-[#111] p-4 border border-[#222] flex flex-col items-center justify-center text-center">
+          <div className="mb-3 text-white"><Calendar size={18} /></div>
+          <span className="text-3xl font-black italic text-white leading-none">{workoutsThisWeek >= settings.goal.targetPerWeek ? '✓' : Math.max(0, settings.goal.targetPerWeek - workoutsThisWeek)}</span>
+          <span className="text-[10px] font-bold text-[#666] uppercase mt-1 tracking-widest">REMAINING</span>
+        </div>
       </div>
 
       {/* Neural Coach Widget */}
@@ -170,34 +185,53 @@ const Dashboard = () => {
            <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-3 flex items-center gap-2">
               <Activity size={14} /> Recovery Protocol
            </h3>
-           <div className="flex gap-4">
-                <div className="flex-1 bg-[#0a0a0a] border border-[#333] p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+           <div className="grid grid-cols-2 gap-3">
+                {/* Sleep Input */}
+                <div className="bg-[#0a0a0a] border border-[#333] p-4 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 mb-1">
                         <Moon size={16} className="text-blue-400" />
                         <span className="text-[10px] font-bold text-[#888] uppercase">Sleep</span>
                     </div>
-                    <input 
-                        type="number" 
-                        placeholder="--"
-                        value={todayLog.sleepHours || ''}
-                        onChange={(e) => logDailyBio(today, { sleepHours: parseFloat(e.target.value) })}
-                        className="w-12 bg-transparent text-right font-mono text-white outline-none focus:text-primary"
-                    />
-                    <span className="text-[10px] text-[#444]">HRS</span>
+                    <div className="flex items-baseline gap-2">
+                        <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            max="24"
+                            step="0.5"
+                            placeholder="7.5"
+                            value={todayLog.sleepHours || ''}
+                            onChange={(e) => logDailyBio(today, { sleepHours: parseFloat(e.target.value) })}
+                            className="flex-1 bg-[#111] border border-[#444] px-3 py-2 text-2xl font-mono text-white text-center outline-none focus:border-primary focus:text-primary transition-colors min-h-[44px]"
+                            aria-label="Sleep hours"
+                        />
+                        <span className="text-xs text-[#666] font-mono">HRS</span>
+                    </div>
+                    <span className="text-[9px] text-[#555] font-mono uppercase tracking-wide">Tap to log (0-24)</span>
                 </div>
-                <div className="flex-1 bg-[#0a0a0a] border border-[#333] p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+
+                {/* Water Input */}
+                <div className="bg-[#0a0a0a] border border-[#333] p-4 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 mb-1">
                         <Droplets size={16} className="text-cyan-400" />
                         <span className="text-[10px] font-bold text-[#888] uppercase">Water</span>
                     </div>
-                     <input 
-                        type="number" 
-                        placeholder="--"
-                        value={todayLog.waterLitres || ''}
-                        onChange={(e) => logDailyBio(today, { waterLitres: parseFloat(e.target.value) })}
-                        className="w-12 bg-transparent text-right font-mono text-white outline-none focus:text-primary"
-                    />
-                    <span className="text-[10px] text-[#444]">L</span>
+                    <div className="flex items-baseline gap-2">
+                        <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            max="20"
+                            step="0.5"
+                            placeholder="3.0"
+                            value={todayLog.waterLitres || ''}
+                            onChange={(e) => logDailyBio(today, { waterLitres: parseFloat(e.target.value) })}
+                            className="flex-1 bg-[#111] border border-[#444] px-3 py-2 text-2xl font-mono text-white text-center outline-none focus:border-primary focus:text-primary transition-colors min-h-[44px]"
+                            aria-label="Water litres"
+                        />
+                        <span className="text-xs text-[#666] font-mono">L</span>
+                    </div>
+                    <span className="text-[9px] text-[#555] font-mono uppercase tracking-wide">Tap to log (0-20)</span>
                 </div>
            </div>
       </div>
@@ -255,22 +289,49 @@ const Dashboard = () => {
           </div>
         </div>
       ) : (
-          <div 
+          <div
             onClick={currentProgramDetails ? handleStartProgramSession : () => navigate('/lift')}
-            className={`border border-dashed p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${currentProgramDetails ? 'border-primary bg-primary/5 hover:bg-primary/10' : 'border-[#333] hover:border-[#666] hover:bg-[#111]'}`}
+            className={`relative overflow-hidden border-2 p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all group ${currentProgramDetails ? 'border-primary bg-primary/10 hover:bg-primary/15 shadow-[0_0_20px_rgba(204,255,0,0.2)]' : 'border-primary/30 bg-[#111] hover:bg-[#1a1a1a] hover:border-primary/50'}`}
           >
-              <h3 className={`font-bold uppercase italic text-lg mb-1 ${currentProgramDetails ? 'text-primary' : 'text-white'}`}>
-                  {currentProgramDetails ? `Start Week ${currentProgramDetails.week} Day ${currentProgramDetails.day}` : 'Ready to train?'}
-              </h3>
-              <p className="text-xs text-[#666] font-mono uppercase">
-                  {currentProgramDetails ? `Up Next: ${currentProgramDetails.nextTemplate?.name}` : 'Initiate a new protocol in the Lift Hub'}
-              </p>
+              {/* Diagonal accent stripe */}
+              <div className="absolute top-0 left-0 bottom-0 bg-primary/5 w-1/4 skew-x-[-15deg] -ml-8"></div>
+
+              <div className="relative z-10">
+                  <div className={`mb-4 ${currentProgramDetails ? 'text-primary' : 'text-primary/70 group-hover:text-primary'} transition-colors`}>
+                      <Dumbbell size={48} strokeWidth={2} />
+                  </div>
+
+                  <h3 className={`volt-header text-2xl mb-2 ${currentProgramDetails ? 'text-primary' : 'text-white'}`}>
+                      {currentProgramDetails ? `Start Week ${currentProgramDetails.week} Day ${currentProgramDetails.day}` : 'Ready to Dominate?'}
+                  </h3>
+
+                  <p className={`text-xs font-mono uppercase tracking-wide mb-3 ${currentProgramDetails ? 'text-white' : 'text-[#888]'}`}>
+                      {currentProgramDetails ? `Up Next: ${currentProgramDetails.nextTemplate?.name}` : 'Tap to select your protocol'}
+                  </p>
+
+                  {/* Action indicator */}
+                  <div className={`flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest ${currentProgramDetails ? 'text-primary' : 'text-primary/50 group-hover:text-primary'} transition-colors`}>
+                      <Play size={12} fill="currentColor" />
+                      <span>{currentProgramDetails ? 'Start Session' : 'Go to Lift Hub'}</span>
+                      <ChevronRight size={12} strokeWidth={3} />
+                  </div>
+              </div>
           </div>
       )}
 
       {/* Recent Activity Mini-Feed */}
       <section>
-          <h2 className="text-sm font-bold text-[#666] uppercase tracking-widest mb-4">Recent Logs</h2>
+          <div className="flex justify-between items-center mb-4">
+              <h2 className="text-sm font-bold text-[#666] uppercase tracking-widest">Recent Logs</h2>
+              {history.length > 3 && (
+                  <button
+                      onClick={() => navigate('/history')}
+                      className="text-[10px] text-primary font-mono uppercase tracking-wider hover:underline"
+                  >
+                      View All ({history.length})
+                  </button>
+              )}
+          </div>
           {history.length === 0 ? (
               <EmptyState
                   icon={Dumbbell}
@@ -281,15 +342,39 @@ const Dashboard = () => {
               />
           ) : (
               <div className="space-y-2">
-                  {history.slice(0, 3).map(h => (
-                      <div key={h.id} className="bg-[#0a0a0a] p-4 border-l-2 border-[#222] flex justify-between items-center">
-                          <div>
-                              <div className="font-bold text-white uppercase italic">{h.name}</div>
-                              <div className="text-[10px] text-[#555] font-mono">{new Date(h.startTime).toLocaleDateString()}</div>
+                  {history.slice(0, 3).map(h => {
+                      const duration = h.endTime ? Math.floor((h.endTime - h.startTime) / 1000 / 60) : 0;
+                      const date = new Date(h.startTime);
+                      const isToday = date.toDateString() === new Date().toDateString();
+                      const dateStr = isToday ? 'Today' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                      return (
+                          <div
+                              key={h.id}
+                              className="bg-[#111] border border-[#222] p-4 flex justify-between items-center hover:bg-[#1a1a1a] hover:border-[#333] transition-colors cursor-pointer group"
+                              onClick={() => navigate('/history')}
+                          >
+                              <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                      <div className="font-bold text-white uppercase italic group-hover:text-primary transition-colors">{h.name}</div>
+                                      {h.status === 'completed' && <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>}
+                                  </div>
+                                  <div className="flex items-center gap-3 text-[10px] text-[#666] font-mono uppercase">
+                                      <span className={isToday ? 'text-primary' : ''}>{dateStr}</span>
+                                      {duration > 0 && (
+                                          <>
+                                              <span>•</span>
+                                              <span>{duration} min</span>
+                                          </>
+                                      )}
+                                      <span>•</span>
+                                      <span>{h.logs.length} exercises</span>
+                                  </div>
+                              </div>
+                              <ChevronRight size={16} className="text-[#444] group-hover:text-primary transition-colors" strokeWidth={2} />
                           </div>
-                          <div className="text-xs font-bold text-[#444]">{h.logs.length} Exercises</div>
-                      </div>
-                  ))}
+                      );
+                  })}
               </div>
           )}
       </section>
