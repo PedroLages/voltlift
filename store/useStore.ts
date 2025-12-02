@@ -32,7 +32,7 @@ interface AppState {
   addSet: (exerciseIndex: number) => void;
   removeSet: (exerciseIndex: number, setIndex: number) => void;
   updateSettings: (settings: Partial<UserSettings>) => void;
-  completeOnboarding: (name: string, goal: Goal, experience: 'Beginner' | 'Intermediate' | 'Advanced') => void;
+  completeOnboarding: (name: string, goal: Goal, experience: 'Beginner' | 'Intermediate' | 'Advanced', equipment: string[]) => void;
   saveExerciseVisual: (exerciseId: string, url: string) => void;
   loadVisuals: () => Promise<void>;
   swapExercise: (logId: string, newExerciseId: string) => void;
@@ -382,13 +382,14 @@ export const useStore = create<AppState>()(
         }
       },
 
-      completeOnboarding: (name, goal, experience) => {
+      completeOnboarding: (name, goal, experience, equipment) => {
         set((state) => ({
           settings: {
             ...state.settings,
             name,
             goal,
             experienceLevel: experience,
+            availableEquipment: equipment,
             onboardingCompleted: true
           }
         }));

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Target, TrendingUp, Dumbbell, Heart, Zap, Shield, Crown } from 'lucide-react';
+import { ChevronRight, Target, TrendingUp, Dumbbell, Heart, Zap, Shield, Crown, Weight, Home } from 'lucide-react';
 import { Goal } from '../types';
 
 const Onboarding = () => {
@@ -12,6 +12,7 @@ const Onboarding = () => {
   const [name, setName] = useState('');
   const [selectedGoal, setSelectedGoal] = useState<Goal['type']>('Build Muscle');
   const [selectedExperience, setSelectedExperience] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Beginner');
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
 
   const goals: { id: Goal['type'], icon: React.ReactNode, label: string, desc: string }[] = [
     { id: 'Build Muscle', icon: <Dumbbell size={24} />, label: 'HYPERTROPHY', desc: 'Maximize muscle growth' },
@@ -26,9 +27,24 @@ const Onboarding = () => {
     { id: 'Advanced', icon: <Crown size={24} />, label: 'ELITE', desc: '3+ Years Experience' },
   ];
 
+  const equipmentOptions = [
+    { id: 'Barbell', icon: <Weight size={24} />, label: 'BARBELL', desc: 'Olympic bar & plates' },
+    { id: 'Dumbbells', icon: <Dumbbell size={24} />, label: 'DUMBBELLS', desc: 'Free weights' },
+    { id: 'Machines', icon: <Zap size={24} />, label: 'MACHINES', desc: 'Cable & pin-loaded' },
+    { id: 'Bodyweight', icon: <Home size={24} />, label: 'BODYWEIGHT', desc: 'No equipment needed' },
+    { id: 'Resistance Bands', icon: <Zap size={24} />, label: 'BANDS', desc: 'Resistance bands' },
+    { id: 'Kettlebells', icon: <Weight size={24} />, label: 'KETTLEBELLS', desc: 'Swings & carries' },
+  ];
+
+  const toggleEquipment = (id: string) => {
+    setSelectedEquipment(prev =>
+      prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]
+    );
+  };
+
   const handleFinish = () => {
     if (!name.trim()) return;
-    completeOnboarding(name || 'Athlete', { type: selectedGoal, targetPerWeek: 4 }, selectedExperience);
+    completeOnboarding(name || 'Athlete', { type: selectedGoal, targetPerWeek: 4 }, selectedExperience, selectedEquipment);
     navigate('/');
   };
 
@@ -43,7 +59,7 @@ const Onboarding = () => {
       
       {/* Progress Indicators */}
       <div className="flex gap-2 mb-12 w-full max-w-sm justify-center">
-        {[1, 2, 3].map(i => (
+        {[1, 2, 3, 4].map(i => (
           <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === step ? 'w-12 bg-primary shadow-[0_0_10px_rgba(204,255,0,0.5)]' : i < step ? 'w-12 bg-[#333]' : 'w-4 bg-[#222]'}`} />
         ))}
       </div>
@@ -112,8 +128,44 @@ const Onboarding = () => {
           </div>
         )}
 
-        {/* STEP 3: IDENTITY & REVEAL */}
+        {/* STEP 3: EQUIPMENT */}
         {step === 3 && (
+          <div className="animate-slide-in-right absolute inset-0">
+            <h1 className="text-5xl volt-header mb-2 text-center leading-[0.85]">
+              AVAILABLE<br/><span className="text-primary">ARSENAL</span>
+            </h1>
+            <p className="text-[#666] text-center mb-8 font-mono text-xs uppercase tracking-widest">Select your equipment (multiple allowed)</p>
+
+            <div className="space-y-3">
+              {equipmentOptions.map(eq => (
+                <button
+                  key={eq.id}
+                  onClick={() => toggleEquipment(eq.id)}
+                  className={`w-full p-4 border flex items-center gap-4 transition-all text-left group hover:scale-[1.02] active:scale-95 ${selectedEquipment.includes(eq.id) ? 'bg-[#111] border-primary shadow-[0_0_15px_rgba(204,255,0,0.1)]' : 'bg-black border-[#222] hover:border-[#444]'}`}
+                >
+                  <div className={`${selectedEquipment.includes(eq.id) ? 'text-primary' : 'text-[#444] group-hover:text-white transition-colors'}`}>{eq.icon}</div>
+                  <div className="flex-1">
+                    <div className={`font-black italic uppercase text-lg leading-none ${selectedEquipment.includes(eq.id) ? 'text-white' : 'text-[#888] group-hover:text-[#ccc]'}`}>{eq.label}</div>
+                    <div className="text-[10px] text-[#555] font-mono uppercase mt-1">{eq.desc}</div>
+                  </div>
+                  {selectedEquipment.includes(eq.id) && (
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-4 mt-8">
+              <button onClick={() => setStep(2)} className="flex-1 bg-[#111] text-[#666] py-4 font-bold uppercase tracking-wider hover:text-white transition-colors">Back</button>
+              <button onClick={() => setStep(4)} className="flex-[2] bg-white text-black py-4 font-black italic uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#ccc] transition-colors">
+                Continue <ChevronRight size={20} strokeWidth={3} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: IDENTITY & REVEAL */}
+        {step === 4 && (
           <div className="animate-slide-in-right absolute inset-0 text-center">
             <h1 className="text-5xl volt-header mb-6 text-white leading-none">
                 SYSTEM<br/><span className="text-primary">READY</span>
@@ -143,9 +195,9 @@ const Onboarding = () => {
             </div>
 
             <div className="flex gap-4">
-                <button onClick={() => setStep(2)} className="flex-1 bg-[#111] text-[#666] py-4 font-bold uppercase tracking-wider hover:text-white transition-colors">Back</button>
-                <button 
-                    onClick={handleFinish} 
+                <button onClick={() => setStep(3)} className="flex-1 bg-[#111] text-[#666] py-4 font-bold uppercase tracking-wider hover:text-white transition-colors">Back</button>
+                <button
+                    onClick={handleFinish}
                     disabled={!name.trim()}
                     className="flex-[2] bg-primary text-black py-5 font-black italic uppercase tracking-wider text-xl shadow-[0_0_30px_rgba(204,255,0,0.4)] hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
