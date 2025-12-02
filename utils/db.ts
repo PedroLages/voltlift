@@ -1,5 +1,5 @@
 
-const DB_NAME = 'IronPathAssets';
+const DB_NAME = 'VoltLiftAssets';
 const STORE_NAME = 'visuals';
 const DB_VERSION = 1;
 

@@ -48,6 +48,22 @@
       .animate-marquee {
         animation: marquee 20s linear infinite;
       }
+
+      /* Accessibility: Prominent Focus Indicators */
+      *:focus-visible {
+        outline: 2px solid #ccff00;
+        outline-offset: 2px;
+      }
+
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible,
+      select:focus-visible {
+        outline: 2px solid #ccff00;
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px rgba(204, 255, 0, 0.2);
+      }
     </style>
   <script type="importmap">
 {

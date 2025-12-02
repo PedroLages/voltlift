@@ -82,7 +82,7 @@ const HistoryDetail = () => {
                     <div className="absolute top-0 left-0 right-0 h-4 -mt-4 bg-white" style={{ clipPath: 'polygon(0% 100%, 5% 0%, 10% 100%, 15% 0%, 20% 100%, 25% 0%, 30% 100%, 35% 0%, 40% 100%, 45% 0%, 50% 100%, 55% 0%, 60% 100%, 65% 0%, 70% 100%, 75% 0%, 80% 100%, 85% 0%, 90% 100%, 95% 0%, 100% 100%)' }}></div>
                     
                     <div className="text-center mb-6 border-b-2 border-dashed border-black pb-4">
-                        <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-1">IRONPATH.SYS</h2>
+                        <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-1">VOLTLIFT.SYS</h2>
                         <p className="uppercase text-xs">{new Date(session.startTime).toLocaleDateString()}</p>
                         <p className="uppercase text-xs">{settings.name}</p>
                     </div>
@@ -114,7 +114,7 @@ const HistoryDetail = () => {
                     </div>
                     
                     <div className="mt-8 text-center text-[10px] uppercase text-gray-500">
-                        Verified by IronPath
+                        Verified by VoltLift
                     </div>
                     
                     {/* Jagged Bottom */}

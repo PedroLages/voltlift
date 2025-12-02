@@ -1,5 +1,5 @@
-const CACHE_NAME = 'ironpath-v1';
-const RUNTIME_CACHE = 'ironpath-runtime-v1';
+const CACHE_NAME = 'voltlift-v1';
+const RUNTIME_CACHE = 'voltlift-runtime-v1';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -74,7 +74,7 @@ self.addEventListener('sync', (event) => {
 });
 
 async function syncWorkouts() {
-  // This will be used when IronCloud backend is implemented
+  // This will be used when VoltCloud backend is implemented
   // For now, IndexedDB handles offline storage automatically
   console.log('Background sync triggered for workouts');
 }
