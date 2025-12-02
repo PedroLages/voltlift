@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { EXERCISE_LIBRARY } from '../constants';
-import { ArrowLeft, TrendingUp, BarChart2, Calendar, Activity } from 'lucide-react';
+import { ArrowLeft, TrendingUp, BarChart2, Calendar, Activity, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BodyHeatmap from '../components/BodyHeatmap';
+import PRHistoryTimeline from '../components/PRHistoryTimeline';
 
 const Analytics = () => {
   const { history, settings } = useStore();
@@ -125,7 +126,7 @@ const Analytics = () => {
       );
   };
 
-  const currentPR = settings.personalRecords[selectedExerciseId];
+  const exercisePRHistory = settings.personalRecords[selectedExerciseId];
 
   return (
     <div className="p-6 pb-24 min-h-screen bg-black">
@@ -188,13 +189,45 @@ const Analytics = () => {
         </div>
         <div className="bg-[#111] p-4 border border-[#222]">
            <div className="flex items-center gap-2 text-white mb-2">
-               <Calendar size={16} /> <span className="text-[10px] font-black uppercase">All Time Best</span>
+               <Calendar size={16} /> <span className="text-[10px] font-black uppercase">Weight PR</span>
            </div>
            <div className="text-3xl font-black italic text-white">
-               {currentPR ? currentPR.weight : 0}
+               {exercisePRHistory?.bestWeight?.value || 0}
                <span className="text-sm not-italic text-[#666] font-medium ml-1">LBS</span>
            </div>
-           {currentPR && <div className="text-[10px] text-[#444] font-mono mt-1">{new Date(currentPR.date).toLocaleDateString()}</div>}
+           {exercisePRHistory?.bestWeight && (
+             <div className="text-[10px] text-[#444] font-mono mt-1">
+               {new Date(exercisePRHistory.bestWeight.date).toLocaleDateString()} • {exercisePRHistory.bestWeight.reps} reps
+             </div>
+           )}
+        </div>
+        <div className="bg-[#111] p-4 border border-[#222]">
+           <div className="flex items-center gap-2 text-white mb-2">
+               <TrendingUp size={16} /> <span className="text-[10px] font-black uppercase">Volume PR</span>
+           </div>
+           <div className="text-3xl font-black italic text-white">
+               {exercisePRHistory?.bestVolume?.value || 0}
+               <span className="text-sm not-italic text-[#666] font-medium ml-1">LBS</span>
+           </div>
+           {exercisePRHistory?.bestVolume && (
+             <div className="text-[10px] text-[#444] font-mono mt-1">
+               {new Date(exercisePRHistory.bestVolume.date).toLocaleDateString()} • {exercisePRHistory.bestVolume.setDetails?.length} sets
+             </div>
+           )}
+        </div>
+        <div className="bg-[#111] p-4 border border-[#222]">
+           <div className="flex items-center gap-2 text-white mb-2">
+               <Zap size={16} /> <span className="text-[10px] font-black uppercase">Rep PR</span>
+           </div>
+           <div className="text-3xl font-black italic text-white">
+               {exercisePRHistory?.bestReps?.value || 0}
+               <span className="text-sm not-italic text-[#666] font-medium ml-1">REPS</span>
+           </div>
+           {exercisePRHistory?.bestReps && (
+             <div className="text-[10px] text-[#444] font-mono mt-1">
+               {new Date(exercisePRHistory.bestReps.date).toLocaleDateString()} @ {exercisePRHistory.bestReps.weight} lbs
+             </div>
+           )}
         </div>
       </div>
 
@@ -204,6 +237,15 @@ const Analytics = () => {
               <BarChart2 size={14} /> Strength Trend (Estimated 1RM)
           </h3>
           <Chart data={chartData} />
+      </div>
+
+      {/* PR History Timeline */}
+      <div className="mb-8">
+          <PRHistoryTimeline
+            prHistory={exercisePRHistory}
+            exerciseName={EXERCISE_LIBRARY.find(e => e.id === selectedExerciseId)?.name || 'Exercise'}
+            units={settings.units}
+          />
       </div>
 
       <div className="p-4 bg-[#111] border-l-2 border-primary">

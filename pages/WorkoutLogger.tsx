@@ -149,9 +149,9 @@ const WorkoutLogger = () => {
           // Trigger Global Rest Timer
           startRestTimer(settings.defaultRestTimer || 90);
           
-          // Check for PR
-          const currentPR = settings.personalRecords[exerciseId]?.weight || 0;
-          if (weight > currentPR && weight > 0) {
+          // Check for PR (using new PR structure)
+          const currentBestWeight = settings.personalRecords[exerciseId]?.bestWeight?.value || 0;
+          if (weight > currentBestWeight && weight > 0) {
               const exerciseName = EXERCISE_LIBRARY.find(e => e.id === exerciseId)?.name;
               setShowPR(exerciseName || 'NEW RECORD');
               setTimeout(() => setShowPR(null), 3000);

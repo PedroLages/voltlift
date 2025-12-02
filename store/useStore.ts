@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserSettings, WorkoutSession, ExerciseLog, SetLog, Goal, Program, DailyLog, BiometricPoint } from '../types';
+import { UserSettings, WorkoutSession, ExerciseLog, SetLog, Goal, Program, DailyLog, BiometricPoint, PRType, PersonalRecord } from '../types';
 import { MOCK_HISTORY, INITIAL_TEMPLATES, EXERCISE_LIBRARY, INITIAL_PROGRAMS } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { saveImageToDB, getAllImagesFromDB } from '../utils/db';
@@ -136,30 +136,95 @@ export const useStore = create<AppState>()(
           biometrics: activeBiometrics // Save heart rate data
         };
 
-        // Calculate New Personal Records
+        // Calculate New Personal Records (Weight, Volume, Reps)
         const newPRs = { ...settings.personalRecords };
         let prUpdated = false;
+        const newPRsDetected: { exerciseId: string; type: PRType; value: number }[] = [];
 
         completedWorkout.logs.forEach(log => {
           const validSets = log.sets.filter(s => s.completed && s.type !== 'W');
-          const maxWeightInSession = Math.max(...validSets.map(s => s.weight), 0);
-          
-          if (maxWeightInSession > 0) {
-            const currentPR = newPRs[log.exerciseId]?.weight || 0;
-            if (maxWeightInSession > currentPR) {
-              newPRs[log.exerciseId] = {
-                weight: maxWeightInSession,
-                date: Date.now()
-              };
-              prUpdated = true;
-            }
+          if (validSets.length === 0) return;
+
+          // Get or initialize exercise PR history
+          const exercisePRs = newPRs[log.exerciseId] || {
+            exerciseId: log.exerciseId,
+            records: [],
+            bestWeight: undefined,
+            bestVolume: undefined,
+            bestReps: undefined
+          };
+
+          const now = Date.now();
+
+          // 1. WEIGHT PR: Max single set weight
+          const maxWeightSet = validSets.reduce((max, set) =>
+            set.weight > max.weight ? set : max, validSets[0]
+          );
+          const maxWeight = maxWeightSet.weight;
+          const currentBestWeight = exercisePRs.bestWeight?.value || 0;
+
+          if (maxWeight > currentBestWeight && maxWeight > 0) {
+            const weightPR: PersonalRecord = {
+              value: maxWeight,
+              date: now,
+              type: 'weight',
+              reps: maxWeightSet.reps
+            };
+            exercisePRs.bestWeight = weightPR;
+            exercisePRs.records.unshift(weightPR);
+            prUpdated = true;
+            newPRsDetected.push({ exerciseId: log.exerciseId, type: 'weight', value: maxWeight });
+          }
+
+          // 2. VOLUME PR: Total weight × reps across all sets
+          const totalVolume = validSets.reduce((sum, set) => sum + (set.weight * set.reps), 0);
+          const currentBestVolume = exercisePRs.bestVolume?.value || 0;
+
+          if (totalVolume > currentBestVolume && totalVolume > 0) {
+            const volumePR: PersonalRecord = {
+              value: totalVolume,
+              date: now,
+              type: 'volume',
+              setDetails: validSets.map(s => ({ weight: s.weight, reps: s.reps }))
+            };
+            exercisePRs.bestVolume = volumePR;
+            exercisePRs.records.unshift(volumePR);
+            prUpdated = true;
+            newPRsDetected.push({ exerciseId: log.exerciseId, type: 'volume', value: totalVolume });
+          }
+
+          // 3. REP PR: Most reps at any weight
+          const maxRepsSet = validSets.reduce((max, set) =>
+            set.reps > max.reps ? set : max, validSets[0]
+          );
+          const maxReps = maxRepsSet.reps;
+          const currentBestReps = exercisePRs.bestReps?.value || 0;
+
+          if (maxReps > currentBestReps && maxReps > 0) {
+            const repPR: PersonalRecord = {
+              value: maxReps,
+              date: now,
+              type: 'reps',
+              weight: maxRepsSet.weight
+            };
+            exercisePRs.bestReps = repPR;
+            exercisePRs.records.unshift(repPR);
+            prUpdated = true;
+            newPRsDetected.push({ exerciseId: log.exerciseId, type: 'reps', value: maxReps });
+          }
+
+          // Update the exercise PRs in the main record
+          if (prUpdated) {
+            newPRs[log.exerciseId] = exercisePRs;
           }
         });
-        
+
         let newSettings = { ...settings };
 
         if (prUpdated) {
           newSettings.personalRecords = newPRs;
+          // Store detected PRs for UI notification (could add to state if needed)
+          console.log('🎉 New PRs detected:', newPRsDetected);
         }
 
         // Program Progression Logic

@@ -63,9 +63,23 @@ export interface Goal {
   targetPerWeek: number;
 }
 
+export type PRType = 'weight' | 'volume' | 'reps';
+
 export interface PersonalRecord {
-  weight: number;
+  value: number; // The PR value (weight in lbs/kg, volume in lbs/kg, or rep count)
   date: number;
+  type: PRType;
+  reps?: number; // For weight PRs, track the reps achieved at that weight
+  weight?: number; // For rep PRs, track the weight used for those reps
+  setDetails?: { weight: number; reps: number }[]; // For volume PRs, track all sets
+}
+
+export interface ExercisePRHistory {
+  exerciseId: string;
+  records: PersonalRecord[]; // All historical PRs sorted by date (newest first)
+  bestWeight?: PersonalRecord; // Best weight PR
+  bestVolume?: PersonalRecord; // Best volume PR (total weight × reps)
+  bestReps?: PersonalRecord; // Best reps PR (most reps at any weight)
 }
 
 export interface ProgramSession {
@@ -97,7 +111,7 @@ export interface UserSettings {
   experienceLevel: 'Beginner' | 'Intermediate' | 'Advanced';
   availableEquipment: string[];
   onboardingCompleted: boolean;
-  personalRecords: Record<string, PersonalRecord>; // exerciseId -> Max Weight
+  personalRecords: Record<string, ExercisePRHistory>; // exerciseId -> PR History with best weight/volume/reps
   defaultRestTimer: number; // in seconds
   barWeight: number; // Weight of the bar (e.g., 45lbs)
   activeProgram?: {
