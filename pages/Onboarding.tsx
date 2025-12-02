@@ -173,14 +173,19 @@ const Onboarding = () => {
 
             <div className="mb-8">
               <label className="text-[10px] font-bold text-[#666] uppercase tracking-widest mb-3 block">Enter Codename</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="ATHLETE NAME"
                 autoFocus
                 className="w-full bg-[#0a0a0a] border-b-2 border-[#333] py-4 px-2 text-2xl font-black italic uppercase text-center text-white focus:border-primary outline-none placeholder-[#333]"
               />
+              {!name.trim() && (
+                <p className="text-[10px] text-textMuted mt-2 text-center font-mono uppercase tracking-wide">
+                  Enter your name to continue
+                </p>
+              )}
             </div>
 
             <div className="bg-[#111] border border-[#222] p-6 mb-8 text-left relative overflow-hidden group">

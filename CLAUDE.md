@@ -81,11 +81,78 @@ Falls back gracefully when `GEMINI_API_KEY` is not set.
 
 ## Design Principles
 
-1. **Mobile-first:** Optimize for phone before desktop
-2. **Speed:** Fast logging is non-negotiable (< 100ms for set logging)
-3. **Offline-first:** Full functionality without internet
-4. **Progressive disclosure:** Don't overwhelm new users
-5. **Data-driven:** Features backed by competitive research
+VoltLift follows mobile-first fitness app design principles documented in [`/docs/design-principles.md`](docs/design-principles.md). This comprehensive guide defines our S-tier standards for speed, accessibility, brand, and user experience.
+
+### Core Principles (Summary)
+
+1. **⚡ Speed First:** < 100ms for set logging, < 200ms page transitions
+2. **👍 Thumb-Zone Optimization:** Primary actions within bottom 60% of screen
+3. **📱 Mobile-First, Always:** Design for 375px (iPhone SE) first
+4. **🔁 Offline-First:** Full functionality without internet
+5. **🎯 Progressive Overload Built-In:** UI guides users to increase weight/reps
+6. **💪 Aggressive Energy:** High contrast, bold typography, intense language
+7. **♿ WCAG AA Compliance:** 4.5:1 contrast ratios, keyboard navigation
+8. **⚡ Performance:** Lighthouse > 90, Core Web Vitals passing
+
+### Design Review Process
+
+**Before merging any UI changes**, run a comprehensive design review:
+
+```bash
+/design-review
+```
+
+This automated review will:
+
+- ✅ Test live app across mobile (375px), tablet (768px), desktop (1440px)
+- ✅ Verify WCAG AA accessibility compliance
+- ✅ Check keyboard navigation and focus states
+- ✅ Validate brand consistency (colors, typography, animations)
+- ✅ Measure performance (page load, interactions)
+- ✅ Test offline functionality
+- ✅ Screenshot visual issues with evidence
+- ✅ Generate structured markdown report with triage priorities
+
+### Design Standards Checklist
+
+All UI changes must meet these requirements:
+
+#### Accessibility
+
+- [ ] WCAG AA contrast ratios met (4.5:1 for text)
+- [ ] Keyboard navigable with visible focus states
+- [ ] Touch targets ≥ 44x44px
+- [ ] Semantic HTML with proper ARIA labels
+- [ ] Screen reader compatible
+
+#### Performance
+
+- [ ] < 200ms page transitions
+- [ ] < 100ms for critical path (set logging)
+- [ ] No layout shifts (CLS < 0.1)
+- [ ] Images lazy loaded
+- [ ] Works offline completely
+
+#### Brand
+
+- [ ] Uses approved color palette (#000 bg, #ccff00 primary, #9ca3af muted)
+- [ ] Bold typography (900 weight, italic, uppercase for headers)
+- [ ] Aggressive, energizing aesthetic (not calming)
+- [ ] Micro-interactions < 200ms
+
+#### Mobile-First
+
+- [ ] Works perfectly on 375px width (iPhone SE)
+- [ ] One-handed operation easy
+- [ ] Safe area insets for notched devices
+- [ ] Primary actions in thumb-zone (bottom 60%)
+
+### Quick Reference
+
+- **Design Principles:** [`docs/design-principles.md`](docs/design-principles.md)
+- **Slash Command:** `/design-review` (run before merging UI changes)
+- **Color Palette:** See `tailwind.config.js`
+- **Accessibility:** Focus states defined in `index.html`
 
 ## Key Competitive Insights
 

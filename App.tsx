@@ -50,7 +50,8 @@ const BottomNav = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-black border-t border-[#333] px-6 py-4 flex justify-between items-center z-50 safe-area-bottom"
+      className="fixed bottom-0 left-0 right-0 bg-black border-t border-[#333] px-6 py-4 flex justify-between items-center z-50"
+      style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       aria-label="Main navigation"
       role="navigation"
     >
