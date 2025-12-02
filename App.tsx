@@ -1,21 +1,33 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, Link, useNavigate } from 'react-router-dom';
 import { Home, Dumbbell, Calendar, User, Play, Timer } from 'lucide-react';
-import Dashboard from './pages/Dashboard';
-import ExerciseLibrary from './pages/ExerciseLibrary';
-import Lift from './pages/Lift';
-import WorkoutLogger from './pages/WorkoutLogger';
-import History from './pages/History';
-import HistoryDetail from './pages/HistoryDetail';
-import Profile from './pages/Profile';
-import Onboarding from './pages/Onboarding';
-import Landing4 from './pages/landings/Landing4';
-import ProgramBuilder from './pages/ProgramBuilder';
-import Analytics from './pages/Analytics';
-import Login from './pages/Login';
 import { useStore } from './store/useStore';
 import { useAuthStore } from './store/useAuthStore';
+
+// Lazy load pages for better performance
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ExerciseLibrary = lazy(() => import('./pages/ExerciseLibrary'));
+const Lift = lazy(() => import('./pages/Lift'));
+const WorkoutLogger = lazy(() => import('./pages/WorkoutLogger'));
+const History = lazy(() => import('./pages/History'));
+const HistoryDetail = lazy(() => import('./pages/HistoryDetail'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const Landing4 = lazy(() => import('./pages/landings/Landing4'));
+const ProgramBuilder = lazy(() => import('./pages/ProgramBuilder'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Login = lazy(() => import('./pages/Login'));
+
+// Loading component
+const PageLoader = () => (
+  <div className="min-h-screen bg-black flex items-center justify-center">
+    <div className="text-center">
+      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p className="text-[#666] font-mono text-xs uppercase tracking-widest">Loading...</p>
+    </div>
+  </div>
+);
 
 const BottomNav = () => {
   const location = useLocation();
@@ -80,21 +92,23 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AppContent = () => {
   return (
     <div className="min-h-screen bg-background text-text pb-28 font-sans selection:bg-primary selection:text-black">
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/welcome" element={<Landing4 />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/lift" element={<ProtectedRoute><Lift /></ProtectedRoute>} />
-          <Route path="/builder" element={<ProtectedRoute><ProgramBuilder /></ProtectedRoute>} />
-          <Route path="/exercises" element={<ProtectedRoute><ExerciseLibrary /></ProtectedRoute>} />
-          <Route path="/workout" element={<ProtectedRoute><WorkoutLogger /></ProtectedRoute>} />
-          <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-          <Route path="/history/:id" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
-          <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/welcome" element={<Landing4 />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/lift" element={<ProtectedRoute><Lift /></ProtectedRoute>} />
+            <Route path="/builder" element={<ProtectedRoute><ProgramBuilder /></ProtectedRoute>} />
+            <Route path="/exercises" element={<ProtectedRoute><ExerciseLibrary /></ProtectedRoute>} />
+            <Route path="/workout" element={<ProtectedRoute><WorkoutLogger /></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+            <Route path="/history/:id" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Suspense>
         <BottomNav />
       </div>
   );
