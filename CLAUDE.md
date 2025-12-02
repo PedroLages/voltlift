@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-IronPath is a fitness/workout tracking mobile-first web application built with React 19, TypeScript, and Vite. It features AI-powered workout suggestions via Google's Gemini API and was originally created with Google AI Studio.
+VoltLift is a fitness/workout tracking mobile-first web application built with React 19, TypeScript, and Vite. It features AI-powered workout suggestions via Google's Gemini API and was originally created with Google AI Studio.
 
 ## Development Commands
 
@@ -26,7 +26,7 @@ GEMINI_API_KEY=your_api_key_here
 
 ### State Management
 - **Zustand store** (`store/useStore.ts`): Single global store with persistence via `zustand/middleware/persist`
-- State is persisted to localStorage under key `ironpath-storage`
+- State is persisted to localStorage under key `voltlift-storage`
 - Heavy assets (exercise visuals) are stored in IndexedDB via `utils/db.ts` to avoid localStorage size limits
 
 ### Routing

@@ -1,6 +1,6 @@
 {
-  "name": "IronPath - Fitness Tracker",
-  "short_name": "IronPath",
+  "name": "VoltLift - AI Workout Tracker",
+  "short_name": "VoltLift",
   "description": "AI-powered workout tracking and progressive overload optimization",
   "start_url": "/",
   "display": "standalone",

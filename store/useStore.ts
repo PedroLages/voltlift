@@ -657,7 +657,7 @@ export const useStore = create<AppState>()(
       }
     }),
     {
-      name: 'ironpath-storage',
+      name: 'voltlift-storage',
       partialize: (state) => {
           const { customExerciseVisuals, restTimerStart, activeBiometrics, ...rest } = state;
           return rest;
