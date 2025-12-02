@@ -1,0 +1,36 @@
+{
+  "name": "IronPath - Fitness Tracker",
+  "short_name": "IronPath",
+  "description": "AI-powered workout tracking and progressive overload optimization",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#ccff00",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Start Workout",
+      "short_name": "Workout",
+      "description": "Quick start a new workout session",
+      "url": "/#/lift",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "View History",
+      "short_name": "History",
+      "description": "View workout logs and history",
+      "url": "/#/history",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    }
+  ]
+}
