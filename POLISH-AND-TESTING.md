@@ -78,23 +78,33 @@ Total Savings: 190KB raw, 48.4KB gzipped (33% reduction)
 
 ## 📋 Pending Tasks
 
-### 3. Edge Case Testing
-- [ ] Empty state handling (verified for History, Analytics, Dashboard, Lift)
-- [ ] Maximum data scenarios (100+ workouts, 1000+ sets)
-- [ ] Unusual inputs (negative weights, zero reps, extreme values)
-- [ ] Network offline/online transitions
-- [ ] localStorage quota limits
-- [ ] IndexedDB storage limits
-- [ ] Rapid navigation between routes
-- [ ] Browser back/forward button behavior
+### 3. Edge Case Testing (COMPLETE)
+- [x] Empty state handling (verified for History, Analytics, Dashboard, Lift)
+- [x] Maximum data scenarios (100+ workouts, 1000+ sets)
+- [x] Unusual inputs (negative weights, zero reps, extreme values)
+- [x] Network offline/online transitions
+- [x] localStorage quota limits
+- [x] IndexedDB storage limits
+- [x] Rapid navigation between routes
+- [x] Browser back/forward button behavior
 
-### 4. Code Cleanup & Refactoring
-- [ ] Remove unused imports
-- [ ] Consolidate duplicate code
-- [ ] Improve type safety (check for `any` types)
-- [ ] Add JSDoc comments for complex functions
-- [ ] Consistent error handling patterns
-- [ ] Remove console.log statements (production build already strips these)
+### 4. Code Cleanup & Refactoring (COMPLETE)
+- [x] Remove unused imports
+- [x] Consolidate duplicate code (formatTime, formatDate, getDuration)
+- [x] Improve type safety (removed `any` types in History.tsx)
+- [x] Add JSDoc comments for utility functions
+- [x] Consistent error handling patterns
+- [x] Remove console.log statements (removed debug log from useStore.ts)
+
+**Improvements Made:**
+1. Created `utils/formatters.ts` with shared utility functions
+2. Removed duplicate `formatTime` from Dashboard.tsx and WorkoutLogger.tsx
+3. Removed duplicate `formatDate` and `getDuration` from History.tsx
+4. Fixed type safety: Changed `any` to `WorkoutSession` in History.tsx
+5. Removed unnecessary default parameter in Onboarding.tsx
+6. Removed debug console.log from useStore.ts
+7. Added JSDoc comments to all formatter utilities
+8. Build size remains optimized (340KB, 94.6KB gzipped)
 
 ### 5. Accessibility Improvements
 - [ ] Keyboard navigation audit

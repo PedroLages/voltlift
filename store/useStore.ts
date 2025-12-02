@@ -252,8 +252,7 @@ export const useStore = create<AppState>()(
 
         if (prUpdated) {
           newSettings.personalRecords = newPRs;
-          // Store detected PRs for UI notification (could add to state if needed)
-          console.log('🎉 New PRs detected:', newPRsDetected);
+          // PRs detected and updated in personal records
         }
 
         // Program Progression Logic

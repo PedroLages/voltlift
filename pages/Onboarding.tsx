@@ -44,7 +44,7 @@ const Onboarding = () => {
 
   const handleFinish = () => {
     if (!name.trim()) return;
-    completeOnboarding(name || 'Athlete', { type: selectedGoal, targetPerWeek: 4 }, selectedExperience, selectedEquipment);
+    completeOnboarding(name, { type: selectedGoal, targetPerWeek: 4 }, selectedExperience, selectedEquipment);
     navigate('/');
   };
 

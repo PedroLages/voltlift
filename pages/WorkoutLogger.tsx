@@ -6,6 +6,7 @@ import { EXERCISE_LIBRARY } from '../constants';
 import { Check, Plus, MoreHorizontal, Timer, Sparkles, X, AlertTriangle, RefreshCw, Trash2, StickyNote, Trophy, ArrowRight, Calculator, ChevronDown, Link as LinkIcon, Unlink, Heart } from 'lucide-react';
 import { getProgressiveOverloadTip } from '../services/geminiService';
 import { SetType } from '../types';
+import { formatTime } from '../utils/formatters';
 
 const WorkoutLogger = () => {
   const { activeWorkout, finishWorkout, cancelWorkout, updateSet, addSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, addBiometricPoint } = useStore();
@@ -210,13 +211,6 @@ const WorkoutLogger = () => {
       setActiveMenuId(null);
   };
 
-  const formatTime = (seconds: number) => {
-      if (seconds <= 0) return "0:00";
-      const m = Math.floor(seconds / 60);
-      const s = seconds % 60;
-      return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-  
   // Plate Calc Logic
   const getPlates = (target: number) => {
       const bar = settings.barWeight || 45;

@@ -6,6 +6,7 @@ import { TrendingUp, Activity, Flame, ChevronRight, Play, Clock, BarChart2, Time
 import { getWorkoutMotivation } from '../services/geminiService';
 import { EXERCISE_LIBRARY } from '../constants';
 import EmptyState from '../components/EmptyState';
+import { formatTime } from '../utils/formatters';
 
 const Dashboard = () => {
   const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, syncStatus, logDailyBio, dailyLogs } = useStore();
@@ -55,12 +56,6 @@ const Dashboard = () => {
           setRestTimeLeft(0);
       }
   }, [restTimerStart, restDuration]);
-
-  const formatTime = (seconds: number) => {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
 
   const getNextExerciseName = () => {
       if (!activeWorkout) return '';

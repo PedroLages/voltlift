@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, ChevronRight, Clock, Box, Filter, X, Dumbbell } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
 import EmptyState from '../components/EmptyState';
+import { WorkoutSession } from '../types';
+import { formatDate, getDuration } from '../utils/formatters';
 
 const History = () => {
   const { history, templates } = useStore();
@@ -15,24 +17,10 @@ const History = () => {
   const [templateFilter, setTemplateFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const getDuration = (start: number, end?: number) => {
-    if (!end) return '--';
-    const minutes = Math.floor((end - start) / 60000);
-    return `${minutes} MIN`;
-  };
-
-  const getTotalVolume = (session: any) => {
+  const getTotalVolume = (session: WorkoutSession) => {
     let volume = 0;
-    session.logs.forEach((log: any) => {
-      log.sets.forEach((set: any) => {
+    session.logs.forEach((log) => {
+      log.sets.forEach((set) => {
         if (set.completed) volume += (set.weight * set.reps);
       });
     });
