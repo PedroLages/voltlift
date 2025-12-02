@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Plus, ChevronRight, Dumbbell, PenTool, Trash2, Play, CalendarRange, X, Edit, Copy } from 'lucide-react';
+import { Plus, ChevronRight, Dumbbell, PenTool, Trash2, Play, CalendarRange, X, Edit, Copy, FileText } from 'lucide-react';
 import { Program, WorkoutSession } from '../types';
 import TemplateEditor from '../components/TemplateEditor';
+import EmptyState from '../components/EmptyState';
 
 const Lift = () => {
   const navigate = useNavigate();
@@ -104,7 +105,16 @@ const Lift = () => {
             <span className="text-[10px] font-mono text-[#666]">{programs.length} AVAILABLE</span>
           </div>
 
-          <div className="space-y-3">
+          {programs.length === 0 ? (
+            <EmptyState
+              icon={CalendarRange}
+              title="No Training Programs"
+              description="Structured multi-week programs will appear here. Programs help you systematically progress through different training phases."
+              actionLabel="Create Custom Template"
+              onAction={() => navigate('/builder')}
+            />
+          ) : (
+            <div className="space-y-3">
               {programs.map(prog => (
                   <div 
                     key={prog.id} 
@@ -145,7 +155,8 @@ const Lift = () => {
                       </div>
                   </div>
               ))}
-          </div>
+            </div>
+          )}
       </section>
 
       {/* Protocols List */}
