@@ -37,6 +37,8 @@ interface AppState {
   loadVisuals: () => Promise<void>;
   swapExercise: (logId: string, newExerciseId: string) => void;
   saveTemplate: (name: string, exerciseIds: string[]) => void;
+  updateTemplate: (id: string, name: string, exerciseIds: string[]) => void;
+  duplicateTemplate: (id: string) => void;
   deleteTemplate: (id: string) => void;
   suggestNextSet: (exerciseIndex: number, setIndex: number) => void; 
   updateExerciseLog: (logId: string, updates: Partial<ExerciseLog>) => void;
@@ -92,17 +94,44 @@ export const useStore = create<AppState>()(
         if (templateId) {
           const template = get().templates.find(t => t.id === templateId);
           if (template) {
+            // Find the most recent completed workout from this template
+            const previousWorkout = get().history
+              .filter(w => w.sourceTemplateId === templateId && w.status === 'completed')
+              .sort((a, b) => (b.endTime || 0) - (a.endTime || 0))[0];
+
             newWorkout = {
               ...template,
               id: uuidv4(),
               startTime: Date.now(),
               status: 'active',
               sourceTemplateId: templateId, // Track source
-              logs: template.logs.map(log => ({
-                ...log,
-                id: uuidv4(),
-                sets: log.sets.map(s => ({ ...s, id: uuidv4(), completed: false, type: 'N' }))
-              }))
+              logs: template.logs.map(log => {
+                // Try to find matching exercise from previous workout
+                const previousLog = previousWorkout?.logs.find(l => l.exerciseId === log.exerciseId);
+
+                if (previousLog && previousLog.sets.length > 0) {
+                  // Pre-fill with previous workout data
+                  return {
+                    ...log,
+                    id: uuidv4(),
+                    sets: previousLog.sets.map(prevSet => ({
+                      id: uuidv4(),
+                      reps: prevSet.reps,
+                      weight: prevSet.weight,
+                      rpe: prevSet.rpe,
+                      type: 'N' as SetType,
+                      completed: false
+                    }))
+                  };
+                } else {
+                  // No previous data, use template defaults
+                  return {
+                    ...log,
+                    id: uuidv4(),
+                    sets: log.sets.map(s => ({ ...s, id: uuidv4(), completed: false, type: 'N' }))
+                  };
+                }
+              })
             };
           } else {
              newWorkout = {
@@ -423,6 +452,45 @@ export const useStore = create<AppState>()(
                 exerciseId: exId,
                 sets: [{ id: uuidv4(), reps: 10, weight: 0, completed: false, type: 'N' }]
             }))
+        };
+        set(state => ({ templates: [...state.templates, newTemplate] }));
+      },
+
+      updateTemplate: (id, name, exerciseIds) => {
+        set(state => ({
+          templates: state.templates.map(t =>
+            t.id === id
+              ? {
+                  ...t,
+                  name,
+                  logs: exerciseIds.map((exId, idx) => {
+                    // Try to preserve existing log if same exercise
+                    const existingLog = t.logs.find(l => l.exerciseId === exId);
+                    return existingLog || {
+                      id: uuidv4(),
+                      exerciseId: exId,
+                      sets: [{ id: uuidv4(), reps: 10, weight: 0, completed: false, type: 'N' }]
+                    };
+                  })
+                }
+              : t
+          )
+        }));
+      },
+
+      duplicateTemplate: (id) => {
+        const template = get().templates.find(t => t.id === id);
+        if (!template) return;
+
+        const newTemplate: WorkoutSession = {
+          ...template,
+          id: uuidv4(),
+          name: `${template.name} (Copy)`,
+          logs: template.logs.map(log => ({
+            ...log,
+            id: uuidv4(),
+            sets: log.sets.map(set => ({ ...set, id: uuidv4(), completed: false }))
+          }))
         };
         set(state => ({ templates: [...state.templates, newTemplate] }));
       },

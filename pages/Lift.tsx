@@ -2,13 +2,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Plus, ChevronRight, Dumbbell, PenTool, Trash2, Play, CalendarRange, X } from 'lucide-react';
-import { Program } from '../types';
+import { Plus, ChevronRight, Dumbbell, PenTool, Trash2, Play, CalendarRange, X, Edit, Copy } from 'lucide-react';
+import { Program, WorkoutSession } from '../types';
+import TemplateEditor from '../components/TemplateEditor';
 
 const Lift = () => {
   const navigate = useNavigate();
-  const { templates, programs, startWorkout, deleteTemplate, activateProgram, settings } = useStore();
+  const { templates, programs, startWorkout, deleteTemplate, duplicateTemplate, activateProgram, settings } = useStore();
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<WorkoutSession | null>(null);
 
   const handleStartTemplate = (id: string) => {
     startWorkout(id);
@@ -18,6 +20,16 @@ const Lift = () => {
   const handleQuickStart = () => {
     startWorkout();
     navigate('/workout');
+  };
+
+  const handleEditTemplate = (e: React.MouseEvent, template: WorkoutSession) => {
+    e.stopPropagation();
+    setEditingTemplate(template);
+  };
+
+  const handleDuplicateTemplate = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    duplicateTemplate(id);
   };
 
   const handleDeleteTemplate = (e: React.MouseEvent, id: string) => {
@@ -158,16 +170,36 @@ const Lift = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    {/* Edit button for all templates */}
+                    <button
+                        onClick={(e) => handleEditTemplate(e, t)}
+                        className="w-8 h-8 flex items-center justify-center text-[#444] hover:text-primary hover:bg-[#1a1a1a] rounded transition-colors z-10"
+                        title="Edit Template"
+                    >
+                        <Edit size={16} />
+                    </button>
+
+                    {/* Duplicate button */}
+                    <button
+                        onClick={(e) => handleDuplicateTemplate(e, t.id)}
+                        className="w-8 h-8 flex items-center justify-center text-[#444] hover:text-blue-400 hover:bg-[#001a1a] rounded transition-colors z-10"
+                        title="Duplicate Template"
+                    >
+                        <Copy size={16} />
+                    </button>
+
                     {/* Only show delete for custom templates */}
                     {t.logs.length > 0 && !['t1', 't2'].includes(t.id) && (
-                        <button 
+                        <button
                             onClick={(e) => handleDeleteTemplate(e, t.id)}
                             className="w-8 h-8 flex items-center justify-center text-[#444] hover:text-red-500 hover:bg-[#1a0000] rounded transition-colors z-10"
+                            title="Delete Template"
                         >
                             <Trash2 size={16} />
                         </button>
                     )}
+
                     <ChevronRight size={24} className="text-[#333] group-hover:text-primary transition-colors" />
                 </div>
               </div>
@@ -228,6 +260,14 @@ const Lift = () => {
                 </div>
             </div>
         </div>
+      )}
+
+      {/* Template Editor Modal */}
+      {editingTemplate && (
+        <TemplateEditor
+          template={editingTemplate}
+          onClose={() => setEditingTemplate(null)}
+        />
       )}
 
     </div>
