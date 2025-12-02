@@ -24,7 +24,7 @@ const PageLoader = () => (
   <div className="min-h-screen bg-black flex items-center justify-center">
     <div className="text-center">
       <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-      <p className="text-[#666] font-mono text-xs uppercase tracking-widest">Loading...</p>
+      <p className="text-primary font-black text-sm uppercase tracking-widest italic animate-pulse">POWERING UP</p>
     </div>
   </div>
 );

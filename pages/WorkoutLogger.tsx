@@ -249,7 +249,7 @@ const WorkoutLogger = () => {
       {calculatorTarget !== null && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in" onClick={() => setCalculatorTarget(null)}>
               <div className="bg-[#111] border border-[#333] p-8 max-w-sm w-full mx-4 relative" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setCalculatorTarget(null)} className="absolute top-4 right-4 text-[#666] hover:text-white"><X size={24} /></button>
+                  <button onClick={() => setCalculatorTarget(null)} className="absolute top-4 right-4 text-[#666] hover:text-white" aria-label="Close calculator"><X size={24} /></button>
                   <h3 className="volt-header text-2xl text-white mb-6">LOAD BAR</h3>
                   
                   <div className="flex justify-between items-end border-b border-[#333] pb-4 mb-6">
@@ -412,9 +412,10 @@ const WorkoutLogger = () => {
                 
                 {/* Context Menu */}
                 <div className="relative">
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === log.id ? null : log.id); }}
                         className="text-[#444] hover:text-white p-2"
+                        aria-label="Exercise options"
                     >
                         <MoreHorizontal size={20} />
                     </button>

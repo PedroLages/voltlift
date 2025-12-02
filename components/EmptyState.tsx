@@ -21,16 +21,19 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   onSecondaryAction,
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center bg-[#111] border border-[#222] rounded">
-      <div className="mb-4 p-4 rounded-full bg-[#1a1a1a] border border-[#333]">
-        <Icon size={32} className="text-[#444]" />
+    <div className="flex flex-col items-center justify-center p-8 text-center bg-[#111] border border-[#333] rounded relative overflow-hidden">
+      {/* Volt accent line */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary"></div>
+
+      <div className="mb-4 p-4 rounded-full bg-[#1a1a1a] border-2 border-primary/20">
+        <Icon size={32} className="text-primary/60" />
       </div>
 
-      <h3 className="text-white font-bold uppercase text-sm mb-2 tracking-wide">
+      <h3 className="text-white font-black italic uppercase text-sm mb-2 tracking-wider">
         {title}
       </h3>
 
-      <p className="text-[#666] text-xs font-mono max-w-md mb-6 leading-relaxed">
+      <p className="text-[#888] text-xs font-mono max-w-md mb-6 leading-relaxed">
         {description}
       </p>
 
