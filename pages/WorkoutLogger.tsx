@@ -315,25 +315,33 @@ const WorkoutLogger = () => {
       )}
 
       {/* Top Bar */}
-      <div className="sticky top-0 z-40 bg-black/95 border-b border-[#333] p-4 flex justify-between items-center safe-area-top">
+      <div className="sticky top-0 z-40 bg-black/95 border-b border-[#333] p-4 flex justify-between items-center safe-area-top" role="banner">
         <div className="flex items-center gap-4">
-            <button onClick={(e) => { e.stopPropagation(); if(confirm("ABORT SESSION?")) { cancelWorkout(); navigate('/'); } }} className="text-[#666] text-xs font-bold uppercase tracking-wider hover:text-red-500 transition-colors">
+            <button
+              onClick={(e) => { e.stopPropagation(); if(confirm("ABORT SESSION?")) { cancelWorkout(); navigate('/'); } }}
+              aria-label="Abort workout session"
+              className="text-[#666] text-xs font-bold uppercase tracking-wider hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
             Abort
             </button>
             {/* Live HR Monitor */}
-            <div className="flex items-center gap-2 bg-[#111] px-2 py-1 rounded border border-[#222]">
-                <Heart size={12} className="text-red-500 animate-pulse" fill="currentColor" />
+            <div className="flex items-center gap-2 bg-[#111] px-2 py-1 rounded border border-[#222]" role="status" aria-live="polite" aria-label={`Heart rate: ${bpm} beats per minute`}>
+                <Heart size={12} className="text-red-500 animate-pulse" fill="currentColor" aria-hidden="true" />
                 <span className="text-xs font-mono font-bold text-white w-8 text-right">{bpm}</span>
             </div>
         </div>
-        
+
         <div className="flex flex-col items-center">
-          <span className="font-black italic uppercase text-lg tracking-tighter text-white">{activeWorkout.name}</span>
-          <span className="text-[10px] text-primary font-mono flex items-center gap-1">
-            <Timer size={10} /> {Math.floor((Date.now() - activeWorkout.startTime) / 60000)} MIN
+          <h1 className="font-black italic uppercase text-lg tracking-tighter text-white">{activeWorkout.name}</h1>
+          <span className="text-[10px] text-primary font-mono flex items-center gap-1" role="timer" aria-label={`Workout duration: ${Math.floor((Date.now() - activeWorkout.startTime) / 60000)} minutes`}>
+            <Timer size={10} aria-hidden="true" /> {Math.floor((Date.now() - activeWorkout.startTime) / 60000)} MIN
           </span>
         </div>
-        <button onClick={(e) => { e.stopPropagation(); handleFinish(); }} className="bg-primary text-black px-4 py-2 text-xs font-black uppercase italic tracking-wider hover:bg-white transition-colors">
+        <button
+          onClick={(e) => { e.stopPropagation(); handleFinish(); }}
+          aria-label="Finish workout session"
+          className="bg-primary text-black px-4 py-2 text-xs font-black uppercase italic tracking-wider hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black"
+        >
           Finish
         </button>
       </div>
@@ -507,11 +515,13 @@ const WorkoutLogger = () => {
                     
                     {/* Weight Input */}
                     <div className="col-span-3 relative">
-                      <input 
-                        type="number" 
-                        value={set.weight || ''} 
+                      <input
+                        type="number"
+                        value={set.weight || ''}
                         onChange={(e) => updateSet(exerciseIndex, setIndex, { weight: parseFloat(e.target.value) })}
                         placeholder={previousSet ? `${previousSet.weight}` : "0"}
+                        aria-label={`Weight for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
+                        inputMode="decimal"
                         className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -532,11 +542,13 @@ const WorkoutLogger = () => {
 
                     {/* Reps Input */}
                     <div className="col-span-3">
-                      <input 
-                        type="number" 
-                        value={set.reps || ''} 
+                      <input
+                        type="number"
+                        value={set.reps || ''}
                         onChange={(e) => updateSet(exerciseIndex, setIndex, { reps: parseFloat(e.target.value) })}
                         placeholder={previousSet ? `${previousSet.reps}` : "0"}
+                        aria-label={`Repetitions for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
+                        inputMode="numeric"
                         className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -550,6 +562,7 @@ const WorkoutLogger = () => {
                         <select
                              value={set.rpe || ''}
                              onChange={(e) => updateSet(exerciseIndex, setIndex, { rpe: parseInt(e.target.value) })}
+                             aria-label={`Rate of perceived exertion for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
                              className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-sm font-bold text-[#888] focus:border-primary outline-none appearance-none"
                              onClick={(e) => e.stopPropagation()}
                         >

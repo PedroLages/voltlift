@@ -49,19 +49,24 @@ const BottomNav = () => {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-black border-t border-[#333] px-6 py-4 flex justify-between items-center z-50 safe-area-bottom">
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-black border-t border-[#333] px-6 py-4 flex justify-between items-center z-50 safe-area-bottom"
+      aria-label="Main navigation"
+      role="navigation"
+    >
       <LinkItem to="/" icon={<Home size={22} />} label="HOME" active={isActive('/')} />
       <LinkItem to="/lift" icon={<Dumbbell size={22} />} label="LIFT" active={isActive('/lift')} />
-      
+
       <div className="relative -top-6">
-        <button 
-            onClick={handlePlayClick} 
+        <button
+            onClick={handlePlayClick}
+            aria-label={activeWorkout ? "Continue active workout" : restTimerStart ? "Resume workout after rest" : "Start workout"}
             className={`flex items-center justify-center w-16 h-16 rounded-lg shadow-[0_0_20px_rgba(204,255,0,0.3)] transition-transform active:scale-95 ${activeWorkout || restTimerStart ? 'bg-primary animate-pulse text-black' : 'bg-primary text-black'}`}
         >
           {restTimerStart ? (
-              <Timer size={28} strokeWidth={2.5} className="animate-spin-slow" />
+              <Timer size={28} strokeWidth={2.5} aria-hidden="true" className="animate-spin-slow" />
           ) : (
-              <Play size={28} fill="currentColor" strokeWidth={2.5} />
+              <Play size={28} fill="currentColor" strokeWidth={2.5} aria-hidden="true" />
           )}
         </button>
       </div>
@@ -73,8 +78,13 @@ const BottomNav = () => {
 };
 
 const LinkItem = ({ to, icon, label, active }: { to: string, icon: React.ReactNode, label: string, active: boolean }) => (
-  <Link to={to} className={`flex flex-col items-center gap-1.5 transition-colors ${active ? 'text-primary' : 'text-[#444]'} hover:text-white`}>
-    {icon}
+  <Link
+    to={to}
+    className={`flex flex-col items-center gap-1.5 transition-colors ${active ? 'text-primary' : 'text-[#444]'} hover:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black`}
+    aria-label={label}
+    aria-current={active ? 'page' : undefined}
+  >
+    <span aria-hidden="true">{icon}</span>
     <span className="text-[10px] font-black italic tracking-wider">{label}</span>
   </Link>
 );

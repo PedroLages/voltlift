@@ -58,9 +58,10 @@ const Lift = () => {
       </header>
 
       {/* Primary Action: Quick Start */}
-      <button 
+      <button
         onClick={handleQuickStart}
-        className="w-full group relative overflow-hidden bg-primary p-6 mb-8 skew-x-[-2deg] hover:scale-[1.02] transition-transform active:scale-95"
+        aria-label="Start empty workout session"
+        className="w-full group relative overflow-hidden bg-primary p-6 mb-8 skew-x-[-2deg] hover:scale-[1.02] transition-transform active:scale-95 focus:outline-none focus:ring-4 focus:ring-primary focus:ring-offset-4 focus:ring-offset-black"
       >
         <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-[-20deg]"></div>
         <div className="flex justify-between items-center skew-x-[2deg]">
@@ -76,21 +77,23 @@ const Lift = () => {
 
       {/* Tool Grid */}
       <div className="grid grid-cols-2 gap-4 mb-10">
-        <button 
+        <button
           onClick={() => navigate('/exercises')}
-          className="bg-[#111] border border-[#222] p-5 flex flex-col justify-between h-32 hover:border-primary group transition-colors"
+          aria-label="Browse exercise library"
+          className="bg-[#111] border border-[#222] p-5 flex flex-col justify-between h-32 hover:border-primary group transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black"
         >
-            <Dumbbell className="text-[#666] group-hover:text-primary transition-colors" size={28} />
+            <Dumbbell className="text-[#666] group-hover:text-primary transition-colors" size={28} aria-hidden="true" />
             <div className="text-left">
                 <span className="block text-white font-bold uppercase italic text-lg leading-none group-hover:text-primary">Database</span>
                 <span className="text-[10px] text-[#555] font-mono uppercase">Browse Library</span>
             </div>
         </button>
-        <button 
+        <button
           onClick={() => navigate('/builder')}
-          className="bg-[#111] border border-[#222] p-5 flex flex-col justify-between h-32 hover:border-primary group transition-colors"
+          aria-label="Create new workout template"
+          className="bg-[#111] border border-[#222] p-5 flex flex-col justify-between h-32 hover:border-primary group transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black"
         >
-            <PenTool className="text-[#666] group-hover:text-primary transition-colors" size={28} />
+            <PenTool className="text-[#666] group-hover:text-primary transition-colors" size={28} aria-hidden="true" />
             <div className="text-left">
                 <span className="block text-white font-bold uppercase italic text-lg leading-none group-hover:text-primary">Builder</span>
                 <span className="text-[10px] text-[#555] font-mono uppercase">New Protocol</span>
