@@ -79,13 +79,17 @@ This document outlines all planned features and improvements for IronPath, organ
 
 ## P1: High Priority (Core Product Features)
 
-**Status:** 🟦 **IN PROGRESS (8/11 Complete - 73%)**
+**Status:** 🟦 **IN PROGRESS (9/11 Complete - 82%)**
 
 ### Workout Management
-- [ ] ⬜ **Template system improvements**
-  - Edit templates without affecting history
-  - Quick start from template with data pre-fill
-  - Template library view
+- [x] ✅ **Template system improvements** (COMPLETE)
+  - Edit templates without affecting history ✅
+  - Quick start from template with data pre-fill ✅
+  - Template library view ✅
+  - Duplicate templates ✅
+  - Implemented in TemplateEditor.tsx component
+  - updateTemplate() and duplicateTemplate() in useStore.ts
+  - Previous workout data pre-fills automatically
 
 - [x] ✅ **Exercise selection and search** (COMPLETE)
   - Fast search through exercise library ✅
