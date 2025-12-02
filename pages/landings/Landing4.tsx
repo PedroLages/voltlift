@@ -10,7 +10,7 @@ const Landing4 = () => {
       
       {/* Nav */}
       <nav className="p-6 flex justify-between items-center">
-        <div className="text-2xl font-black italic tracking-tighter text-[#ccff00]">IRONPATH</div>
+        <div className="text-2xl font-black italic tracking-tighter text-[#ccff00]">VOLTLIFT</div>
         <button onClick={() => navigate('/')} className="bg-[#222] hover:bg-[#333] px-4 py-2 rounded font-bold text-sm uppercase tracking-wide">Login</button>
       </nav>
 
@@ -58,7 +58,7 @@ const Landing4 = () => {
 
       {/* Footer */}
       <div className="py-8 text-center">
-          <p className="text-[#333] font-bold text-xs uppercase tracking-widest">IronPath © 2024</p>
+          <p className="text-[#333] font-bold text-xs uppercase tracking-widest">VoltLift © 2025</p>
       </div>
     </div>
   );

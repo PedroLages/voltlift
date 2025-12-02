@@ -103,9 +103,9 @@ const Profile = () => {
         </div>
       </section>
 
-      {/* IronCloud Sync Section */}
+      {/* VoltCloud Sync Section */}
       <section className="mb-10">
-          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">IronCloud Network</h3>
+          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">VoltCloud Network</h3>
           <div className="bg-[#111] border border-[#222] p-6 relative overflow-hidden">
                <div className="absolute top-0 right-0 p-6 opacity-5">
                    <Cloud size={120} />
@@ -282,9 +282,9 @@ const Profile = () => {
               </div>
           </div>
       </section>
-      
+
       <div className="mt-12 text-center">
-        <p className="text-[10px] text-[#333] font-mono uppercase">IronPath Sys v1.0.4</p>
+        <p className="text-[10px] text-[#333] font-mono uppercase">VoltLift Sys v1.0.4</p>
       </div>
     </div>
   );

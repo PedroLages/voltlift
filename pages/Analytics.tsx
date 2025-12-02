@@ -264,7 +264,7 @@ const Analytics = () => {
       </div>
 
       <div className="p-4 bg-[#111] border-l-2 border-primary">
-          <h4 className="font-bold text-white uppercase italic text-sm mb-1">IronPath Insight</h4>
+          <h4 className="font-bold text-white uppercase italic text-sm mb-1">VoltLift Insight</h4>
           <p className="text-xs text-[#888] font-mono leading-relaxed">
               Consistently tracking specific movements allows the system to calculate your 1RM accurately.
               Focus on progressive overload to see this trend line climb.
