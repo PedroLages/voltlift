@@ -7,16 +7,20 @@ import { Check, Plus, MoreHorizontal, Timer, Sparkles, X, AlertTriangle, Refresh
 import { getProgressiveOverloadTip } from '../services/geminiService';
 import { SetType } from '../types';
 import { formatTime } from '../utils/formatters';
+import { AISuggestionBadge, VolumeWarningBadge, RecoveryScore } from '../components/AISuggestionBadge';
+import { checkAllPRs, PRDetection } from '../services/strengthScore';
+import PRCelebration from '../components/PRCelebration';
+import SetTypeSelector from '../components/SetTypeSelector';
 
 const WorkoutLogger = () => {
-  const { activeWorkout, finishWorkout, cancelWorkout, updateSet, addSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, addBiometricPoint } = useStore();
+  const { activeWorkout, finishWorkout, cancelWorkout, updateSet, addSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning } = useStore();
   const navigate = useNavigate();
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [swapTargetLogId, setSwapTargetLogId] = useState<string | null>(null);
-  
+
   const [aiTip, setAiTip] = useState<{id: string, text: string} | null>(null);
   const [loadingAi, setLoadingAi] = useState<string | null>(null);
-  
+
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [showNotesId, setShowNotesId] = useState<string | null>(null);
 
@@ -26,8 +30,8 @@ const WorkoutLogger = () => {
   // Timer Local State (synced with global)
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // PR Celebration State
-  const [showPR, setShowPR] = useState<string | null>(null); // Name of exercise for PR
+  // PR Celebration State (Enhanced Multi-PR Detection)
+  const [activePRs, setActivePRs] = useState<{ prs: PRDetection[]; exerciseName: string } | null>(null);
 
   // Live Heart Rate Simulation State
   const [bpm, setBpm] = useState(70);
@@ -143,29 +147,32 @@ const WorkoutLogger = () => {
     }
   };
 
-  const handleSetComplete = (exerciseIndex: number, setIndex: number, completed: boolean, weight: number, exerciseId: string) => {
+  const handleSetComplete = (exerciseIndex: number, setIndex: number, completed: boolean, weight: number, reps: number, exerciseId: string) => {
       updateSet(exerciseIndex, setIndex, { completed });
-      
+
       if (completed) {
           // Trigger Global Rest Timer
           startRestTimer(settings.defaultRestTimer || 90);
-          
-          // Check for PR (using new PR structure)
-          const currentBestWeight = settings.personalRecords[exerciseId]?.bestWeight?.value || 0;
-          if (weight > currentBestWeight && weight > 0) {
-              const exerciseName = EXERCISE_LIBRARY.find(e => e.id === exerciseId)?.name;
-              setShowPR(exerciseName || 'NEW RECORD');
-              setTimeout(() => setShowPR(null), 3000);
+
+          // Enhanced Multi-PR Detection (Alpha Progression strategy)
+          const prHistory = settings.personalRecords[exerciseId];
+          const currentSet = activeWorkout?.logs[exerciseIndex]?.sets[setIndex];
+
+          if (currentSet && weight > 0 && reps > 0) {
+              const detectedPRs = checkAllPRs(currentSet, prHistory);
+
+              if (detectedPRs.length > 0) {
+                  const exerciseName = EXERCISE_LIBRARY.find(e => e.id === exerciseId)?.name || 'Exercise';
+                  setActivePRs({ prs: detectedPRs, exerciseName });
+              }
           }
       } else {
           stopRestTimer();
       }
   };
   
-  const cycleSetType = (exerciseIndex: number, setIndex: number, currentType: SetType) => {
-      const types: SetType[] = ['N', 'W', 'D', 'F'];
-      const nextType = types[(types.indexOf(currentType) + 1) % types.length];
-      updateSet(exerciseIndex, setIndex, { type: nextType });
+  const handleSetTypeChange = (exerciseIndex: number, setIndex: number, newType: SetType) => {
+      updateSet(exerciseIndex, setIndex, { type: newType });
   };
 
   const handleGetAiTip = async (exerciseId: string) => {
@@ -234,15 +241,14 @@ const WorkoutLogger = () => {
 
   return (
     <div className="pb-32 bg-background min-h-screen" onClick={() => setActiveMenuId(null)}>
-      {/* PR Celebration Overlay */}
-      {showPR && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-              <div className="text-center animate-bounce-in">
-                  <Trophy size={64} className="text-primary mx-auto mb-4" strokeWidth={1} />
-                  <h2 className="text-4xl volt-header text-white mb-2">NEW RECORD</h2>
-                  <p className="text-xl font-bold uppercase text-[#888]">{showPR}</p>
-              </div>
-          </div>
+      {/* Enhanced PR Celebration (Multi-PR Detection + Confetti + Haptic) */}
+      {activePRs && (
+          <PRCelebration
+              prs={activePRs.prs}
+              exerciseName={activePRs.exerciseName}
+              onClose={() => setActivePRs(null)}
+              autoCloseDuration={5000}
+          />
       )}
       
       {/* Plate Calculator Modal */}
@@ -346,6 +352,25 @@ const WorkoutLogger = () => {
         </button>
       </div>
 
+      {/* Workout Notes Section */}
+      <div className="p-4 pb-0">
+        <details className="bg-[#111] border border-[#222] rounded-lg overflow-hidden">
+          <summary className="px-4 py-3 cursor-pointer flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#888] hover:text-white transition-colors">
+            <StickyNote size={14} />
+            {activeWorkout.notes ? 'Edit Workout Notes' : 'Add Workout Notes'}
+            {activeWorkout.notes && <span className="text-primary ml-auto">•</span>}
+          </summary>
+          <div className="px-4 pb-4">
+            <textarea
+              value={activeWorkout.notes || ''}
+              onChange={(e) => updateActiveWorkout({ notes: e.target.value })}
+              placeholder="Add general notes about this workout... Use #tags for organization (#injury, #form, #pr, etc.)"
+              className="w-full bg-[#000] border border-[#333] p-3 text-xs text-[#aaa] font-mono outline-none focus:border-primary min-h-[80px] rounded"
+            />
+          </div>
+        </details>
+      </div>
+
       {/* Exercises List */}
       <div className="p-4 space-y-4">
         {activeWorkout.logs.map((log, exerciseIndex) => {
@@ -362,9 +387,24 @@ const WorkoutLogger = () => {
           const isSupersetStart = log.supersetId && (exerciseIndex === 0 || activeWorkout.logs[exerciseIndex - 1].supersetId !== log.supersetId);
           const isSupersetEnd = log.supersetId && (exerciseIndex === activeWorkout.logs.length - 1 || activeWorkout.logs[exerciseIndex + 1].supersetId !== log.supersetId);
           const isSupersetMiddle = log.supersetId && !isSupersetStart && !isSupersetEnd;
-          
+
           const isLinkedToNext = log.supersetId && activeWorkout.logs[exerciseIndex + 1]?.supersetId === log.supersetId;
           const isLinkedToPrev = log.supersetId && activeWorkout.logs[exerciseIndex - 1]?.supersetId === log.supersetId;
+
+          // Circuit Notation Logic (A1, A2, B1, B2, etc.)
+          let circuitLabel = '';
+          if (log.supersetId) {
+            // Find all unique superset IDs
+            const uniqueSupersetIds = Array.from(new Set(activeWorkout.logs.filter(l => l.supersetId).map(l => l.supersetId)));
+            const supersetGroupIndex = uniqueSupersetIds.indexOf(log.supersetId);
+            const groupLetter = String.fromCharCode(65 + supersetGroupIndex); // A, B, C, etc.
+
+            // Find position within this superset group
+            const logsInGroup = activeWorkout.logs.filter(l => l.supersetId === log.supersetId);
+            const positionInGroup = logsInGroup.findIndex(l => l.id === log.id) + 1;
+
+            circuitLabel = `${groupLetter}${positionInGroup}`;
+          }
 
           return (
             <div 
@@ -387,7 +427,20 @@ const WorkoutLogger = () => {
               {/* Exercise Header */}
               <div className="p-4 flex justify-between items-start border-b border-[#222]">
                 <div className="flex-1">
-                    <h3 className="volt-header text-xl text-white max-w-[90%]">{exerciseDef?.name || 'Unknown Exercise'}</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                        {/* Circuit Notation Badge */}
+                        {circuitLabel && (
+                            <div className="flex items-center justify-center w-8 h-8 bg-primary text-black font-black text-sm border-2 border-primary/30 rounded-sm">
+                                {circuitLabel}
+                            </div>
+                        )}
+                        <h3 className="volt-header text-xl text-white">{exerciseDef?.name || 'Unknown Exercise'}</h3>
+                        {/* Volume Warning Badge */}
+                        {(() => {
+                            const volumeWarning = getVolumeWarning(log.exerciseId);
+                            return volumeWarning && <VolumeWarningBadge warning={volumeWarning} />;
+                        })()}
+                    </div>
                     {prevBestSet && (
                         <p className="text-[10px] text-[#666] font-mono mt-1 uppercase">
                             Prev Best: {prevBestSet.weight}lbs x {prevBestSet.reps}
@@ -399,7 +452,7 @@ const WorkoutLogger = () => {
                                 <AlertTriangle size={10} /> Equip Mismatch ({exerciseDef?.equipment})
                              </span>
                              {canSubstitute && (
-                                <button 
+                                <button
                                     onClick={(e) => { e.stopPropagation(); handleSwap(log.id, log.exerciseId); }}
                                     className="text-primary text-[10px] font-bold uppercase flex items-center gap-1 border border-primary/50 px-2 py-1 bg-primary/10 hover:bg-primary hover:text-black transition-colors"
                                 >
@@ -452,7 +505,34 @@ const WorkoutLogger = () => {
                 </div>
               </div>
 
-              {/* AI Tip Section */}
+              {/* AI Progressive Overload Suggestion */}
+              <div className="px-4 pt-3">
+                 {(() => {
+                   const suggestion = getProgressiveSuggestion(log.exerciseId);
+                   if (!suggestion) return null;
+
+                   const handleApplySuggestion = () => {
+                     // Find first uncompleted set
+                     const firstUncompletedIndex = log.sets.findIndex(s => !s.completed);
+                     if (firstUncompletedIndex !== -1) {
+                       updateSet(exerciseIndex, firstUncompletedIndex, {
+                         weight: suggestion.weight,
+                         reps: suggestion.reps[1] // Use upper bound of range
+                       });
+                     }
+                   };
+
+                   return (
+                     <AISuggestionBadge
+                       suggestion={suggestion}
+                       onApply={handleApplySuggestion}
+                       showApplyButton={log.sets.some(s => !s.completed)}
+                     />
+                   );
+                 })()}
+              </div>
+
+              {/* AI Tip Section (Gemini API - Phase 4) */}
               <div className="px-4 pt-3">
                  {aiTip?.id === log.exerciseId ? (
                    <div className="text-xs text-[#ccff00] bg-[#ccff00]/5 p-3 border border-[#ccff00]/20 flex gap-2 font-mono">
@@ -460,13 +540,13 @@ const WorkoutLogger = () => {
                      {aiTip.text}
                    </div>
                  ) : (
-                   <button 
+                   <button
                     disabled={loadingAi === log.exerciseId}
                     onClick={(e) => { e.stopPropagation(); handleGetAiTip(log.exerciseId); }}
                     className="text-[10px] font-bold uppercase tracking-widest text-[#666] flex items-center gap-1 hover:text-primary transition-colors disabled:opacity-50"
                    >
                      <Sparkles size={10} />
-                     {loadingAi === log.exerciseId ? 'ANALYZING...' : 'AI COACH'}
+                     {loadingAi === log.exerciseId ? 'ANALYZING...' : 'GEMINI COACH (BETA)'}
                    </button>
                  )}
               </div>
@@ -499,19 +579,14 @@ const WorkoutLogger = () => {
 
                   return (
                   <div key={set.id} className={`grid grid-cols-12 gap-2 items-start ${set.completed ? 'opacity-40 grayscale' : ''}`}>
-                    {/* Set Tag / Type Button */}
+                    {/* Set Type Selector */}
                     <div className="col-span-1 flex justify-center pt-2">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); cycleSetType(exerciseIndex, setIndex, set.type); }}
-                        className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-black border transition-colors ${
-                            set.type === 'W' ? 'bg-blue-500/20 text-blue-500 border-blue-500' :
-                            set.type === 'D' ? 'bg-orange-500/20 text-orange-500 border-orange-500' :
-                            set.type === 'F' ? 'bg-red-500/20 text-red-500 border-red-500' :
-                            'bg-[#222] text-[#666] border-[#333]'
-                        }`}
-                      >
-                          {set.type}
-                      </button>
+                      <SetTypeSelector
+                        value={set.type}
+                        onChange={(newType) => handleSetTypeChange(exerciseIndex, setIndex, newType)}
+                        compact={true}
+                        disabled={set.completed}
+                      />
                     </div>
                     
                     {/* Weight Input */}
@@ -576,10 +651,10 @@ const WorkoutLogger = () => {
 
                     {/* Completion Check */}
                     <div className="col-span-3 flex justify-center">
-                       <button 
-                        onClick={(e) => { 
-                            e.stopPropagation(); 
-                            handleSetComplete(exerciseIndex, setIndex, !set.completed, set.weight, log.exerciseId);
+                       <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetComplete(exerciseIndex, setIndex, !set.completed, set.weight, set.reps, log.exerciseId);
                         }}
                         className={`w-full h-10 flex items-center justify-center transition-all ${set.completed ? 'bg-primary text-black' : 'bg-[#222] text-[#444] hover:bg-[#333]'}`}
                        >

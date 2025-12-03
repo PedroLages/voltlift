@@ -16,6 +16,8 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Landing4 = lazy(() => import('./pages/landings/Landing4'));
 const ProgramBuilder = lazy(() => import('./pages/ProgramBuilder'));
+const ProgramBrowser = lazy(() => import('./pages/ProgramBrowser'));
+const ProgramEnroll = lazy(() => import('./pages/ProgramEnroll'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Login = lazy(() => import('./pages/Login'));
 
@@ -111,6 +113,8 @@ const AppContent = () => {
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/lift" element={<ProtectedRoute><Lift /></ProtectedRoute>} />
             <Route path="/builder" element={<ProtectedRoute><ProgramBuilder /></ProtectedRoute>} />
+            <Route path="/programs" element={<ProtectedRoute><ProgramBrowser /></ProtectedRoute>} />
+            <Route path="/program-enroll/:programId" element={<ProtectedRoute><ProgramEnroll /></ProtectedRoute>} />
             <Route path="/exercises" element={<ProtectedRoute><ExerciseLibrary /></ProtectedRoute>} />
             <Route path="/workout" element={<ProtectedRoute><WorkoutLogger /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />

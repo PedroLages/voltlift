@@ -6,48 +6,55 @@ import { useNavigate } from 'react-router-dom';
 import BodyHeatmap from '../components/BodyHeatmap';
 import PRHistoryTimeline from '../components/PRHistoryTimeline';
 import EmptyState from '../components/EmptyState';
+import { ProgressionChart, VolumeChart } from '../components/ProgressionChart';
+import MuscleGroupVolumeChart from '../components/MuscleGroupVolumeChart';
+import VolumeBreakdownTable from '../components/VolumeBreakdownTable';
+import {
+  getExerciseProgression,
+  getVolumeProgression,
+  getMuscleGroupVolumeDistribution,
+  calculateVolumeBalanceScore,
+  getWeeklyVolumeBreakdown
+} from '../services/progressionData';
 
 const Analytics = () => {
   const { history, settings } = useStore();
   const navigate = useNavigate();
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>(EXERCISE_LIBRARY[0]?.id || 'e1');
+  const [dateRange, setDateRange] = useState<30 | 60 | 90>(90);
 
-  // 1. Prepare Data for Charting
-  // We want to graph Estimated 1RM over time for the selected exercise.
-  // Formula: Weight * (1 + Reps/30)
-  
-  const chartData = useMemo(() => {
-    const dataPoints: { date: number, value: number, label: string }[] = [];
+  // Get exercise progression data
+  const progressionData = useMemo(() => {
+    const selectedExercise = EXERCISE_LIBRARY.find(e => e.id === selectedExerciseId);
+    if (!selectedExercise) return null;
 
-    // Sort history chronologically
-    const sortedHistory = [...history]
-        .filter(h => h.status === 'completed')
-        .sort((a, b) => a.startTime - b.startTime);
+    return getExerciseProgression(
+      selectedExerciseId,
+      selectedExercise.name,
+      history,
+      dateRange
+    );
+  }, [history, selectedExerciseId, dateRange]);
 
-    sortedHistory.forEach(session => {
-        const log = session.logs.find(l => l.exerciseId === selectedExerciseId);
-        if (log) {
-            // Find best set in this session
-            let max1RM = 0;
-            log.sets.forEach(set => {
-                if (set.completed && set.weight > 0 && set.reps > 0) {
-                    const e1rm = set.weight * (1 + set.reps / 30);
-                    if (e1rm > max1RM) max1RM = e1rm;
-                }
-            });
+  // Get volume progression data
+  const volumeData = useMemo(() => {
+    return getVolumeProgression(history, dateRange);
+  }, [history, dateRange]);
 
-            if (max1RM > 0) {
-                dataPoints.push({
-                    date: session.startTime,
-                    value: Math.round(max1RM),
-                    label: new Date(session.startTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                });
-            }
-        }
-    });
+  // Get muscle group volume distribution
+  const muscleGroupDistribution = useMemo(() => {
+    return getMuscleGroupVolumeDistribution(history, EXERCISE_LIBRARY, dateRange);
+  }, [history, dateRange]);
 
-    return dataPoints;
-  }, [history, selectedExerciseId]);
+  // Calculate volume balance score
+  const volumeBalance = useMemo(() => {
+    return calculateVolumeBalanceScore(history, EXERCISE_LIBRARY, dateRange);
+  }, [history, dateRange]);
+
+  // Get weekly volume breakdown
+  const weeklyVolumeData = useMemo(() => {
+    return getWeeklyVolumeBreakdown(history, EXERCISE_LIBRARY, 12);
+  }, [history]);
 
   // 2. Prepare Data for Heatmap (Last 7 Days)
   const muscleIntensity = useMemo(() => {
@@ -70,62 +77,6 @@ const Analytics = () => {
       return intensity;
   }, [history]);
 
-  // 3. SVG Chart Logic
-  const Chart = ({ data }: { data: typeof chartData }) => {
-      if (data.length < 2) return <div className="h-64 flex items-center justify-center border border-[#333] text-[#666] font-mono text-xs uppercase">Not enough data to visualize trends.</div>;
-
-      const width = 100;
-      const height = 50;
-      const padding = 5;
-
-      const minVal = Math.min(...data.map(d => d.value)) * 0.9;
-      const maxVal = Math.max(...data.map(d => d.value)) * 1.1;
-      
-      const getX = (index: number) => padding + (index / (data.length - 1)) * (width - 2 * padding);
-      const getY = (val: number) => height - padding - ((val - minVal) / (maxVal - minVal)) * (height - 2 * padding);
-
-      const points = data.map((d, i) => `${getX(i)},${getY(d.value)}`).join(' ');
-
-      return (
-        <div className="relative w-full aspect-[2/1] bg-[#111] border border-[#222] p-2">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
-                {/* Grid Lines */}
-                <line x1={padding} y1={padding} x2={width-padding} y2={padding} stroke="#333" strokeWidth="0.5" strokeDasharray="2" />
-                <line x1={padding} y1={height/2} x2={width-padding} y2={height/2} stroke="#333" strokeWidth="0.5" strokeDasharray="2" />
-                <line x1={padding} y1={height-padding} x2={width-padding} y2={height-padding} stroke="#333" strokeWidth="0.5" strokeDasharray="2" />
-
-                {/* The Line */}
-                <polyline 
-                    points={points} 
-                    fill="none" 
-                    stroke="#ccff00" 
-                    strokeWidth="1.5" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                    className="drop-shadow-[0_0_10px_rgba(204,255,0,0.5)]"
-                />
-
-                {/* Data Points */}
-                {data.map((d, i) => (
-                    <circle 
-                        key={i} 
-                        cx={getX(i)} 
-                        cy={getY(d.value)} 
-                        r="2" 
-                        fill="#000" 
-                        stroke="#ccff00" 
-                        strokeWidth="1"
-                    />
-                ))}
-            </svg>
-            
-            {/* Labels */}
-            <div className="absolute top-2 left-2 text-[10px] text-[#666]">{Math.round(maxVal)}</div>
-            <div className="absolute bottom-2 left-2 text-[10px] text-[#666]">{Math.round(minVal)}</div>
-            <div className="absolute bottom-1 right-2 text-[10px] text-[#666]">{data[data.length-1]?.label}</div>
-        </div>
-      );
-  };
 
   const exercisePRHistory = settings.personalRecords[selectedExerciseId];
 
@@ -177,28 +128,66 @@ const Analytics = () => {
           </div>
       </div>
 
-      {/* Exercise Selector */}
+      {/* Exercise Selector & Date Range Filter */}
       <div className="mb-8 border-t border-[#222] pt-8">
-          <label className="text-[10px] font-bold text-[#666] uppercase tracking-widest mb-2 block">Select Movement Analysis</label>
-          <select 
-            value={selectedExerciseId} 
-            onChange={(e) => setSelectedExerciseId(e.target.value)}
-            className="w-full bg-[#111] border border-[#333] p-4 text-white font-bold uppercase outline-none focus:border-primary"
-          >
-              {EXERCISE_LIBRARY.map(ex => (
-                  <option key={ex.id} value={ex.id}>{ex.name}</option>
-              ))}
-          </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Exercise Selector */}
+              <div>
+                  <label className="text-[10px] font-bold text-[#666] uppercase tracking-widest mb-2 block">Select Movement</label>
+                  <select
+                    value={selectedExerciseId}
+                    onChange={(e) => setSelectedExerciseId(e.target.value)}
+                    className="w-full bg-[#111] border border-[#333] p-4 text-white font-bold uppercase outline-none focus:border-primary"
+                  >
+                      {EXERCISE_LIBRARY.map(ex => (
+                          <option key={ex.id} value={ex.id}>{ex.name}</option>
+                      ))}
+                  </select>
+              </div>
+
+              {/* Date Range Filter */}
+              <div>
+                  <label className="text-[10px] font-bold text-[#666] uppercase tracking-widest mb-2 block">Time Range</label>
+                  <div className="flex bg-[#111] border border-[#333]">
+                      <button
+                        onClick={() => setDateRange(30)}
+                        className={`flex-1 py-4 text-xs font-bold uppercase transition-colors ${
+                          dateRange === 30 ? 'bg-primary text-black' : 'text-[#666] hover:text-white'
+                        }`}
+                      >
+                        30 Days
+                      </button>
+                      <button
+                        onClick={() => setDateRange(60)}
+                        className={`flex-1 py-4 text-xs font-bold uppercase transition-colors border-x border-[#333] ${
+                          dateRange === 60 ? 'bg-primary text-black' : 'text-[#666] hover:text-white'
+                        }`}
+                      >
+                        60 Days
+                      </button>
+                      <button
+                        onClick={() => setDateRange(90)}
+                        className={`flex-1 py-4 text-xs font-bold uppercase transition-colors ${
+                          dateRange === 90 ? 'bg-primary text-black' : 'text-[#666] hover:text-white'
+                        }`}
+                      >
+                        90 Days
+                      </button>
+                  </div>
+              </div>
+          </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div className="bg-[#111] p-4 border border-[#222]">
            <div className="flex items-center gap-2 text-primary mb-2">
-               <TrendingUp size={16} /> <span className="text-[10px] font-black uppercase">Est. 1RM</span>
+               <TrendingUp size={16} /> <span className="text-[10px] font-black uppercase">Current 1RM</span>
            </div>
            <div className="text-3xl font-black italic text-white">
-               {chartData.length > 0 ? chartData[chartData.length-1].value : 0} 
+               {progressionData && progressionData.dataPoints.length > 0
+                 ? progressionData.dataPoints[progressionData.dataPoints.length - 1].value
+                 : 0}
                <span className="text-sm not-italic text-[#666] font-medium ml-1">LBS</span>
            </div>
         </div>
@@ -246,12 +235,26 @@ const Analytics = () => {
         </div>
       </div>
 
-      {/* Main Chart */}
-      <div className="mb-8">
-          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4 flex items-center gap-2">
-              <BarChart2 size={14} /> Strength Trend (Estimated 1RM)
-          </h3>
-          <Chart data={chartData} />
+      {/* Progression Charts */}
+      <div className="space-y-6 mb-8">
+          {/* 1RM Progression Chart */}
+          {progressionData && (
+            <ProgressionChart
+              progression={progressionData}
+              color="#ccff00"
+              height={300}
+            />
+          )}
+
+          {/* Volume Progression Chart */}
+          {volumeData.length > 0 && (
+            <VolumeChart
+              data={volumeData}
+              title="Total Volume Trend"
+              color="#00d9ff"
+              height={250}
+            />
+          )}
       </div>
 
       {/* PR History Timeline */}
@@ -261,6 +264,25 @@ const Analytics = () => {
             exerciseName={EXERCISE_LIBRARY.find(e => e.id === selectedExerciseId)?.name || 'Exercise'}
             units={settings.units}
           />
+      </div>
+
+      {/* Muscle Group Volume Analytics */}
+      <div className="mb-8 border-t border-[#222] pt-8">
+          <h2 className="text-2xl font-black italic uppercase text-white mb-6">Muscle Group Analytics</h2>
+
+          {/* Muscle Group Volume Distribution */}
+          <div className="mb-6">
+            <MuscleGroupVolumeChart
+              distribution={muscleGroupDistribution}
+              balanceScore={volumeBalance}
+              height={300}
+            />
+          </div>
+
+          {/* Weekly Volume Breakdown */}
+          <div>
+            <VolumeBreakdownTable weeklyData={weeklyVolumeData} />
+          </div>
       </div>
 
       <div className="p-4 bg-[#111] border-l-2 border-primary">

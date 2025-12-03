@@ -2,14 +2,16 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Activity, Flame, ChevronRight, Play, Clock, BarChart2, Timer, Brain, Calendar, Cloud, Moon, Droplets, Dumbbell } from 'lucide-react';
+import { TrendingUp, Activity, Flame, ChevronRight, Play, Clock, BarChart2, Timer, Brain, Calendar, Cloud, Moon, Droplets, Dumbbell, AlertCircle } from 'lucide-react';
 import { getWorkoutMotivation } from '../services/geminiService';
 import { EXERCISE_LIBRARY } from '../constants';
 import EmptyState from '../components/EmptyState';
 import { formatTime } from '../utils/formatters';
+import { RecoveryScore } from '../components/AISuggestionBadge';
+import { StrengthScore } from '../components/StrengthScore';
 
 const Dashboard = () => {
-  const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, syncStatus, logDailyBio, dailyLogs } = useStore();
+  const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, syncStatus, logDailyBio, dailyLogs, getVolumeWarning } = useStore();
   const navigate = useNavigate();
   const [motivation, setMotivation] = useState("LOADING PROTOCOL...");
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -25,6 +27,47 @@ const Dashboard = () => {
   // Daily Log Logic
   const today = new Date().toISOString().split('T')[0];
   const todayLog = dailyLogs[today] || { date: today };
+
+  // Calculate Recovery Score from daily log
+  const getRecoveryScore = () => {
+    if (!todayLog.sleepHours) return 7; // Neutral if no data
+
+    let score = 7;
+    if (todayLog.sleepHours >= 8) score += 2;
+    else if (todayLog.sleepHours >= 7) score += 1;
+    else if (todayLog.sleepHours >= 6) score -= 1;
+    else score -= 3;
+
+    if (todayLog.stressLevel) {
+      if (todayLog.stressLevel >= 8) score -= 2;
+      else if (todayLog.stressLevel >= 6) score -= 1;
+    }
+
+    return Math.max(0, Math.min(10, score));
+  };
+
+  // Get Volume Warnings for all muscle groups
+  const getVolumeWarnings = () => {
+    const muscleGroups = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
+    return muscleGroups
+      .map(mg => {
+        // For dashboard, we check volume per muscle group by finding exercises
+        const recentExercises = history
+          .filter(h => h.status === 'completed')
+          .flatMap(h => h.logs.map(l => l.exerciseId));
+
+        // Get first exercise of this muscle group to check volume
+        const firstExerciseId = EXERCISE_LIBRARY.find(e => e.muscleGroup === mg)?.id;
+        if (!firstExerciseId) return null;
+
+        const warning = getVolumeWarning(firstExerciseId);
+        return warning?.warning ? { muscleGroup: mg, warning } : null;
+      })
+      .filter((item): item is { muscleGroup: string; warning: { warning: boolean; message: string; sets: number } } => item !== null);
+  };
+
+  const recoveryScore = getRecoveryScore();
+  const volumeWarnings = getVolumeWarnings();
 
   useEffect(() => {
     getWorkoutMotivation(settings.name).then(setMotivation);
@@ -174,7 +217,7 @@ const Dashboard = () => {
               ) : (
                   <div>
                       <div className="text-[#444] font-bold text-sm uppercase">No Active Program</div>
-                      <button onClick={() => navigate('/lift')} className="text-[10px] text-primary underline font-mono uppercase mt-1">Select Program</button>
+                      <button onClick={() => navigate('/programs')} className="text-[10px] text-primary underline font-mono uppercase mt-1">Browse Programs</button>
                   </div>
               )}
           </div>
@@ -185,6 +228,12 @@ const Dashboard = () => {
            <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-3 flex items-center gap-2">
               <Activity size={14} /> Recovery Protocol
            </h3>
+
+           {/* Recovery Score Display */}
+           <div className="mb-4 bg-[#0a0a0a] border border-[#333] p-4">
+               <RecoveryScore score={recoveryScore} compact={false} />
+           </div>
+
            <div className="grid grid-cols-2 gap-3">
                 {/* Sleep Input */}
                 <div className="bg-[#0a0a0a] border border-[#333] p-4 flex flex-col gap-2">
@@ -235,6 +284,40 @@ const Dashboard = () => {
                 </div>
            </div>
       </div>
+
+      {/* Volume Warnings */}
+      {volumeWarnings.length > 0 && (
+          <div className="bg-[#111] border border-orange-500/30 p-4">
+              <h3 className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <AlertCircle size={14} /> Volume Alerts
+              </h3>
+              <div className="space-y-2">
+                  {volumeWarnings.map(({ muscleGroup, warning }) => (
+                      <div key={muscleGroup} className="bg-[#0a0a0a] border border-orange-500/20 p-3 flex justify-between items-center">
+                          <div>
+                              <div className="text-sm font-bold text-white uppercase">{muscleGroup}</div>
+                              <div className="text-[10px] text-orange-400 font-mono mt-1">
+                                  {Math.round(warning!.sets)} sets this week
+                              </div>
+                          </div>
+                          <div className="text-[10px] text-orange-400 font-bold uppercase text-right">
+                              {warning!.sets >= 22 ? 'DELOAD NEXT' : 'AT LIMIT'}
+                          </div>
+                      </div>
+                  ))}
+              </div>
+              <p className="text-[9px] text-[#666] font-mono uppercase mt-3">
+                  Reduce volume to prevent overtraining and injury
+              </p>
+          </div>
+      )}
+
+      {/* Strength Score Widget */}
+      <StrengthScore
+          personalRecords={settings.personalRecords}
+          bodyweight={settings.bodyweight}
+          gender={settings.gender}
+      />
 
       {/* Active Workout Banner */}
       {activeWorkout ? (

@@ -5,6 +5,8 @@ import { UserSettings, WorkoutSession, ExerciseLog, SetLog, Goal, Program, Daily
 import { MOCK_HISTORY, INITIAL_TEMPLATES, EXERCISE_LIBRARY, INITIAL_PROGRAMS } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { saveImageToDB, getAllImagesFromDB } from '../utils/db';
+import { getSuggestion, checkVolumeWarning, shouldDeloadWeek, ProgressiveSuggestion } from '../services/progressiveOverload';
+import { calculate1RM, getBest1RM, classifyStrengthLevel, calculateOverallStrengthScore, OneRepMax } from '../services/strengthScore';
 
 interface AppState {
   settings: UserSettings;
@@ -44,6 +46,7 @@ interface AppState {
   updateExerciseLog: (logId: string, updates: Partial<ExerciseLog>) => void;
   removeExerciseLog: (logId: string) => void;
   toggleSuperset: (logId: string) => void;
+  updateActiveWorkout: (updates: Partial<WorkoutSession>) => void;
   activateProgram: (programId: string) => void;
   
   // Phase 4 Actions
@@ -58,6 +61,13 @@ interface AppState {
   // Selectors/Helpers
   getExerciseHistory: (exerciseId: string) => ExerciseLog | undefined;
   getFatigueStatus: () => { status: 'Fresh' | 'Optimal' | 'High Fatigue', color: string, recommendation: string };
+
+  // AI Coach Helpers
+  getProgressiveSuggestion: (exerciseId: string) => ProgressiveSuggestion | null;
+  getEstimated1RM: (exerciseId: string) => OneRepMax | null;
+  getOverallStrengthScore: () => number;
+  getVolumeWarning: (exerciseId: string) => { warning: boolean; message: string; sets: number } | null;
+  checkDeloadNeeded: () => { shouldDeload: boolean; reasoning: string };
 }
 
 export const useStore = create<AppState>()(
@@ -439,7 +449,44 @@ export const useStore = create<AppState>()(
         set({ activeWorkout: { ...activeWorkout, logs: newLogs }});
       },
       
-      suggestNextSet: () => {}, 
+      suggestNextSet: (exerciseIndex, setIndex) => {
+        const { activeWorkout, history, dailyLogs } = get();
+        if (!activeWorkout) return;
+
+        const exerciseLog = activeWorkout.logs[exerciseIndex];
+        if (!exerciseLog) return;
+
+        // Get previous workout data for this exercise
+        const previousLog = get().getExerciseHistory(exerciseLog.exerciseId);
+
+        // Get today's biomarkers
+        const today = new Date().toISOString().split('T')[0];
+        const todayLog = dailyLogs[today];
+
+        // Get AI suggestion using offline heuristics
+        const suggestion = getSuggestion(
+          exerciseLog.exerciseId,
+          previousLog,
+          todayLog,
+          history,
+          activeWorkout.startTime
+        );
+
+        // Pre-fill the next set with suggested values
+        const newLogs = [...activeWorkout.logs];
+        const newSets = [...newLogs[exerciseIndex].sets];
+
+        if (setIndex < newSets.length) {
+          newSets[setIndex] = {
+            ...newSets[setIndex],
+            weight: suggestion.weight,
+            reps: suggestion.reps[1], // Use upper bound of range
+          };
+
+          newLogs[exerciseIndex] = { ...newLogs[exerciseIndex], sets: newSets };
+          set({ activeWorkout: { ...activeWorkout, logs: newLogs } });
+        }
+      }, 
 
       saveTemplate: (name, exerciseIds) => {
         const newTemplate: WorkoutSession = {
@@ -521,7 +568,7 @@ export const useStore = create<AppState>()(
 
           const logs = [...activeWorkout.logs];
           const index = logs.findIndex(l => l.id === logId);
-          if (index === -1 || index === logs.length - 1) return; 
+          if (index === -1 || index === logs.length - 1) return;
 
           const current = logs[index];
           const next = logs[index + 1];
@@ -537,8 +584,14 @@ export const useStore = create<AppState>()(
               current.supersetId = newId;
               next.supersetId = newId;
           }
-          
+
           set({ activeWorkout: { ...activeWorkout, logs } });
+      },
+
+      updateActiveWorkout: (updates) => {
+          const { activeWorkout } = get();
+          if (!activeWorkout) return;
+          set({ activeWorkout: { ...activeWorkout, ...updates } });
       },
 
       activateProgram: (programId) => {
@@ -621,7 +674,7 @@ export const useStore = create<AppState>()(
           const { history, dailyLogs } = get();
           const today = new Date().toISOString().split('T')[0];
           const yesterLog = dailyLogs[today]; // Simplified, could check yesterday too
-          
+
           // Factor 1: Sleep (Immediate Impact)
           if (yesterLog && yesterLog.sleepHours && yesterLog.sleepHours < 6) {
               return { status: 'High Fatigue', color: '#ef4444', recommendation: 'Sleep deprivation detected. Reduce volume by 30%.' };
@@ -632,12 +685,12 @@ export const useStore = create<AppState>()(
             .filter(h => h.status === 'completed')
             .sort((a,b) => b.startTime - a.startTime)
             .slice(0, 3);
-          
+
           if (recent.length === 0) return { status: 'Fresh', color: '#ccff00', recommendation: 'Ready to train.' };
 
           let totalRPE = 0;
           let setCheckCount = 0;
-          
+
           recent.forEach(sess => {
               sess.logs.forEach(log => {
                   log.sets.forEach(set => {
@@ -654,6 +707,61 @@ export const useStore = create<AppState>()(
           if (avgRPE > 8.5) return { status: 'High Fatigue', color: '#ef4444', recommendation: 'Central Nervous System stress high. Deload advised.' };
           if (avgRPE < 6) return { status: 'Fresh', color: '#ccff00', recommendation: 'Push intensity. You are detrained.' };
           return { status: 'Optimal', color: '#3b82f6', recommendation: 'Maintain current volume progression.' };
+      },
+
+      // AI Coach Helpers Implementation
+      getProgressiveSuggestion: (exerciseId) => {
+          const { history, dailyLogs, activeWorkout } = get();
+
+          // Get previous workout for this exercise
+          const previousLog = get().getExerciseHistory(exerciseId);
+
+          // Get today's biomarkers
+          const today = new Date().toISOString().split('T')[0];
+          const todayLog = dailyLogs[today];
+
+          const currentTime = activeWorkout?.startTime || Date.now();
+
+          return getSuggestion(exerciseId, previousLog, todayLog, history, currentTime);
+      },
+
+      getEstimated1RM: (exerciseId) => {
+          const { settings } = get();
+          const prHistory = settings.personalRecords[exerciseId];
+
+          if (!prHistory?.bestWeight) return null;
+
+          return calculate1RM(
+              prHistory.bestWeight.value,
+              prHistory.bestWeight.reps || 1
+          );
+      },
+
+      getOverallStrengthScore: () => {
+          const { settings } = get();
+          // Default bodyweight to 200lbs if not tracked yet
+          // TODO: Add bodyweight tracking to UserSettings
+          const bodyweight = 200;
+
+          return calculateOverallStrengthScore(
+              settings.personalRecords,
+              bodyweight,
+              'male' // TODO: Add gender to UserSettings
+          );
+      },
+
+      getVolumeWarning: (exerciseId) => {
+          const { history } = get();
+          const exercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
+
+          if (!exercise) return null;
+
+          return checkVolumeWarning(history, exercise.muscleGroup);
+      },
+
+      checkDeloadNeeded: () => {
+          const { history, dailyLogs } = get();
+          return shouldDeloadWeek(history, dailyLogs);
       }
     }),
     {

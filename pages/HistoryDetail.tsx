@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { ArrowLeft, Calendar, Clock, Box, Dumbbell, Share2, X, Activity } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
+import { SetTypeBadge } from '../components/SetTypeBadge';
 
 const HistoryDetail = () => {
   const { id } = useParams();
@@ -171,22 +172,60 @@ const HistoryDetail = () => {
            <HRChart data={session.biometrics} />
        )}
 
+       {/* Workout Notes */}
+       {session.notes && (
+           <div className="bg-[#111] border border-[#222] p-4 mt-6">
+               <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-3 flex items-center gap-2">
+                   <StickyNote size={14} /> Workout Notes
+               </h3>
+               <p className="text-sm text-[#aaa] font-mono leading-relaxed whitespace-pre-wrap">
+                   {session.notes.split(/(#\w+)/g).map((part, i) =>
+                       part.startsWith('#') ? (
+                           <span key={i} className="text-primary font-bold">{part}</span>
+                       ) : (
+                           <span key={i}>{part}</span>
+                       )
+                   )}
+               </p>
+           </div>
+       )}
+
        {/* Logs */}
        <div className="space-y-6">
            <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest border-b border-[#222] pb-2">Session Data</h3>
-           
-           {session.logs.map((log) => {
+
+           {session.logs.map((log, logIndex) => {
                const ex = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId);
+
+               // Circuit Notation Logic (A1, A2, B1, B2, etc.)
+               let circuitLabel = '';
+               if (log.supersetId) {
+                 const uniqueSupersetIds = Array.from(new Set(session.logs.filter(l => l.supersetId).map(l => l.supersetId)));
+                 const supersetGroupIndex = uniqueSupersetIds.indexOf(log.supersetId);
+                 const groupLetter = String.fromCharCode(65 + supersetGroupIndex);
+                 const logsInGroup = session.logs.filter(l => l.supersetId === log.supersetId);
+                 const positionInGroup = logsInGroup.findIndex(l => l.id === log.id) + 1;
+                 circuitLabel = `${groupLetter}${positionInGroup}`;
+               }
+
                return (
                    <div key={log.id} className="bg-[#0a0a0a] border-l-2 border-[#333] pl-4 py-2">
                        <h4 className="font-bold text-lg uppercase italic mb-3 flex items-center gap-2">
+                           {circuitLabel && (
+                               <div className="flex items-center justify-center w-7 h-7 bg-primary text-black font-black text-xs border-2 border-primary/30 rounded-sm">
+                                   {circuitLabel}
+                               </div>
+                           )}
                            <Dumbbell size={16} className="text-[#333]" />
                            {ex?.name || 'Unknown'}
                        </h4>
                        <div className="space-y-1">
                            {log.sets.map((set, i) => (
                                <div key={set.id} className={`grid grid-cols-5 text-sm py-1 border-b border-[#111] ${set.completed ? 'text-[#ccc]' : 'text-[#444]'}`}>
-                                   <div className="font-mono text-[#444] text-[10px] flex items-center">{i + 1} {set.type !== 'N' && <span className="ml-1 px-1 bg-[#222] text-[#888] rounded">{set.type}</span>}</div>
+                                   <div className="font-mono text-[#444] text-[10px] flex items-center gap-1">
+                                       {i + 1}
+                                       <SetTypeBadge type={set.type} size="sm" />
+                                   </div>
                                    <div className="text-right font-bold col-span-2">{set.weight} <span className="text-[10px] text-[#444]">LBS</span></div>
                                    <div className="text-right font-bold">{set.reps} <span className="text-[10px] text-[#444]">REPS</span></div>
                                    <div className="text-right flex justify-end">

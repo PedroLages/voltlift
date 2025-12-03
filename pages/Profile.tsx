@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
+import PlateCalculator from '../components/PlateCalculator';
 
 const Profile = () => {
   const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData } = useStore();
@@ -246,7 +247,7 @@ const Profile = () => {
           </div>
           <div className="p-5 flex justify-between items-center">
              <span className="font-bold uppercase text-sm">Frequency</span>
-             <select 
+             <select
               value={settings.goal.targetPerWeek}
               onChange={(e) => updateSettings({ goal: { ...settings.goal, targetPerWeek: parseInt(e.target.value) } })}
               className="bg-[#222] text-white font-mono rounded-none px-2 py-1 outline-none text-sm uppercase"
@@ -258,6 +259,40 @@ const Profile = () => {
                <option value="6">6 Days</option>
              </select>
           </div>
+          <div className="p-5 flex justify-between items-center">
+            <span className="font-bold uppercase text-sm">Bodyweight</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                min="50"
+                max="500"
+                step="0.5"
+                placeholder="180"
+                value={settings.bodyweight || ''}
+                onChange={(e) => updateSettings({ bodyweight: parseFloat(e.target.value) || undefined })}
+                className="bg-[#222] text-white font-mono text-right px-3 py-1 outline-none text-sm uppercase w-20 focus:border focus:border-primary"
+              />
+              <span className="text-xs text-[#666] font-mono">LBS</span>
+            </div>
+          </div>
+          <div className="p-5 flex justify-between items-center">
+            <span className="font-bold uppercase text-sm">Gender</span>
+            <div className="flex bg-[#222] p-1">
+              <button
+                onClick={() => updateSettings({ gender: 'male' })}
+                className={`px-4 py-1 text-xs font-bold uppercase ${settings.gender === 'male' ? 'bg-primary text-black' : 'text-[#666]'}`}
+              >
+                Male
+              </button>
+              <button
+                onClick={() => updateSettings({ gender: 'female' })}
+                className={`px-4 py-1 text-xs font-bold uppercase ${settings.gender === 'female' ? 'bg-primary text-black' : 'text-[#666]'}`}
+              >
+                Female
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -266,12 +301,12 @@ const Profile = () => {
           <div className="bg-[#111] border border-[#222] p-5">
               <div className="grid grid-cols-2 gap-3">
                   {EQUIPMENT_TYPES.map(eq => (
-                      <button 
+                      <button
                         key={eq}
                         onClick={() => toggleEquipment(eq)}
                         className={`p-3 border text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors ${
-                            settings.availableEquipment.includes(eq) 
-                            ? 'border-primary text-white bg-primary/10' 
+                            settings.availableEquipment.includes(eq)
+                            ? 'border-primary text-white bg-primary/10'
                             : 'border-[#333] text-[#666] hover:bg-[#1a1a1a]'
                         }`}
                       >
@@ -281,6 +316,12 @@ const Profile = () => {
                   ))}
               </div>
           </div>
+      </section>
+
+      {/* Plate Calculator Section */}
+      <section className="mt-10">
+          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Plate Calculator</h3>
+          <PlateCalculator units={settings.units} />
       </section>
 
       <div className="mt-12 text-center">

@@ -50,6 +50,7 @@ export interface WorkoutSession {
   status: 'active' | 'completed' | 'template';
   sourceTemplateId?: string; // Tracks which template spawned this session
   biometrics?: BiometricPoint[]; // Phase 4: Heart Rate Data
+  notes?: string; // General workout-level notes with tag support (#injury, #form, etc.)
 }
 
 export interface UserStats {
@@ -114,6 +115,8 @@ export interface UserSettings {
   personalRecords: Record<string, ExercisePRHistory>; // exerciseId -> PR History with best weight/volume/reps
   defaultRestTimer: number; // in seconds
   barWeight: number; // Weight of the bar (e.g., 45lbs)
+  bodyweight?: number; // User's bodyweight in lbs (for strength score calculations)
+  gender?: 'male' | 'female'; // For strength standard classifications
   activeProgram?: {
       programId: string;
       currentSessionIndex: number;
