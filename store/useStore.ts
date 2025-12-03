@@ -28,6 +28,8 @@ interface AppState {
   // Actions
   startWorkout: (templateId?: string) => void;
   finishWorkout: () => void;
+  saveDraft: () => void;
+  resumeWorkout: (draftId: string) => void;
   cancelWorkout: () => void;
   addExerciseToActive: (exerciseId: string) => void;
   updateSet: (exerciseIndex: number, setIndex: number, updates: Partial<SetLog>) => void;
@@ -297,6 +299,45 @@ export const useStore = create<AppState>()(
         
         // Auto Sync on finish
         get().syncData();
+      },
+
+      saveDraft: () => {
+        const { activeWorkout, history, activeBiometrics } = get();
+        if (!activeWorkout) return;
+
+        const draftWorkout: WorkoutSession = {
+          ...activeWorkout,
+          endTime: Date.now(),
+          status: 'draft',
+          biometrics: activeBiometrics
+        };
+
+        set({
+          history: [draftWorkout, ...history],
+          activeWorkout: null,
+          restTimerStart: null,
+          activeBiometrics: []
+        });
+      },
+
+      resumeWorkout: (draftId) => {
+        const { history } = get();
+        const draft = history.find(h => h.id === draftId && h.status === 'draft');
+
+        if (!draft) return;
+
+        // Remove draft from history and set as active
+        const newHistory = history.filter(h => h.id !== draftId);
+
+        set({
+          activeWorkout: {
+            ...draft,
+            status: 'active',
+            endTime: undefined
+          },
+          history: newHistory,
+          activeBiometrics: draft.biometrics || []
+        });
       },
 
       cancelWorkout: () => {

@@ -11,12 +11,14 @@ import { AISuggestionBadge, VolumeWarningBadge, RecoveryScore } from '../compone
 import { checkAllPRs, PRDetection } from '../services/strengthScore';
 import PRCelebration from '../components/PRCelebration';
 import SetTypeSelector from '../components/SetTypeSelector';
+import WorkoutCompletionModal from '../components/WorkoutCompletionModal';
 
 const WorkoutLogger = () => {
-  const { activeWorkout, finishWorkout, cancelWorkout, updateSet, addSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning } = useStore();
+  const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning } = useStore();
   const navigate = useNavigate();
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [swapTargetLogId, setSwapTargetLogId] = useState<string | null>(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const [aiTip, setAiTip] = useState<{id: string, text: string} | null>(null);
   const [loadingAi, setLoadingAi] = useState<string | null>(null);
@@ -140,10 +142,26 @@ const WorkoutLogger = () => {
   }
 
   const handleFinish = () => {
-    // Custom Confirmation Modal
-    if (confirm("TERMINATE SESSION?")) {
-      finishWorkout();
-      navigate('/history');
+    setShowCompletionModal(true);
+  };
+
+  const handleCompleteWorkout = () => {
+    finishWorkout();
+    setShowCompletionModal(false);
+    navigate('/history');
+  };
+
+  const handleSaveDraft = () => {
+    saveDraft();
+    setShowCompletionModal(false);
+    navigate('/');
+  };
+
+  const handleDiscardWorkout = () => {
+    if (confirm("Are you sure you want to discard this workout? All progress will be lost.")) {
+      cancelWorkout();
+      setShowCompletionModal(false);
+      navigate('/');
     }
   };
 
@@ -726,6 +744,15 @@ const WorkoutLogger = () => {
         </div>
       )}
     </div>
+      {/* Workout Completion Modal */}
+      {showCompletionModal && (
+        <WorkoutCompletionModal
+          onFinish={handleCompleteWorkout}
+          onSaveDraft={handleSaveDraft}
+          onCancel={handleDiscardWorkout}
+          onDismiss={() => setShowCompletionModal(false)}
+        />
+      )}
   );
 };
 

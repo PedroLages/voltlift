@@ -47,7 +47,7 @@ export interface WorkoutSession {
   startTime: number;
   endTime?: number;
   logs: ExerciseLog[];
-  status: 'active' | 'completed' | 'template';
+  status: 'active' | 'completed' | 'template' | 'draft';
   sourceTemplateId?: string; // Tracks which template spawned this session
   biometrics?: BiometricPoint[]; // Phase 4: Heart Rate Data
   notes?: string; // General workout-level notes with tag support (#injury, #form, etc.)

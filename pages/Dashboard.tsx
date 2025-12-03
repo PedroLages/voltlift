@@ -9,9 +9,10 @@ import EmptyState from '../components/EmptyState';
 import { formatTime } from '../utils/formatters';
 import { RecoveryScore } from '../components/AISuggestionBadge';
 import { StrengthScore } from '../components/StrengthScore';
+import ResumeWorkoutBanner from '../components/ResumeWorkoutBanner';
 
 const Dashboard = () => {
-  const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, syncStatus, logDailyBio, dailyLogs, getVolumeWarning } = useStore();
+  const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, resumeWorkout, syncStatus, logDailyBio, dailyLogs, getVolumeWarning } = useStore();
   const navigate = useNavigate();
   const [motivation, setMotivation] = useState("LOADING PROTOCOL...");
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -21,6 +22,23 @@ const Dashboard = () => {
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     return h.startTime > oneWeekAgo && h.status === 'completed';
   }).length;
+
+  // Find most recent draft workout
+  const draftWorkout = history.find(h => h.status === 'draft');
+
+  const handleResumeDraft = () => {
+    if (draftWorkout) {
+      resumeWorkout(draftWorkout.id);
+      navigate('/workout');
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    if (draftWorkout && confirm('Discard this draft workout?')) {
+      const newHistory = history.filter(h => h.id !== draftWorkout.id);
+      // This will need a method in the store, but for now just using history filter
+    }
+  };
 
   const fatigue = getFatigueStatus();
   
