@@ -75,8 +75,19 @@ const Lift = () => {
         </div>
       </button>
 
-      {/* Tool Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-10">
+      {/* Tool Grid - 2x2 with equal weight */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <button
+          onClick={() => navigate('/programs')}
+          aria-label="Browse training programs"
+          className="bg-[#111] border border-[#222] p-5 flex flex-col justify-between h-32 hover:border-primary group transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black"
+        >
+            <CalendarRange className="text-[#666] group-hover:text-primary transition-colors" size={28} aria-hidden="true" />
+            <div className="text-left">
+                <span className="block text-white font-bold uppercase italic text-lg leading-none group-hover:text-primary">Programs</span>
+                <span className="text-[10px] text-[#555] font-mono uppercase">{programs.length} Available</span>
+            </div>
+        </button>
         <button
           onClick={() => navigate('/exercises')}
           aria-label="Browse exercise library"
@@ -99,79 +110,29 @@ const Lift = () => {
                 <span className="text-[10px] text-[#555] font-mono uppercase">New Protocol</span>
             </div>
         </button>
+        <button
+          onClick={() => navigate('/analytics')}
+          aria-label="View workout analytics"
+          className="bg-[#111] border border-[#222] p-5 flex flex-col justify-between h-32 hover:border-primary group transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black"
+        >
+            <FileText className="text-[#666] group-hover:text-primary transition-colors" size={28} aria-hidden="true" />
+            <div className="text-left">
+                <span className="block text-white font-bold uppercase italic text-lg leading-none group-hover:text-primary">Analytics</span>
+                <span className="text-[10px] text-[#555] font-mono uppercase">View Stats</span>
+            </div>
+        </button>
       </div>
 
-      {/* Programs (Macro-Cycles) */}
+      {/* Protocols List - Moved to top for quick access */}
       <section className="mb-10">
-          <div className="flex justify-between items-end mb-4 border-b border-[#222] pb-2">
-            <h2 className="text-xl volt-header text-white">MACRO-CYCLES</h2>
-            <span className="text-[10px] font-mono text-[#666]">{programs.length} AVAILABLE</span>
-          </div>
-
-          {programs.length === 0 ? (
-            <EmptyState
-              icon={CalendarRange}
-              title="No Training Programs"
-              description="Structured multi-week programs will appear here. Programs help you systematically progress through different training phases."
-              actionLabel="Create Custom Template"
-              onAction={() => navigate('/builder')}
-            />
-          ) : (
-            <div className="space-y-3">
-              {programs.map(prog => (
-                  <div 
-                    key={prog.id} 
-                    className={`bg-[#0a0a0a] p-5 border-l-4 ${settings.activeProgram?.programId === prog.id ? 'border-primary bg-[#111]' : 'border-[#333] hover:border-[#666]'} flex flex-col gap-3 group relative`}
-                  >
-                      <div className="flex justify-between items-start">
-                          <div>
-                              <h3 className="font-bold text-white uppercase italic tracking-wide text-lg group-hover:text-primary transition-colors">{prog.name}</h3>
-                              <p className="text-[10px] text-[#888] font-mono uppercase mt-1 max-w-[80%]">{prog.description}</p>
-                          </div>
-                          {settings.activeProgram?.programId === prog.id && (
-                              <span className="text-[10px] font-black uppercase bg-primary text-black px-2 py-1">Active</span>
-                          )}
-                      </div>
-                      
-                      <div className="flex justify-between items-center border-t border-[#222] pt-3 mt-1">
-                          <div className="flex gap-4">
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-[#666] uppercase"><CalendarRange size={12}/> {prog.weeks} Weeks</span>
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-[#666] uppercase"><Dumbbell size={12}/> {prog.sessions.length} Sessions</span>
-                          </div>
-                          
-                          <div className="flex gap-2">
-                             <button 
-                                onClick={() => setSelectedProgram(prog)}
-                                className="text-xs font-bold uppercase text-[#888] hover:text-white transition-colors border border-[#444] px-2 py-1"
-                              >
-                                  View Schedule
-                              </button>
-                             {settings.activeProgram?.programId !== prog.id && (
-                                <button 
-                                  onClick={() => handleActivateProgram(prog.id)}
-                                  className="text-xs font-bold uppercase text-white hover:text-primary transition-colors border border-white hover:border-primary px-2 py-1"
-                                >
-                                    Activate
-                                </button>
-                            )}
-                          </div>
-                      </div>
-                  </div>
-              ))}
-            </div>
-          )}
-      </section>
-
-      {/* Protocols List */}
-      <section>
         <div className="flex justify-between items-end mb-4 border-b border-[#222] pb-2">
-            <h2 className="text-xl volt-header text-white">SINGLE PROTOCOLS</h2>
+            <h2 className="text-xl volt-header text-white">QUICK PROTOCOLS</h2>
             <span className="text-[10px] font-mono text-[#666]">{templates.length} LOADED</span>
         </div>
 
         <div className="space-y-3">
             {templates.map(t => (
-              <div 
+              <div
                 key={t.id}
                 onClick={() => handleStartTemplate(t.id)}
                 className="bg-[#0a0a0a] p-5 border-l-4 border-[#333] hover:border-primary flex justify-between items-center cursor-pointer transition-colors group relative"
@@ -183,7 +144,7 @@ const Lift = () => {
                       {['t1', 't2'].includes(t.id) && <span className="px-1.5 py-0.5 bg-primary/20 text-primary text-[10px] font-mono uppercase">SYSTEM</span>}
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                     {/* Edit button for all templates */}
                     <button
@@ -220,6 +181,41 @@ const Lift = () => {
             ))}
         </div>
       </section>
+
+      {/* Active Program (Condensed) - Only shows if user has an active program */}
+      {settings.activeProgram && (
+        <section className="mb-10">
+          <div className="flex justify-between items-end mb-4 border-b border-[#222] pb-2">
+            <h2 className="text-xl volt-header text-white">ACTIVE PROGRAM</h2>
+          </div>
+
+          {(() => {
+            const activeProg = programs.find(p => p.id === settings.activeProgram?.programId);
+            if (!activeProg) return null;
+
+            return (
+              <div className="bg-[#0a0a0a] p-5 border-l-4 border-primary bg-[#111] flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-white uppercase italic tracking-wide text-lg">{activeProg.name}</h3>
+                    <p className="text-[10px] text-[#888] font-mono uppercase mt-1">
+                      Week {settings.activeProgram.currentWeek} / Session {settings.activeProgram.currentSessionIndex + 1}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-black uppercase bg-primary text-black px-2 py-1">Active</span>
+                </div>
+
+                <button
+                  onClick={() => navigate(`/program/${activeProg.id}`)}
+                  className="text-xs font-bold uppercase text-white hover:text-primary transition-colors border border-white hover:border-primary px-3 py-2 text-center"
+                >
+                  View Full Program
+                </button>
+              </div>
+            );
+          })()}
+        </section>
+      )}
 
       {/* Program Detail Modal */}
       {selectedProgram && (
