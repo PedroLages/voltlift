@@ -265,11 +265,18 @@ const WorkoutLogger = () => {
                   
                   <div className="flex justify-center items-center gap-2 mb-8 flex-wrap">
                       <div className="h-24 w-4 bg-[#444] rounded-sm"></div> {/* Bar End */}
-                      {getPlates(calculatorTarget).map((p, i) => (
-                          <div key={i} className={`h-${p >= 45 ? '24' : p >= 25 ? '20' : p >= 10 ? '16' : '12'} w-6 bg-[#222] border border-[#444] flex items-center justify-center text-[10px] font-bold text-white`}>
-                              <span className="-rotate-90">{p}</span>
-                          </div>
-                      ))}
+                      {getPlates(calculatorTarget).map((p, i) => {
+                          const height = p >= 45 ? 96 : p >= 25 ? 80 : p >= 10 ? 64 : 48;
+                          return (
+                              <div
+                                  key={i}
+                                  className="w-6 bg-[#222] border border-[#444] flex items-center justify-center text-[10px] font-bold text-white"
+                                  style={{ height: `${height}px` }}
+                              >
+                                  <span className="-rotate-90">{p}</span>
+                              </div>
+                          );
+                      })}
                       {getPlates(calculatorTarget).length === 0 && <span className="text-[#444] font-mono text-xs uppercase">BAR ONLY</span>}
                   </div>
                   
@@ -603,11 +610,12 @@ const WorkoutLogger = () => {
                       />
                       {/* Calculator Button */}
                       {set.weight > 0 && !set.completed && (
-                          <button 
+                          <button
                             onClick={(e) => { e.stopPropagation(); setCalculatorTarget(set.weight); }}
-                            className="absolute right-0 top-2 text-[#444] hover:text-white"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors bg-black/50 p-1 rounded"
+                            aria-label="Open plate calculator"
                           >
-                              <Calculator size={10} />
+                              <Calculator size={16} />
                           </button>
                       )}
                       
