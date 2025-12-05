@@ -14,7 +14,7 @@ export const getProgressiveOverloadTip = async (
   userSettings: UserSettings
 ): Promise<string | null> => {
   const client = getClient();
-  if (!client) return "Simulated AI: Increase weight by 2.5kg if you hit all reps last time.";
+  if (!client) return `Simulated AI: Increase weight by 2.5${userSettings.units} if you hit all reps last time.`;
 
   const exercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
   if (!exercise) return null;
