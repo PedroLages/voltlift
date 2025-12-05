@@ -1796,5 +1796,274 @@ export const INITIAL_PROGRAMS: Program[] = [
             { templateId: 'nsuns_1', week: 1, day: 4 },
             { templateId: 'nsuns_2', week: 1, day: 5 },
         ]
+    },
+    {
+        id: 'prog_evidence_hypertrophy',
+        name: 'Evidence-Based Hypertrophy',
+        description: 'Science-backed program for returning lifters 35-50. Optimized recovery, progressive volume, built-in deloads. 4 days/week Upper/Lower.',
+        weeks: 12,
+        sessions: [
+            // MESOCYCLE 1: WEEKS 1-4 (MEV → MAV → MAV+ → DELOAD)
+            // Week 1: MEV (Minimum Effective Volume)
+            { templateId: 'ebh_upper_a', week: 1, day: 1 },
+            { templateId: 'ebh_lower_a', week: 1, day: 2 },
+            { templateId: 'ebh_upper_b', week: 1, day: 4 },
+            { templateId: 'ebh_lower_b', week: 1, day: 5 },
+            // Week 2: MAV (Maximum Adaptive Volume)
+            { templateId: 'ebh_upper_a', week: 2, day: 1 },
+            { templateId: 'ebh_lower_a', week: 2, day: 2 },
+            { templateId: 'ebh_upper_b', week: 2, day: 4 },
+            { templateId: 'ebh_lower_b', week: 2, day: 5 },
+            // Week 3: MAV+ (Overreaching)
+            { templateId: 'ebh_upper_a', week: 3, day: 1 },
+            { templateId: 'ebh_lower_a', week: 3, day: 2 },
+            { templateId: 'ebh_upper_b', week: 3, day: 4 },
+            { templateId: 'ebh_lower_b', week: 3, day: 5 },
+            // Week 4: DELOAD
+            { templateId: 'ebh_upper_deload', week: 4, day: 1 },
+            { templateId: 'ebh_lower_deload', week: 4, day: 2 },
+            { templateId: 'ebh_upper_deload', week: 4, day: 4 },
+            { templateId: 'ebh_lower_deload', week: 4, day: 5 },
+
+            // MESOCYCLE 2: WEEKS 5-8 (Repeat structure)
+            { templateId: 'ebh_upper_a', week: 5, day: 1 },
+            { templateId: 'ebh_lower_a', week: 5, day: 2 },
+            { templateId: 'ebh_upper_b', week: 5, day: 4 },
+            { templateId: 'ebh_lower_b', week: 5, day: 5 },
+            { templateId: 'ebh_upper_a', week: 6, day: 1 },
+            { templateId: 'ebh_lower_a', week: 6, day: 2 },
+            { templateId: 'ebh_upper_b', week: 6, day: 4 },
+            { templateId: 'ebh_lower_b', week: 6, day: 5 },
+            { templateId: 'ebh_upper_a', week: 7, day: 1 },
+            { templateId: 'ebh_lower_a', week: 7, day: 2 },
+            { templateId: 'ebh_upper_b', week: 7, day: 4 },
+            { templateId: 'ebh_lower_b', week: 7, day: 5 },
+            { templateId: 'ebh_upper_deload', week: 8, day: 1 },
+            { templateId: 'ebh_lower_deload', week: 8, day: 2 },
+            { templateId: 'ebh_upper_deload', week: 8, day: 4 },
+            { templateId: 'ebh_lower_deload', week: 8, day: 5 },
+
+            // MESOCYCLE 3: WEEKS 9-12 (Final push)
+            { templateId: 'ebh_upper_a', week: 9, day: 1 },
+            { templateId: 'ebh_lower_a', week: 9, day: 2 },
+            { templateId: 'ebh_upper_b', week: 9, day: 4 },
+            { templateId: 'ebh_lower_b', week: 9, day: 5 },
+            { templateId: 'ebh_upper_a', week: 10, day: 1 },
+            { templateId: 'ebh_lower_a', week: 10, day: 2 },
+            { templateId: 'ebh_upper_b', week: 10, day: 4 },
+            { templateId: 'ebh_lower_b', week: 10, day: 5 },
+            { templateId: 'ebh_upper_a', week: 11, day: 1 },
+            { templateId: 'ebh_lower_a', week: 11, day: 2 },
+            { templateId: 'ebh_upper_b', week: 11, day: 4 },
+            { templateId: 'ebh_lower_b', week: 11, day: 5 },
+            { templateId: 'ebh_upper_deload', week: 12, day: 1 },
+            { templateId: 'ebh_lower_deload', week: 12, day: 2 },
+            { templateId: 'ebh_upper_deload', week: 12, day: 4 },
+            { templateId: 'ebh_lower_deload', week: 12, day: 5 },
+        ]
+    },
+    {
+        id: 'prog_gzclp',
+        name: 'GZCLP',
+        description: 'Reddit\'s #1 recommended beginner-intermediate program by Cody Lefever. Learn the GZCL tier system: T1 main lifts (5×3), T2 secondary (3×10), T3 accessories (3×15). Built-in progression with failure protocols. 4 days/week.',
+        weeks: 12,
+        sessions: [
+            // Week 1
+            { templateId: 'gzclp_day1', week: 1, day: 1 },
+            { templateId: 'gzclp_day2', week: 1, day: 2 },
+            { templateId: 'gzclp_day3', week: 1, day: 4 },
+            { templateId: 'gzclp_day4', week: 1, day: 5 },
+            // Week 2
+            { templateId: 'gzclp_day1', week: 2, day: 1 },
+            { templateId: 'gzclp_day2', week: 2, day: 2 },
+            { templateId: 'gzclp_day3', week: 2, day: 4 },
+            { templateId: 'gzclp_day4', week: 2, day: 5 },
+            // Week 3
+            { templateId: 'gzclp_day1', week: 3, day: 1 },
+            { templateId: 'gzclp_day2', week: 3, day: 2 },
+            { templateId: 'gzclp_day3', week: 3, day: 4 },
+            { templateId: 'gzclp_day4', week: 3, day: 5 },
+            // Week 4
+            { templateId: 'gzclp_day1', week: 4, day: 1 },
+            { templateId: 'gzclp_day2', week: 4, day: 2 },
+            { templateId: 'gzclp_day3', week: 4, day: 4 },
+            { templateId: 'gzclp_day4', week: 4, day: 5 },
+            // Week 5
+            { templateId: 'gzclp_day1', week: 5, day: 1 },
+            { templateId: 'gzclp_day2', week: 5, day: 2 },
+            { templateId: 'gzclp_day3', week: 5, day: 4 },
+            { templateId: 'gzclp_day4', week: 5, day: 5 },
+            // Week 6
+            { templateId: 'gzclp_day1', week: 6, day: 1 },
+            { templateId: 'gzclp_day2', week: 6, day: 2 },
+            { templateId: 'gzclp_day3', week: 6, day: 4 },
+            { templateId: 'gzclp_day4', week: 6, day: 5 },
+            // Week 7
+            { templateId: 'gzclp_day1', week: 7, day: 1 },
+            { templateId: 'gzclp_day2', week: 7, day: 2 },
+            { templateId: 'gzclp_day3', week: 7, day: 4 },
+            { templateId: 'gzclp_day4', week: 7, day: 5 },
+            // Week 8
+            { templateId: 'gzclp_day1', week: 8, day: 1 },
+            { templateId: 'gzclp_day2', week: 8, day: 2 },
+            { templateId: 'gzclp_day3', week: 8, day: 4 },
+            { templateId: 'gzclp_day4', week: 8, day: 5 },
+            // Week 9
+            { templateId: 'gzclp_day1', week: 9, day: 1 },
+            { templateId: 'gzclp_day2', week: 9, day: 2 },
+            { templateId: 'gzclp_day3', week: 9, day: 4 },
+            { templateId: 'gzclp_day4', week: 9, day: 5 },
+            // Week 10
+            { templateId: 'gzclp_day1', week: 10, day: 1 },
+            { templateId: 'gzclp_day2', week: 10, day: 2 },
+            { templateId: 'gzclp_day3', week: 10, day: 4 },
+            { templateId: 'gzclp_day4', week: 10, day: 5 },
+            // Week 11
+            { templateId: 'gzclp_day1', week: 11, day: 1 },
+            { templateId: 'gzclp_day2', week: 11, day: 2 },
+            { templateId: 'gzclp_day3', week: 11, day: 4 },
+            { templateId: 'gzclp_day4', week: 11, day: 5 },
+            // Week 12
+            { templateId: 'gzclp_day1', week: 12, day: 1 },
+            { templateId: 'gzclp_day2', week: 12, day: 2 },
+            { templateId: 'gzclp_day3', week: 12, day: 4 },
+            { templateId: 'gzclp_day4', week: 12, day: 5 },
+        ]
+    },
+    {
+        id: 'prog_phat',
+        name: 'PHAT',
+        description: 'Dr. Layne Norton\'s legendary powerbuilding program. Combines power days (3-5 reps) with hypertrophy days (8-20 reps) for maximum strength AND size. Natural bodybuilding champion proven. 5 days/week.',
+        weeks: 12,
+        sessions: [
+            // Week 1
+            { templateId: 'phat_upper_power', week: 1, day: 1 },
+            { templateId: 'phat_lower_power', week: 1, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 1, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 1, day: 5 },
+            { templateId: 'phat_chest_arms', week: 1, day: 6 },
+            // Week 2
+            { templateId: 'phat_upper_power', week: 2, day: 1 },
+            { templateId: 'phat_lower_power', week: 2, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 2, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 2, day: 5 },
+            { templateId: 'phat_chest_arms', week: 2, day: 6 },
+            // Week 3
+            { templateId: 'phat_upper_power', week: 3, day: 1 },
+            { templateId: 'phat_lower_power', week: 3, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 3, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 3, day: 5 },
+            { templateId: 'phat_chest_arms', week: 3, day: 6 },
+            // Week 4
+            { templateId: 'phat_upper_power', week: 4, day: 1 },
+            { templateId: 'phat_lower_power', week: 4, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 4, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 4, day: 5 },
+            { templateId: 'phat_chest_arms', week: 4, day: 6 },
+            // Week 5
+            { templateId: 'phat_upper_power', week: 5, day: 1 },
+            { templateId: 'phat_lower_power', week: 5, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 5, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 5, day: 5 },
+            { templateId: 'phat_chest_arms', week: 5, day: 6 },
+            // Week 6
+            { templateId: 'phat_upper_power', week: 6, day: 1 },
+            { templateId: 'phat_lower_power', week: 6, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 6, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 6, day: 5 },
+            { templateId: 'phat_chest_arms', week: 6, day: 6 },
+            // Week 7
+            { templateId: 'phat_upper_power', week: 7, day: 1 },
+            { templateId: 'phat_lower_power', week: 7, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 7, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 7, day: 5 },
+            { templateId: 'phat_chest_arms', week: 7, day: 6 },
+            // Week 8
+            { templateId: 'phat_upper_power', week: 8, day: 1 },
+            { templateId: 'phat_lower_power', week: 8, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 8, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 8, day: 5 },
+            { templateId: 'phat_chest_arms', week: 8, day: 6 },
+            // Week 9
+            { templateId: 'phat_upper_power', week: 9, day: 1 },
+            { templateId: 'phat_lower_power', week: 9, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 9, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 9, day: 5 },
+            { templateId: 'phat_chest_arms', week: 9, day: 6 },
+            // Week 10
+            { templateId: 'phat_upper_power', week: 10, day: 1 },
+            { templateId: 'phat_lower_power', week: 10, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 10, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 10, day: 5 },
+            { templateId: 'phat_chest_arms', week: 10, day: 6 },
+            // Week 11
+            { templateId: 'phat_upper_power', week: 11, day: 1 },
+            { templateId: 'phat_lower_power', week: 11, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 11, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 11, day: 5 },
+            { templateId: 'phat_chest_arms', week: 11, day: 6 },
+            // Week 12
+            { templateId: 'phat_upper_power', week: 12, day: 1 },
+            { templateId: 'phat_lower_power', week: 12, day: 2 },
+            { templateId: 'phat_back_shoulders', week: 12, day: 4 },
+            { templateId: 'phat_lower_hypertrophy', week: 12, day: 5 },
+            { templateId: 'phat_chest_arms', week: 12, day: 6 },
+        ]
+    },
+    {
+        id: 'prog_531_beginner',
+        name: '5/3/1 for Beginners',
+        description: 'Jim Wendler\'s most famous strength program. Wave loading with FSL (First Set Last) 5×5 supplemental work. Teaches submaximal training and long-term progression. Perfect for strength-focused beginners. 3 days/week.',
+        weeks: 12,
+        sessions: [
+            // Week 1
+            { templateId: '531_day1', week: 1, day: 1 },
+            { templateId: '531_day2', week: 1, day: 3 },
+            { templateId: '531_day3', week: 1, day: 5 },
+            // Week 2
+            { templateId: '531_day1', week: 2, day: 1 },
+            { templateId: '531_day2', week: 2, day: 3 },
+            { templateId: '531_day3', week: 2, day: 5 },
+            // Week 3
+            { templateId: '531_day1', week: 3, day: 1 },
+            { templateId: '531_day2', week: 3, day: 3 },
+            { templateId: '531_day3', week: 3, day: 5 },
+            // Week 4
+            { templateId: '531_day1', week: 4, day: 1 },
+            { templateId: '531_day2', week: 4, day: 3 },
+            { templateId: '531_day3', week: 4, day: 5 },
+            // Week 5
+            { templateId: '531_day1', week: 5, day: 1 },
+            { templateId: '531_day2', week: 5, day: 3 },
+            { templateId: '531_day3', week: 5, day: 5 },
+            // Week 6
+            { templateId: '531_day1', week: 6, day: 1 },
+            { templateId: '531_day2', week: 6, day: 3 },
+            { templateId: '531_day3', week: 6, day: 5 },
+            // Week 7
+            { templateId: '531_day1', week: 7, day: 1 },
+            { templateId: '531_day2', week: 7, day: 3 },
+            { templateId: '531_day3', week: 7, day: 5 },
+            // Week 8
+            { templateId: '531_day1', week: 8, day: 1 },
+            { templateId: '531_day2', week: 8, day: 3 },
+            { templateId: '531_day3', week: 8, day: 5 },
+            // Week 9
+            { templateId: '531_day1', week: 9, day: 1 },
+            { templateId: '531_day2', week: 9, day: 3 },
+            { templateId: '531_day3', week: 9, day: 5 },
+            // Week 10
+            { templateId: '531_day1', week: 10, day: 1 },
+            { templateId: '531_day2', week: 10, day: 3 },
+            { templateId: '531_day3', week: 10, day: 5 },
+            // Week 11
+            { templateId: '531_day1', week: 11, day: 1 },
+            { templateId: '531_day2', week: 11, day: 3 },
+            { templateId: '531_day3', week: 11, day: 5 },
+            // Week 12
+            { templateId: '531_day1', week: 12, day: 1 },
+            { templateId: '531_day2', week: 12, day: 3 },
+            { templateId: '531_day3', week: 12, day: 5 },
+        ]
     }
 ];
