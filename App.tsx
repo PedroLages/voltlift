@@ -36,19 +36,36 @@ const PageLoader = () => (
 
 const BottomNav = () => {
   const location = useLocation();
-  const { activeWorkout, restTimerStart } = useStore();
+  const { activeWorkout, restTimerStart, settings, programs, templates, startWorkout } = useStore();
   const navigate = useNavigate();
 
   const isActive = (path: string) => location.pathname === path;
-  
+
   // Hide nav on onboarding, welcome, and login
   if (location.pathname === '/onboarding' || location.pathname === '/welcome' || location.pathname === '/login') return null;
-  
+
+  // Check if there's an active program and get next session
+  let nextProgramTemplate = null;
+  if (settings.activeProgram && !activeWorkout) {
+      const prog = programs.find(p => p.id === settings.activeProgram?.programId);
+      if (prog) {
+          const sessionIndex = settings.activeProgram.currentSessionIndex;
+          const session = prog.sessions[sessionIndex];
+          nextProgramTemplate = templates.find(t => t.id === session?.templateId);
+      }
+  }
+
   const handlePlayClick = (e: React.MouseEvent) => {
       e.preventDefault();
       if (activeWorkout) {
+          // Continue active workout
+          navigate('/workout');
+      } else if (nextProgramTemplate) {
+          // Start next program session
+          startWorkout(nextProgramTemplate.id);
           navigate('/workout');
       } else {
+          // No program, go to lift page to choose
           navigate('/lift');
       }
   }
@@ -66,7 +83,7 @@ const BottomNav = () => {
       <div className="relative -top-6">
         <button
             onClick={handlePlayClick}
-            aria-label={activeWorkout ? "Continue active workout" : restTimerStart ? "Resume workout after rest" : "Start workout"}
+            aria-label={activeWorkout ? "Continue active workout" : nextProgramTemplate ? "Start next program session" : "Start workout"}
             className={`flex items-center justify-center w-16 h-16 rounded-lg shadow-[0_0_20px_rgba(204,255,0,0.3)] transition-transform active:scale-95 ${activeWorkout || restTimerStart ? 'bg-primary animate-pulse text-black' : 'bg-primary text-black'}`}
         >
           {restTimerStart ? (
