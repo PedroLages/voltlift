@@ -1,43 +1,38 @@
 import { create } from 'zustand';
-import { authService, workoutService, settingsService, dailyLogService } from '../services/pocketbase';
+import { backend } from '../services/backend';
 import { useStore } from './useStore';
 
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: { id: string; email: string; name: string } | null;
+  user: { id: string; email: string; name: string; photoURL?: string } | null;
   error: string | null;
 
   // Actions
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<boolean>;
+  loginWithApple: () => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
   checkAuth: () => void;
   syncFromCloud: () => Promise<void>;
   syncToCloud: () => Promise<void>;
+  clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  isAuthenticated: authService.isLoggedIn,
+  isAuthenticated: backend.auth.isLoggedIn,
   isLoading: false,
-  user: authService.user ? {
-    id: authService.user.id,
-    email: authService.user.email,
-    name: authService.user.name || '',
-  } : null,
+  user: backend.auth.user,
   error: null,
 
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const authData = await authService.login(email, password);
+      const { user } = await backend.auth.login(email, password);
       set({
         isAuthenticated: true,
-        user: {
-          id: authData.record.id,
-          email: authData.record.email,
-          name: authData.record.name || '',
-        },
+        user,
         isLoading: false,
       });
       // Sync data after login
@@ -52,17 +47,55 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  loginWithGoogle: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const { user } = await backend.auth.loginWithGoogle();
+      set({
+        isAuthenticated: true,
+        user,
+        isLoading: false,
+      });
+      // Sync data after login
+      await get().syncFromCloud();
+      return true;
+    } catch (err: any) {
+      set({
+        error: err.message || 'Google Sign-In failed',
+        isLoading: false,
+      });
+      return false;
+    }
+  },
+
+  loginWithApple: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const { user } = await backend.auth.loginWithApple();
+      set({
+        isAuthenticated: true,
+        user,
+        isLoading: false,
+      });
+      // Sync data after login
+      await get().syncFromCloud();
+      return true;
+    } catch (err: any) {
+      set({
+        error: err.message || 'Apple Sign-In failed',
+        isLoading: false,
+      });
+      return false;
+    }
+  },
+
   register: async (email, password, name) => {
     set({ isLoading: true, error: null });
     try {
-      await authService.register(email, password, name);
+      const { user } = await backend.auth.register(email, password, name);
       set({
         isAuthenticated: true,
-        user: {
-          id: authService.user?.id || '',
-          email,
-          name,
-        },
+        user,
         isLoading: false,
       });
       // Push local data to cloud after registration
@@ -78,7 +111,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
-    authService.logout();
+    backend.auth.logout();
     set({
       isAuthenticated: false,
       user: null,
@@ -87,30 +120,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   checkAuth: () => {
-    const isValid = authService.isLoggedIn;
-    const user = authService.user;
+    const isValid = backend.auth.isLoggedIn;
+    const user = backend.auth.user;
     set({
       isAuthenticated: isValid,
-      user: user ? {
-        id: user.id,
-        email: user.email,
-        name: user.name || '',
-      } : null,
+      user,
     });
   },
 
   syncFromCloud: async () => {
-    if (!authService.isLoggedIn) return;
+    if (!backend.auth.isLoggedIn) return;
 
     const appStore = useStore.getState();
 
     try {
-      // Fetch all data from Pocketbase
-      const [cloudHistory, cloudTemplates, cloudSettings, cloudDailyLogs] = await Promise.all([
-        workoutService.getHistory(),
-        workoutService.getTemplates(),
-        settingsService.get(),
-        dailyLogService.getAll(),
+      // Fetch all data from backend
+      const [cloudHistory, cloudTemplates, cloudSettings, cloudDailyLogs, cloudPrograms] = await Promise.all([
+        backend.workouts.getHistory(),
+        backend.workouts.getTemplates(),
+        backend.settings.get(),
+        backend.dailyLogs.getAll(),
+        backend.programs.getAll(),
       ]);
 
       // Merge with local data (cloud takes precedence for now)
@@ -120,8 +150,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         templates: cloudTemplates.length > 0 ? cloudTemplates : appStore.templates,
         settings: cloudSettings ? { ...appStore.settings, ...cloudSettings } : appStore.settings,
         dailyLogs: Object.keys(cloudDailyLogs).length > 0 ? cloudDailyLogs : appStore.dailyLogs,
+        programs: cloudPrograms.length > 0 ? cloudPrograms : appStore.programs,
         syncStatus: 'synced',
       });
+
+      // Sync images
+      try {
+        const cloudImages = await backend.storage.getAllImages();
+        if (Object.keys(cloudImages).length > 0) {
+          useStore.setState({ customExerciseVisuals: cloudImages });
+        }
+      } catch (err) {
+        console.error('Failed to sync images:', err);
+      }
     } catch (err) {
       console.error('Sync from cloud failed:', err);
       useStore.setState({ syncStatus: 'error' });
@@ -129,31 +170,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   syncToCloud: async () => {
-    if (!authService.isLoggedIn) return;
+    if (!backend.auth.isLoggedIn) return;
 
-    const { history, templates, settings, dailyLogs } = useStore.getState();
+    const { history, templates, settings, dailyLogs, programs, customExerciseVisuals } = useStore.getState();
 
     try {
       useStore.setState({ syncStatus: 'syncing' });
 
       // Push settings
-      await settingsService.save(settings);
+      await backend.settings.save(settings);
 
       // Push history (completed workouts)
       for (const workout of history) {
         if (workout.status === 'completed') {
-          await workoutService.create(workout);
+          await backend.workouts.create(workout);
         }
       }
 
       // Push templates
       for (const template of templates) {
-        await workoutService.create(template);
+        await backend.workouts.create(template);
       }
 
       // Push daily logs
       for (const [date, log] of Object.entries(dailyLogs)) {
-        await dailyLogService.save(date, log);
+        await backend.dailyLogs.save(date, log);
+      }
+
+      // Push programs
+      for (const program of programs) {
+        await backend.programs.create(program);
+      }
+
+      // Push images
+      for (const [id, dataUrl] of Object.entries(customExerciseVisuals)) {
+        try {
+          await backend.storage.uploadImage(id, dataUrl);
+        } catch (err) {
+          console.error(`Failed to upload image ${id}:`, err);
+        }
       }
 
       useStore.setState({ syncStatus: 'synced' });
@@ -162,9 +217,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useStore.setState({ syncStatus: 'error' });
     }
   },
+
+  clearError: () => {
+    set({ error: null });
+  },
 }));
 
 // Listen for auth changes
-authService.onAuthChange((isValid) => {
-  useAuthStore.getState().checkAuth();
+backend.auth.onAuthChange((user) => {
+  useAuthStore.setState({
+    isAuthenticated: !!user,
+    user,
+  });
 });

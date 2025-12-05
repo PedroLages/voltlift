@@ -395,10 +395,18 @@ This document outlines all planned features and improvements for IronPath, organ
   - Track divergence from original
 
 ### Premium Features
-- [ ] ⬜ **Cloud sync**
-  - Account system
-  - Cross-device sync
-  - Backup/restore
+
+- [x] ✅ **Cloud sync** (Firebase implementation complete)
+  - [x] ✅ Account system (Email/Password)
+  - [x] ✅ Firebase backend with abstraction layer
+  - [x] ✅ Google Sign-In
+  - [x] ✅ Apple Sign-In (requires Apple Developer account setup)
+  - [x] ✅ Cross-device real-time sync
+  - [x] ✅ Cloud image storage (Firebase Storage)
+  - [x] ✅ Backend abstraction (Firebase + PocketBase support)
+  - [x] ✅ Migration guide documentation
+  - [ ] ⬜ Backup/restore functionality (TODO)
+  - [ ] ⬜ **P4: Migrate to self-hosted Unraid/PocketBase** (future)
 
 - [ ] ⬜ **Premium analytics**
   - Advanced charts

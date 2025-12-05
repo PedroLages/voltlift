@@ -18,16 +18,36 @@ npm run preview      # Preview production build
 ## Environment Setup
 
 Create `.env.local` with:
+
+```bash
+# Backend (Firebase or PocketBase)
+VITE_BACKEND_TYPE=firebase
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
+VITE_FIREBASE_APP_ID=1:123456789:web:abcdef
+
+# AI Features (Optional)
+VITE_GEMINI_API_KEY=your_gemini_api_key
+
+# To switch to PocketBase (self-hosted):
+# VITE_BACKEND_TYPE=pocketbase
+# VITE_POCKETBASE_URL=http://your-server:8090
 ```
-GEMINI_API_KEY=your_api_key_here
-```
+
+See [`.env.example`](.env.example) for full template and [`docs/backend-migration-guide.md`](docs/backend-migration-guide.md) for migration instructions.
 
 ## Architecture
 
 ### State Management
 - **Zustand store** (`store/useStore.ts`): Single global store with persistence via `zustand/middleware/persist`
 - State is persisted to localStorage under key `voltlift-storage`
-- Heavy assets (exercise visuals) are stored in IndexedDB via `utils/db.ts` to avoid localStorage size limits
+- **Cloud sync** via backend abstraction layer (`services/backend/`)
+  - Supports Firebase (cloud) and PocketBase (self-hosted)
+  - Switchable via `VITE_BACKEND_TYPE` environment variable
+  - Exercise images stored in Firebase Storage or PocketBase file storage
 
 ### Routing
 - Uses `react-router-dom` with `HashRouter` for client-side routing

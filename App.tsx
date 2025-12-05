@@ -112,12 +112,33 @@ const LinkItem = ({ to, icon, label, active }: { to: string, icon: React.ReactNo
   </Link>
 );
 
+// Onboarding guard - only allows authenticated users
+const OnboardingRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuthStore();
+
+  // Must be authenticated to access onboarding
+  if (!isAuthenticated) {
+    return <Navigate to="/welcome" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 // Auth guard component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { settings } = useStore();
-  if (!settings.onboardingCompleted) {
+  const { isAuthenticated } = useAuthStore();
+
+  // First check: Must be authenticated
+  if (!isAuthenticated) {
     return <Navigate to="/welcome" replace />;
   }
+
+  // Second check: Must complete onboarding
+  if (!settings.onboardingCompleted) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -132,7 +153,7 @@ const AppContent = () => {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/welcome" element={<Landing4 />} />
-            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/lift" element={<ProtectedRoute><Lift /></ProtectedRoute>} />
             <Route path="/builder" element={<ProtectedRoute><ProgramBuilder /></ProtectedRoute>} />

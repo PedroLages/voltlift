@@ -16,7 +16,9 @@ export const StrengthScore: React.FC<StrengthScoreProps> = ({
   gender = 'male',
   compact = false
 }) => {
-  const overallScore = calculateOverallStrengthScore(personalRecords, bodyweight, gender);
+  // Handle undefined or null personalRecords
+  const safePersonalRecords = personalRecords || {};
+  const overallScore = calculateOverallStrengthScore(safePersonalRecords, bodyweight, gender);
 
   // Major lifts to display
   const majorLifts = [
@@ -28,7 +30,7 @@ export const StrengthScore: React.FC<StrengthScoreProps> = ({
 
   // Calculate strength classification for each lift
   const liftClassifications = majorLifts.map(lift => {
-    const prHistory = personalRecords[lift.id];
+    const prHistory = safePersonalRecords[lift.id];
     if (!prHistory?.bestWeight) return null;
 
     const oneRM = calculate1RM(prHistory.bestWeight.value, prHistory.bestWeight.reps || 1);

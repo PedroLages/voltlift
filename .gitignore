@@ -27,5 +27,11 @@ npm-debug.log*
 # Playwright
 .playwright-mcp/
 
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
 # Temp files
 *.tmp

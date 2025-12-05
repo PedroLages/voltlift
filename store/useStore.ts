@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 import { UserSettings, WorkoutSession, ExerciseLog, SetLog, Goal, Program, DailyLog, BiometricPoint, PRType, PersonalRecord } from '../types';
 import { MOCK_HISTORY, INITIAL_TEMPLATES, EXERCISE_LIBRARY, INITIAL_PROGRAMS } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
-import { saveImageToDB, getAllImagesFromDB } from '../utils/db';
+import { backend } from '../services/backend';
 import { getSuggestion, checkVolumeWarning, shouldDeloadWeek, ProgressiveSuggestion } from '../services/progressiveOverload';
 import { calculate1RM, getBest1RM, classifyStrengthLevel, calculateOverallStrengthScore, OneRepMax } from '../services/strengthScore';
 
@@ -473,29 +473,37 @@ export const useStore = create<AppState>()(
       },
 
       saveExerciseVisual: async (exerciseId, url) => {
-        try {
-            await saveImageToDB(exerciseId, url);
-        } catch (e) {
-            console.error("Failed to save visual to DB:", e);
-        }
-
+        // Save to local state immediately
         set((state) => ({
           customExerciseVisuals: {
             ...state.customExerciseVisuals,
             [exerciseId]: url
           }
         }));
+
+        // Upload to cloud if authenticated
+        if (backend.auth.isLoggedIn) {
+          try {
+            await backend.storage.uploadImage(exerciseId, url);
+          } catch (e) {
+            console.error("Failed to save visual to cloud:", e);
+          }
+        }
       },
 
       loadVisuals: async () => {
-        try {
-            const visuals = await getAllImagesFromDB();
+        // If authenticated, load from cloud
+        if (backend.auth.isLoggedIn) {
+          try {
+            const visuals = await backend.storage.getAllImages();
             if (Object.keys(visuals).length > 0) {
-                set({ customExerciseVisuals: visuals });
+              set({ customExerciseVisuals: visuals });
             }
-        } catch (e) {
-            console.error("Failed to load visuals from DB:", e);
+          } catch (e) {
+            console.error("Failed to load visuals from cloud:", e);
+          }
         }
+        // Otherwise, visuals will be loaded from localStorage via persist middleware
       },
 
       swapExercise: (logId, newExerciseId) => {

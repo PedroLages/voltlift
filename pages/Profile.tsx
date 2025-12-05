@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
+import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
 import NotificationSettings from '../components/NotificationSettings';
@@ -9,7 +11,9 @@ import BodyMetricsLogger from '../components/BodyMetricsLogger';
 import BodyweightChart from '../components/BodyweightChart';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData } = useStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const [generatingBatch, setGeneratingBatch] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [batchSize, setBatchSize] = useState<'1K' | '2K' | '4K'>('1K');
@@ -90,6 +94,37 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Account Section */}
+      {isAuthenticated && user && (
+        <section className="mb-10">
+          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Account</h3>
+          <div className="bg-[#111] border border-[#222] divide-y divide-[#222]">
+            <div className="p-5 flex justify-between items-center">
+              <div>
+                <span className="font-bold uppercase text-sm">Email</span>
+                <p className="text-xs text-[#666] font-mono mt-1">{user.email}</p>
+              </div>
+            </div>
+            <div className="p-5 flex justify-between items-center">
+              <span className="font-bold uppercase text-sm">User ID</span>
+              <span className="text-xs text-[#666] font-mono">{user.id.substring(0, 12)}...</span>
+            </div>
+            <div className="p-5">
+              <button
+                onClick={async () => {
+                  await logout();
+                  navigate('/login');
+                }}
+                className="w-full py-4 bg-red-900/20 border border-red-900/50 hover:border-red-500 text-red-400 hover:text-red-300 font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="mb-10">
         <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Performance Data</h3>

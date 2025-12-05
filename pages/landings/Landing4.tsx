@@ -11,7 +11,7 @@ const Landing4 = () => {
       {/* Nav */}
       <nav className="p-6 flex justify-between items-center">
         <div className="text-2xl font-black italic tracking-tighter text-[#ccff00]">VOLTLIFT</div>
-        <button onClick={() => navigate('/')} className="bg-[#222] hover:bg-[#333] px-4 py-2 rounded font-bold text-sm uppercase tracking-wide">Login</button>
+        <button onClick={() => navigate('/login')} className="bg-[#222] hover:bg-[#333] px-4 py-2 rounded font-bold text-sm uppercase tracking-wide">Login</button>
       </nav>
 
       {/* Hero */}
@@ -27,8 +27,8 @@ const Landing4 = () => {
         <p className="max-w-xl mx-auto text-gray-400 text-lg mb-10 font-medium">
             Stop guessing. Start growing. The aggressive tracker for athletes who want to break records, not just sweat.
         </p>
-        <button 
-            onClick={() => navigate('/onboarding')}
+        <button
+            onClick={() => navigate('/login')}
             className="bg-[#ccff00] text-black px-10 py-5 rounded-lg font-black text-xl italic uppercase tracking-wider hover:scale-105 transition-transform shadow-[0_0_40px_rgba(204,255,0,0.3)]"
         >
             Join The Cult
