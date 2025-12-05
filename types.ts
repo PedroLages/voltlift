@@ -125,6 +125,10 @@ export interface UserSettings {
   personalRecords: Record<string, ExercisePRHistory>; // exerciseId -> PR History with best weight/volume/reps
   defaultRestTimer: number; // in seconds
   barWeight: number; // Weight of the bar (e.g., 45lbs)
+  availablePlates?: {
+    kg: number[];
+    lbs: number[];
+  }; // Customizable plates available in user's gym
   bodyweight?: number; // User's bodyweight in lbs (for strength score calculations)
   gender?: 'male' | 'female'; // For strength standard classifications
   activeProgram?: {

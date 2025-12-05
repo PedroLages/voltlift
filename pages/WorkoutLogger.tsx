@@ -271,7 +271,8 @@ const WorkoutLogger = () => {
   // Plate Calc Logic using unit-aware conversion utility
   const getPlates = (target: number) => {
       const bar = settings.barWeight || (settings.units === 'kg' ? 20 : 45);
-      return calculatePlateLoading(target, bar, settings.units);
+      const customPlates = settings.availablePlates?.[settings.units];
+      return calculatePlateLoading(target, bar, settings.units, customPlates);
   };
 
   // Rest Timer Progress Percentage

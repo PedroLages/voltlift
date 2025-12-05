@@ -41,8 +41,13 @@ export const formatWeight = (weight: number, unit: 'lbs' | 'kg'): string => {
 
 /**
  * Get standard plate sets for each unit system
+ * @param unit - Unit system ('lbs' or 'kg')
+ * @param customPlates - Optional custom plates array (will use defaults if not provided)
  */
-export const getPlateSet = (unit: 'lbs' | 'kg'): number[] => {
+export const getPlateSet = (unit: 'lbs' | 'kg', customPlates?: number[]): number[] => {
+  if (customPlates && customPlates.length > 0) {
+    return [...customPlates].sort((a, b) => b - a); // Sort descending for greedy algorithm
+  }
   if (unit === 'kg') {
     return [25, 20, 15, 10, 5, 2.5, 1.25];
   }
@@ -61,16 +66,18 @@ export const getStandardBarWeight = (unit: 'lbs' | 'kg'): number => {
  * @param targetWeight - Total target weight including bar
  * @param barWeight - Weight of the bar
  * @param unit - Unit system to use
+ * @param customPlates - Optional custom plates array (will use defaults if not provided)
  */
 export const calculatePlateLoading = (
   targetWeight: number,
   barWeight: number,
-  unit: 'lbs' | 'kg'
+  unit: 'lbs' | 'kg',
+  customPlates?: number[]
 ): number[] => {
   if (targetWeight <= barWeight) return [];
 
   let remaining = (targetWeight - barWeight) / 2; // Weight per side
-  const plates = getPlateSet(unit);
+  const plates = getPlateSet(unit, customPlates);
   const result: number[] = [];
 
   plates.forEach(plateWeight => {

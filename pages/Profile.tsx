@@ -14,6 +14,7 @@ const Profile = () => {
   const [generatingBatch, setGeneratingBatch] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [batchSize, setBatchSize] = useState<'1K' | '2K' | '4K'>('1K');
+  const [showPlateConfig, setShowPlateConfig] = useState(false);
 
   const totalWorkouts = history.length;
   const totalVolume = history.reduce((acc, sess) => {
@@ -259,6 +260,72 @@ const Profile = () => {
               <span className="text-xs text-[#666] font-mono">{settings.units.toUpperCase()}</span>
             </div>
           </div>
+
+          {/* Available Plates Section */}
+          <div className="p-5 border-t border-[#222]">
+            <div className="flex justify-between items-center mb-3">
+              <span className="font-bold uppercase text-sm">Available Plates</span>
+              <button
+                onClick={() => setShowPlateConfig(!showPlateConfig)}
+                className="text-[10px] text-primary font-mono uppercase hover:text-white transition-colors"
+              >
+                {showPlateConfig ? 'Hide' : 'Configure'}
+              </button>
+            </div>
+            {showPlateConfig && (
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {(settings.units === 'kg'
+                  ? [25, 20, 15, 10, 5, 2.5, 1.25]
+                  : [45, 35, 25, 10, 5, 2.5]
+                ).map(plate => {
+                  const currentPlates = settings.availablePlates?.[settings.units] || [];
+                  const isChecked = currentPlates.length === 0 || currentPlates.includes(plate);
+                  return (
+                    <label
+                      key={plate}
+                      className={`flex items-center gap-2 p-2 border cursor-pointer transition-colors ${
+                        isChecked ? 'border-primary bg-primary/10' : 'border-[#333] bg-black'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          const defaultPlates = settings.units === 'kg'
+                            ? [25, 20, 15, 10, 5, 2.5, 1.25]
+                            : [45, 35, 25, 10, 5, 2.5];
+
+                          let newPlates: number[];
+                          if (currentPlates.length === 0) {
+                            // First time configuring, start with defaults minus this plate
+                            newPlates = e.target.checked ? defaultPlates : defaultPlates.filter(p => p !== plate);
+                          } else {
+                            // Toggle plate in existing configuration
+                            newPlates = e.target.checked
+                              ? [...currentPlates, plate].sort((a, b) => b - a)
+                              : currentPlates.filter(p => p !== plate);
+                          }
+
+                          updateSettings({
+                            availablePlates: {
+                              ...settings.availablePlates,
+                              [settings.units]: newPlates
+                            }
+                          });
+                        }}
+                        className="w-4 h-4 accent-primary"
+                      />
+                      <span className="text-sm font-mono text-white">{plate} {settings.units}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-[10px] text-[#444] font-mono mt-2">
+              Select plates available in your gym. Calculator will only use checked plates.
+            </p>
+          </div>
+
           <div className="p-5 flex justify-between items-center">
              <span className="font-bold uppercase text-sm">Rest Timer (Default)</span>
              <select
