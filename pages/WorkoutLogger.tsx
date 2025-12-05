@@ -642,25 +642,27 @@ const WorkoutLogger = () => {
                     </div>
                     
                     {/* Weight Input */}
-                    <div className="col-span-3 relative" onClick={(e) => e.stopPropagation()}>
-                      <QuickIncrementCompact
-                        value={set.weight || 0}
-                        onChange={(value) => updateSet(exerciseIndex, setIndex, { weight: value })}
-                        increments={[2.5, 5, 10]}
-                        min={0}
-                        max={999}
-                        units={settings.units}
-                      />
-                      {/* Calculator Button */}
-                      {set.weight > 0 && !set.completed && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setCalculatorTarget(set.weight); }}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors bg-black/50 p-1 rounded z-10"
-                            aria-label="Open plate calculator"
-                          >
-                              <Calculator size={16} />
-                          </button>
-                      )}
+                    <div className="col-span-3" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1 justify-center">
+                        <QuickIncrementCompact
+                          value={set.weight || 0}
+                          onChange={(value) => updateSet(exerciseIndex, setIndex, { weight: value })}
+                          increments={[2.5, 5, 10]}
+                          min={0}
+                          max={999}
+                          units={settings.units}
+                        />
+                        {/* Calculator Button */}
+                        {set.weight > 0 && !set.completed && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setCalculatorTarget(set.weight); }}
+                              className="w-8 h-8 flex items-center justify-center rounded bg-[#111] border border-[#333] text-primary hover:text-white transition-colors"
+                              aria-label="Open plate calculator"
+                            >
+                                <Calculator size={16} />
+                            </button>
+                        )}
+                      </div>
                       {previousSet && !set.weight && (
                           <div className="text-[9px] text-[#444] text-center mt-1 font-mono">{previousSet.weight}</div>
                       )}
