@@ -67,7 +67,7 @@ const ProgramBrowser = () => {
             <div
               key={program.id}
               className={`bg-[#111] border-2 ${isActive ? 'border-primary' : 'border-[#222]'} p-4 hover:border-[#333] transition-colors cursor-pointer`}
-              onClick={() => setSelectedProgram(program)}
+              onClick={() => navigate(`/program/${program.id}`)}
             >
               {/* Active Badge */}
               {isActive && (
