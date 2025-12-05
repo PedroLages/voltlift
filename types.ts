@@ -105,6 +105,16 @@ export interface DailyLog {
     stressLevel?: number;
 }
 
+export interface NotificationSettings {
+  enabled: boolean; // Master toggle for all notifications
+  workoutReminders: boolean;
+  restTimerAlerts: boolean;
+  prCelebrations: boolean;
+  weeklySummary: boolean;
+  reminderTime?: string; // Time for workout reminders (HH:MM format, e.g., "09:00")
+  reminderDays?: number[]; // Days of week (0-6, Sunday-Saturday) for workout reminders
+}
+
 export interface UserSettings {
   name: string;
   units: 'kg' | 'lbs';
@@ -127,4 +137,5 @@ export interface UserSettings {
       email?: string;
       lastSync?: number;
   };
+  notifications?: NotificationSettings;
 }

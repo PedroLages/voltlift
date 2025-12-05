@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { EXERCISE_LIBRARY } from '../constants';
 import { Check, Plus, MoreHorizontal, Timer, Sparkles, X, AlertTriangle, RefreshCw, Trash2, StickyNote, Trophy, ArrowRight, Calculator, ChevronDown, Link as LinkIcon, Unlink, Heart } from 'lucide-react';
 import { getProgressiveOverloadTip } from '../services/geminiService';
+import { sendRestTimerAlert, sendPRCelebration } from '../services/notificationService';
 import { SetType } from '../types';
 import { formatTime } from '../utils/formatters';
 import { AISuggestionBadge, VolumeWarningBadge, RecoveryScore } from '../components/AISuggestionBadge';
@@ -38,6 +39,9 @@ const WorkoutLogger = () => {
   // Live Heart Rate Simulation State
   const [bpm, setBpm] = useState(70);
 
+  // Track if notification was sent for current rest timer session
+  const [notificationSent, setNotificationSent] = useState(false);
+
   // Audio Oscillator for Beep
   const playTimerSound = () => {
     try {
@@ -68,15 +72,24 @@ const WorkoutLogger = () => {
   useEffect(() => {
       let interval: NodeJS.Timeout;
       if (restTimerStart) {
+          // Reset notification flag when timer starts
+          setNotificationSent(false);
+
           interval = setInterval(() => {
               const secondsGone = Math.floor((Date.now() - restTimerStart) / 1000);
               const remaining = restDuration - secondsGone;
-              
+
               if (remaining <= 0) {
                   // Timer Finished
                   if (remaining === 0) {
                       playTimerSound();
                       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+                      // Send rest timer notification (only once per timer session)
+                      if (!notificationSent && settings.notifications?.enabled && settings.notifications?.restTimerAlerts) {
+                          sendRestTimerAlert();
+                          setNotificationSent(true);
+                      }
                   }
                   if (remaining < -2) { // Auto clear after 2 seconds over
                       stopRestTimer();
@@ -85,12 +98,12 @@ const WorkoutLogger = () => {
               } else {
                   setTimeLeft(remaining);
               }
-          }, 500); 
+          }, 500);
       } else {
           setTimeLeft(0);
       }
       return () => clearInterval(interval);
-  }, [restTimerStart, restDuration, stopRestTimer]);
+  }, [restTimerStart, restDuration, stopRestTimer, notificationSent, settings.notifications]);
 
   // Heart Rate Simulation Logic
   useEffect(() => {
@@ -182,6 +195,23 @@ const WorkoutLogger = () => {
               if (detectedPRs.length > 0) {
                   const exerciseName = EXERCISE_LIBRARY.find(e => e.id === exerciseId)?.name || 'Exercise';
                   setActivePRs({ prs: detectedPRs, exerciseName });
+
+                  // Send PR celebration notification
+                  if (settings.notifications?.enabled && settings.notifications?.prCelebrations) {
+                      // Send notification for the most significant PR
+                      const primaryPR = detectedPRs[0];
+                      const achievement = primaryPR.type === 'weight'
+                          ? `${primaryPR.newValue}${settings.units} x ${reps}`
+                          : primaryPR.type === 'reps'
+                          ? `${reps} reps @ ${weight}${settings.units}`
+                          : `${primaryPR.newValue}${settings.units} volume`;
+
+                      sendPRCelebration(
+                          detectedPRs.length > 1 ? `${detectedPRs.length} PRs` : primaryPR.type,
+                          exerciseName,
+                          achievement
+                      );
+                  }
               }
           }
       } else {

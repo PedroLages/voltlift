@@ -4,6 +4,8 @@ import { HashRouter, Routes, Route, Navigate, useLocation, Link, useNavigate } f
 import { Home, Dumbbell, Calendar, User, Play, Timer } from 'lucide-react';
 import { useStore } from './store/useStore';
 import { useAuthStore } from './store/useAuthStore';
+import NotificationScheduler from './components/NotificationScheduler';
+import { initializeNotificationListeners } from './services/notificationService';
 
 // Lazy load pages for better performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -105,6 +107,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AppContent = () => {
   return (
     <div className="min-h-screen bg-background text-text pb-28 font-sans selection:bg-primary selection:text-black">
+        {/* Background notification scheduler */}
+        <NotificationScheduler />
+
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -138,6 +143,9 @@ const App = () => {
     checkAuth();
     // Hydrate heavy assets from IndexedDB on startup
     loadVisuals();
+
+    // Initialize notification listeners
+    initializeNotificationListeners();
 
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {

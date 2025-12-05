@@ -5,6 +5,7 @@ import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
 import PlateCalculator from '../components/PlateCalculator';
+import NotificationSettings from '../components/NotificationSettings';
 
 const Profile = () => {
   const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData } = useStore();
@@ -316,6 +317,11 @@ const Profile = () => {
                   ))}
               </div>
           </div>
+      </section>
+
+      {/* Notification Settings Section */}
+      <section className="mt-10">
+          <NotificationSettings />
       </section>
 
       {/* Plate Calculator Section */}
