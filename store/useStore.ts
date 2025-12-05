@@ -54,6 +54,10 @@ interface AppState {
   
   // Phase 4 Actions
   logDailyBio: (date: string, data: Partial<DailyLog>) => void;
+  updateBodyweight: (date: string, weight: number) => void;
+  updateMeasurements: (date: string, measurements: Partial<any>) => void;
+  getBodyweightTrend: (days?: number) => { date: string; weight: number }[];
+  getLatestMeasurements: () => any | null;
   syncData: () => Promise<void>;
   addBiometricPoint: (point: BiometricPoint) => void;
   
@@ -703,6 +707,55 @@ export const useStore = create<AppState>()(
               }
           }));
           get().syncData();
+      },
+
+      updateBodyweight: (date, weight) => {
+          set(state => ({
+              dailyLogs: {
+                  ...state.dailyLogs,
+                  [date]: { ...(state.dailyLogs[date] || { date }), bodyweight: weight }
+              },
+              settings: {
+                  ...state.settings,
+                  bodyweight: weight
+              }
+          }));
+          get().syncData();
+      },
+
+      updateMeasurements: (date, measurements) => {
+          set(state => ({
+              dailyLogs: {
+                  ...state.dailyLogs,
+                  [date]: {
+                      ...(state.dailyLogs[date] || { date }),
+                      measurements: {
+                          ...(state.dailyLogs[date]?.measurements || {}),
+                          ...measurements
+                      }
+                  }
+              }
+          }));
+          get().syncData();
+      },
+
+      getBodyweightTrend: (days = 30) => {
+          const { dailyLogs } = get();
+          const entries = Object.values(dailyLogs)
+              .filter(log => log.bodyweight !== undefined)
+              .map(log => ({ date: log.date, weight: log.bodyweight! }))
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .slice(0, days)
+              .reverse();
+          return entries;
+      },
+
+      getLatestMeasurements: () => {
+          const { dailyLogs } = get();
+          const logsWithMeasurements = Object.values(dailyLogs)
+              .filter(log => log.measurements && Object.keys(log.measurements).length > 0)
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          return logsWithMeasurements.length > 0 ? logsWithMeasurements[0].measurements! : null;
       },
 
       addBiometricPoint: (point) => {

@@ -6,6 +6,8 @@ import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
 import PlateCalculator from '../components/PlateCalculator';
 import NotificationSettings from '../components/NotificationSettings';
+import BodyMetricsLogger from '../components/BodyMetricsLogger';
+import BodyweightChart from '../components/BodyweightChart';
 
 const Profile = () => {
   const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData } = useStore();
@@ -102,6 +104,15 @@ const Profile = () => {
             <div className="text-4xl font-black italic text-white leading-none">{(totalVolume / 1000).toFixed(0)}K</div>
             <div className="text-[10px] text-[#666] uppercase tracking-widest mt-1">Total Volume</div>
           </div>
+        </div>
+      </section>
+
+      {/* Body Metrics Section */}
+      <section className="mb-10">
+        <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Body Metrics</h3>
+        <div className="space-y-4">
+          <BodyweightChart days={30} />
+          <BodyMetricsLogger />
         </div>
       </section>
 
