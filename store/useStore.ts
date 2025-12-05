@@ -34,6 +34,7 @@ interface AppState {
   addExerciseToActive: (exerciseId: string) => void;
   updateSet: (exerciseIndex: number, setIndex: number, updates: Partial<SetLog>) => void;
   addSet: (exerciseIndex: number) => void;
+  duplicateSet: (exerciseIndex: number, setIndex: number) => void;
   removeSet: (exerciseIndex: number, setIndex: number) => void;
   updateSettings: (settings: Partial<UserSettings>) => void;
   completeOnboarding: (name: string, goal: Goal, experience: 'Beginner' | 'Intermediate' | 'Advanced', equipment: string[]) => void;
@@ -418,10 +419,32 @@ export const useStore = create<AppState>()(
       removeSet: (exerciseIndex, setIndex) => {
          const { activeWorkout } = get();
          if (!activeWorkout) return;
-         
+
          const newLogs = [...activeWorkout.logs];
          newLogs[exerciseIndex].sets.splice(setIndex, 1);
          set({ activeWorkout: { ...activeWorkout, logs: newLogs } });
+      },
+
+      duplicateSet: (exerciseIndex, setIndex) => {
+        const { activeWorkout } = get();
+        if (!activeWorkout) return;
+
+        const newLogs = [...activeWorkout.logs];
+        const setToDuplicate = newLogs[exerciseIndex].sets[setIndex];
+
+        // Create a duplicate set with a new ID
+        const duplicatedSet: SetLog = {
+          id: uuidv4(),
+          reps: setToDuplicate.reps,
+          weight: setToDuplicate.weight,
+          rpe: setToDuplicate.rpe,
+          type: setToDuplicate.type,
+          completed: false, // New duplicate set starts uncompleted
+        };
+
+        // Insert the duplicate right after the original
+        newLogs[exerciseIndex].sets.splice(setIndex + 1, 0, duplicatedSet);
+        set({ activeWorkout: { ...activeWorkout, logs: newLogs } });
       },
 
       updateSettings: (newSettings) => {
