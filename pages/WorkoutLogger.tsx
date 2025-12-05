@@ -8,6 +8,7 @@ import { getProgressiveOverloadTip } from '../services/geminiService';
 import { sendRestTimerAlert, sendPRCelebration } from '../services/notificationService';
 import { SetType } from '../types';
 import { formatTime } from '../utils/formatters';
+import { calculatePlateLoading, formatWeight } from '../utils/conversions';
 import { AISuggestionBadge, VolumeWarningBadge, RecoveryScore } from '../components/AISuggestionBadge';
 import { checkAllPRs, PRDetection } from '../services/strengthScore';
 import PRCelebration from '../components/PRCelebration';
@@ -266,22 +267,10 @@ const WorkoutLogger = () => {
       setActiveMenuId(null);
   };
 
-  // Plate Calc Logic
+  // Plate Calc Logic using unit-aware conversion utility
   const getPlates = (target: number) => {
-      const bar = settings.barWeight || 45;
-      if (target <= bar) return [];
-      
-      let remaining = (target - bar) / 2;
-      const plates = [45, 35, 25, 10, 5, 2.5];
-      const result: number[] = [];
-      
-      plates.forEach(p => {
-          while (remaining >= p) {
-              result.push(p);
-              remaining -= p;
-          }
-      });
-      return result;
+      const bar = settings.barWeight || (settings.units === 'kg' ? 20 : 45);
+      return calculatePlateLoading(target, bar, settings.units);
   };
 
   // Rest Timer Progress Percentage
@@ -308,21 +297,28 @@ const WorkoutLogger = () => {
                   
                   <div className="flex justify-between items-end border-b border-[#333] pb-4 mb-6">
                       <span className="text-[#888] font-mono text-sm uppercase">TARGET</span>
-                      <span className="text-4xl font-black italic text-primary">{calculatorTarget} <span className="text-lg text-white">LBS</span></span>
+                      <span className="text-4xl font-black italic text-primary">{calculatorTarget} <span className="text-lg text-white">{settings.units.toUpperCase()}</span></span>
                   </div>
                   
                   <div className="flex justify-center items-center gap-2 mb-8 flex-wrap">
                       <div className="h-24 w-4 bg-[#444] rounded-sm"></div> {/* Bar End */}
-                      {getPlates(calculatorTarget).map((p, i) => (
-                          <div key={i} className={`h-${p >= 45 ? '24' : p >= 25 ? '20' : p >= 10 ? '16' : '12'} w-6 bg-[#222] border border-[#444] flex items-center justify-center text-[10px] font-bold text-white`}>
-                              <span className="-rotate-90">{p}</span>
-                          </div>
-                      ))}
+                      {getPlates(calculatorTarget).map((p, i) => {
+                          const height = p >= 45 ? 96 : p >= 25 ? 80 : p >= 10 ? 64 : 48;
+                          return (
+                              <div
+                                  key={i}
+                                  className="w-6 bg-[#222] border border-[#444] flex items-center justify-center text-[10px] font-bold text-white"
+                                  style={{ height: `${height}px` }}
+                              >
+                                  <span className="-rotate-90">{p}</span>
+                              </div>
+                          );
+                      })}
                       {getPlates(calculatorTarget).length === 0 && <span className="text-[#444] font-mono text-xs uppercase">BAR ONLY</span>}
                   </div>
                   
                   <div className="text-center text-[#666] font-mono text-[10px] uppercase">
-                      Based on {settings.barWeight}LB Bar • Per Side Shown
+                      Based on {settings.barWeight}{settings.units.toUpperCase()} Bar • Per Side Shown
                   </div>
               </div>
           </div>
@@ -614,7 +610,7 @@ const WorkoutLogger = () => {
               {/* Sets Header */}
               <div className="grid grid-cols-12 gap-2 p-3 text-[10px] font-bold text-[#666] uppercase tracking-widest text-center mt-2">
                 <div className="col-span-1">TAG</div>
-                <div className="col-span-3">LBS</div>
+                <div className="col-span-3">{settings.units.toUpperCase()}</div>
                 <div className="col-span-3">REPS</div>
                 <div className="col-span-2">RPE</div>
                 <div className="col-span-3">DONE</div>
@@ -651,11 +647,12 @@ const WorkoutLogger = () => {
                       />
                       {/* Calculator Button */}
                       {set.weight > 0 && !set.completed && (
-                          <button 
+                          <button
                             onClick={(e) => { e.stopPropagation(); setCalculatorTarget(set.weight); }}
-                            className="absolute right-0 top-2 text-[#444] hover:text-white"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors bg-black/50 p-1 rounded"
+                            aria-label="Open plate calculator"
                           >
-                              <Calculator size={10} />
+                              <Calculator size={16} />
                           </button>
                       )}
                       

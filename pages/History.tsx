@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, ChevronRight, Clock, Box, Filter, X, Dumbbell } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
 import EmptyState from '../components/EmptyState';
+import WorkoutCalendar from '../components/WorkoutCalendar';
 import { WorkoutSession } from '../types';
 import { formatDate, getDuration } from '../utils/formatters';
 
@@ -82,7 +83,7 @@ const History = () => {
   return (
     <div className="p-6 pb-20">
       {/* Header with Filter Button */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-4xl volt-header">LOGS</h1>
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -96,6 +97,9 @@ const History = () => {
           {hasActiveFilters && <span className="text-[10px]">({filteredHistory.length})</span>}
         </button>
       </div>
+
+      {/* Workout Calendar */}
+      <WorkoutCalendar workouts={history} />
 
       {/* Filter Panel */}
       {showFilters && (

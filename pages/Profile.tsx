@@ -79,12 +79,12 @@ const Profile = () => {
 
       <div className="flex items-center gap-6 mb-10 border-b border-[#222] pb-8">
         <div className="w-24 h-24 bg-primary flex items-center justify-center text-5xl font-black italic text-black">
-          {settings.name.charAt(0)}
+          {(settings.name || 'A').charAt(0)}
         </div>
         <div>
-          <h2 className="text-2xl font-bold uppercase tracking-tight text-white">{settings.name}</h2>
+          <h2 className="text-2xl font-bold uppercase tracking-tight text-white">{settings.name || 'Athlete'}</h2>
           <div className="flex items-center gap-2 mt-2">
-              <span className="px-2 py-1 bg-[#222] text-[#888] text-[10px] font-mono uppercase">{settings.goal.type}</span>
+              <span className="px-2 py-1 bg-[#222] text-[#888] text-[10px] font-mono uppercase">{settings.goal?.type || 'Training'}</span>
           </div>
         </div>
       </div>
@@ -98,7 +98,7 @@ const Profile = () => {
             <div className="text-[10px] text-[#666] uppercase tracking-widest mt-1">Sessions Complete</div>
           </div>
           <div className="bg-[#111] p-6 border border-[#222]">
-            <div className="text-primary mb-2 font-black italic text-xl">LBS</div>
+            <div className="text-primary mb-2 font-black italic text-xl">{settings.units.toUpperCase()}</div>
             <div className="text-4xl font-black italic text-white leading-none">{(totalVolume / 1000).toFixed(0)}K</div>
             <div className="text-[10px] text-[#666] uppercase tracking-widest mt-1">Total Volume</div>
           </div>
@@ -232,8 +232,25 @@ const Profile = () => {
             </div>
           </div>
           <div className="p-5 flex justify-between items-center">
+            <span className="font-bold uppercase text-sm">Bar Weight</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                min="10"
+                max="100"
+                step="0.5"
+                placeholder={settings.units === 'kg' ? '20' : '45'}
+                value={settings.barWeight || ''}
+                onChange={(e) => updateSettings({ barWeight: parseFloat(e.target.value) || (settings.units === 'kg' ? 20 : 45) })}
+                className="bg-[#222] text-white font-mono text-right px-3 py-1 outline-none text-sm uppercase w-20 focus:border focus:border-primary"
+              />
+              <span className="text-xs text-[#666] font-mono">{settings.units.toUpperCase()}</span>
+            </div>
+          </div>
+          <div className="p-5 flex justify-between items-center">
              <span className="font-bold uppercase text-sm">Rest Timer (Default)</span>
-             <select 
+             <select
               value={settings.defaultRestTimer || 90}
               onChange={(e) => updateSettings({ defaultRestTimer: parseInt(e.target.value) })}
               className="bg-[#222] text-white font-mono rounded-none px-2 py-1 outline-none text-sm uppercase"
@@ -269,12 +286,12 @@ const Profile = () => {
                 min="50"
                 max="500"
                 step="0.5"
-                placeholder="180"
+                placeholder={settings.units === 'kg' ? '80' : '180'}
                 value={settings.bodyweight || ''}
                 onChange={(e) => updateSettings({ bodyweight: parseFloat(e.target.value) || undefined })}
                 className="bg-[#222] text-white font-mono text-right px-3 py-1 outline-none text-sm uppercase w-20 focus:border focus:border-primary"
               />
-              <span className="text-xs text-[#666] font-mono">LBS</span>
+              <span className="text-xs text-[#666] font-mono">{settings.units.toUpperCase()}</span>
             </div>
           </div>
           <div className="p-5 flex justify-between items-center">
