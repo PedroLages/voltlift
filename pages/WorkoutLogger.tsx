@@ -743,7 +743,7 @@ const WorkoutLogger = () => {
           </div>
         </div>
       )}
-    </div>
+
       {/* Workout Completion Modal */}
       {showCompletionModal && (
         <WorkoutCompletionModal
@@ -753,6 +753,7 @@ const WorkoutLogger = () => {
           onDismiss={() => setShowCompletionModal(false)}
         />
       )}
+    </div>
   );
 };
 
