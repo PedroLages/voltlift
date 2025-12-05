@@ -15,9 +15,9 @@ const ProgramBuilder = () => {
   const handleSave = () => {
     if (!name.trim()) return alert("PROTOCOL NAME REQUIRED");
     if (selectedExerciseIds.length === 0) return alert("NO MOVEMENTS SELECTED");
-    
+
     saveTemplate(name, selectedExerciseIds);
-    navigate('/');
+    navigate('/lift');
   };
 
   const removeExercise = (index: number) => {
@@ -30,7 +30,7 @@ const ProgramBuilder = () => {
     <div className="min-h-screen bg-background p-6 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <button onClick={() => navigate('/')} className="text-[#666] hover:text-white">
+        <button onClick={() => navigate('/lift')} className="text-[#666] hover:text-white">
           <ArrowLeft size={24} />
         </button>
         <h1 className="volt-header text-2xl text-white">NEW PROTOCOL</h1>
