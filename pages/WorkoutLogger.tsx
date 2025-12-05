@@ -370,7 +370,7 @@ const WorkoutLogger = () => {
       <div className="sticky top-0 z-40 bg-black/95 border-b border-[#333] p-4 flex justify-between items-center safe-area-top" role="banner">
         <div className="flex items-center gap-4">
             <button
-              onClick={(e) => { e.stopPropagation(); if(confirm("ABORT SESSION?")) { cancelWorkout(); navigate('/'); } }}
+              onClick={(e) => { e.stopPropagation(); if(confirm("ABORT SESSION?")) { cancelWorkout(); navigate('/lift'); } }}
               aria-label="Abort workout session"
               className="text-[#666] text-xs font-bold uppercase tracking-wider hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
             >
