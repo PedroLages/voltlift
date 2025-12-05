@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Plus, ChevronRight, Dumbbell, PenTool, Trash2, Play, CalendarRange, X, Edit, Copy, FileText } from 'lucide-react';
+import { Plus, ChevronRight, Dumbbell, PenTool, Trash2, Play, CalendarRange, X, Edit, Copy, FileText, Zap } from 'lucide-react';
 import { Program, WorkoutSession } from '../types';
+import { EXERCISE_LIBRARY } from '../constants';
 import TemplateEditor from '../components/TemplateEditor';
 import EmptyState from '../components/EmptyState';
 
@@ -57,23 +58,44 @@ const Lift = () => {
         </h1>
       </header>
 
-      {/* Primary Action: Quick Start */}
-      <button
-        onClick={handleQuickStart}
-        aria-label="Start empty workout session"
-        className="w-full group relative overflow-hidden bg-primary p-6 mb-8 skew-x-[-2deg] hover:scale-[1.02] transition-transform active:scale-95 focus:outline-none focus:ring-4 focus:ring-primary focus:ring-offset-4 focus:ring-offset-black"
-      >
-        <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-[-20deg]"></div>
-        <div className="flex justify-between items-center skew-x-[2deg]">
+      {/* Primary Action: Quick Start - Contextual sizing based on active program */}
+      {settings.activeProgram ? (
+        /* Compact version when program is active */
+        <button
+          onClick={handleQuickStart}
+          aria-label="Start empty workout session"
+          className="w-full group bg-[#111] border border-[#222] p-4 mb-8 hover:border-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black"
+        >
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3 text-white">
+              <Play size={18} className="text-[#666] group-hover:text-primary transition-colors" />
+              <div className="text-left">
+                <span className="block text-sm font-bold uppercase italic">Empty Session</span>
+                <span className="text-[10px] text-[#555] font-mono uppercase">Freestyle Workout</span>
+              </div>
+            </div>
+            <ChevronRight size={20} className="text-[#333] group-hover:text-primary transition-colors" />
+          </div>
+        </button>
+      ) : (
+        /* Full hero version when no program */
+        <button
+          onClick={handleQuickStart}
+          aria-label="Start empty workout session"
+          className="w-full group relative overflow-hidden bg-primary p-6 mb-8 skew-x-[-2deg] hover:scale-[1.02] transition-transform active:scale-95 focus:outline-none focus:ring-4 focus:ring-primary focus:ring-offset-4 focus:ring-offset-black"
+        >
+          <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-[-20deg]"></div>
+          <div className="flex justify-between items-center skew-x-[2deg]">
             <div className="flex flex-col items-start text-black">
-                <span className="text-3xl font-black italic uppercase tracking-tighter flex items-center gap-2">
-                    <Play fill="currentColor" size={24} /> Initiate
-                </span>
-                <span className="text-xs font-bold uppercase tracking-widest opacity-80">Empty Session</span>
+              <span className="text-3xl font-black italic uppercase tracking-tighter flex items-center gap-2">
+                <Play fill="currentColor" size={24} /> Initiate
+              </span>
+              <span className="text-xs font-bold uppercase tracking-widest opacity-80">Empty Session</span>
             </div>
             <ChevronRight size={32} className="text-black stroke-[3px]" />
-        </div>
-      </button>
+          </div>
+        </button>
+      )}
 
       {/* Tool Grid - 2x2 with equal weight */}
       <div className="grid grid-cols-2 gap-4 mb-8">
@@ -123,9 +145,9 @@ const Lift = () => {
         </button>
       </div>
 
-      {/* Active Program (Condensed) - Only shows if user has an active program */}
+      {/* Active Program (Enhanced) - Only shows if user has an active program */}
       {settings.activeProgram && (
-        <section className="mb-10">
+        <section className="mb-8">
           <div className="flex justify-between items-end mb-4 border-b border-[#222] pb-2">
             <h2 className="text-xl volt-header text-white">ACTIVE PROGRAM</h2>
           </div>
@@ -134,24 +156,112 @@ const Lift = () => {
             const activeProg = programs.find(p => p.id === settings.activeProgram?.programId);
             if (!activeProg) return null;
 
-            return (
-              <div className="bg-[#0a0a0a] p-5 border-l-4 border-primary bg-[#111] flex flex-col gap-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-white uppercase italic tracking-wide text-lg">{activeProg.name}</h3>
-                    <p className="text-[10px] text-[#888] font-mono uppercase mt-1">
-                      Week {settings.activeProgram.currentWeek} / Session {settings.activeProgram.currentSessionIndex + 1}
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-black uppercase bg-primary text-black px-2 py-1">Active</span>
-                </div>
+            // Get next session details
+            const sessionIndex = settings.activeProgram.currentSessionIndex;
+            const nextSession = activeProg.sessions[sessionIndex];
+            const nextTemplate = nextSession ? templates.find(t => t.id === nextSession.templateId) : null;
 
-                <button
-                  onClick={() => navigate(`/program/${activeProg.id}`)}
-                  className="text-xs font-bold uppercase text-white hover:text-primary transition-colors border border-white hover:border-primary px-3 py-2 text-center"
-                >
-                  View Full Program
-                </button>
+            // Get exercises from template
+            const exerciseList = nextTemplate?.logs.slice(0, 3).map((log, idx) => {
+              const exercise = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId);
+              const tier = idx === 0 ? 'T1' : idx === 1 ? 'T2' : 'T3';
+              return { name: exercise?.name || 'Unknown', tier };
+            }) || [];
+
+            const remainingCount = (nextTemplate?.logs.length || 0) - 3;
+
+            // Calculate progress
+            const progressPercent = Math.round((sessionIndex / activeProg.sessions.length) * 100);
+
+            return (
+              <div className="relative overflow-hidden bg-gradient-to-br from-[#111] to-[#0a0a0a] border-2 border-primary/50 shadow-[0_0_30px_rgba(204,255,0,0.15)]">
+                {/* Diagonal accent stripe */}
+                <div className="absolute top-0 right-0 bottom-0 bg-primary/5 w-1/3 skew-x-[15deg] translate-x-12"></div>
+
+                <div className="relative p-6 space-y-4">
+                  {/* Header */}
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-black italic uppercase text-white mb-1">{activeProg.name}</h3>
+                      <p className="text-xs text-[#888] font-mono uppercase">
+                        Week {nextSession?.week} • Day {nextSession?.day} • Session {sessionIndex + 1}/{activeProg.sessions.length}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase bg-primary text-black px-3 py-1.5 shadow-[0_0_10px_rgba(204,255,0,0.3)]">
+                      ACTIVE
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] text-[#666] font-mono uppercase tracking-widest">Progress</span>
+                      <span className="text-[9px] text-primary font-bold">{progressPercent}%</span>
+                    </div>
+                    <div className="h-1.5 bg-[#222] overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-500"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Next Workout Preview */}
+                  {nextTemplate && (
+                    <div className="bg-[#0a0a0a] border border-[#222] p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Zap size={14} className="text-primary" />
+                        <span className="text-xs font-bold uppercase text-primary tracking-widest">Up Next</span>
+                        <span className="text-xs text-[#666] font-mono">{nextTemplate.name}</span>
+                      </div>
+
+                      {/* Exercise Chips */}
+                      <div className="flex flex-wrap gap-2">
+                        {exerciseList.map((ex, idx) => (
+                          <div
+                            key={idx}
+                            className={`px-2 py-1 text-[10px] font-bold uppercase ${
+                              ex.tier === 'T1'
+                                ? 'bg-primary/20 text-primary border border-primary/30'
+                                : ex.tier === 'T2'
+                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                : 'bg-[#222] text-[#888] border border-[#333]'
+                            }`}
+                          >
+                            {ex.tier}: {ex.name}
+                          </div>
+                        ))}
+                        {remainingCount > 0 && (
+                          <div className="px-2 py-1 text-[10px] font-bold uppercase bg-[#222] text-[#666] border border-[#333]">
+                            +{remainingCount} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        if (nextTemplate) {
+                          startWorkout(nextTemplate.id);
+                          navigate('/workout');
+                        }
+                      }}
+                      className="flex-1 bg-primary text-black py-4 font-black italic uppercase text-lg tracking-wider hover:bg-white transition-colors shadow-[0_4px_20px_rgba(204,255,0,0.3)] hover:shadow-[0_4px_30px_rgba(204,255,0,0.5)] flex items-center justify-center gap-2 group"
+                    >
+                      <Play size={20} fill="currentColor" className="group-hover:scale-110 transition-transform" />
+                      START SESSION
+                    </button>
+                    <button
+                      onClick={() => navigate(`/program/${activeProg.id}`)}
+                      className="px-5 py-4 border-2 border-white/20 text-white font-bold uppercase text-xs tracking-widest hover:border-primary hover:text-primary transition-colors"
+                    >
+                      VIEW
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           })()}
