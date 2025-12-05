@@ -15,7 +15,6 @@ import PRCelebration from '../components/PRCelebration';
 import SetTypeSelector from '../components/SetTypeSelector';
 import WorkoutCompletionModal from '../components/WorkoutCompletionModal';
 import SwipeableRow from '../components/SwipeableRow';
-import { QuickIncrementCompact } from '../components/QuickIncrement';
 
 const WorkoutLogger = () => {
   const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning } = useStore();
@@ -573,6 +572,7 @@ const WorkoutLogger = () => {
                        suggestion={suggestion}
                        onApply={handleApplySuggestion}
                        showApplyButton={log.sets.some(s => !s.completed)}
+                       units={settings.units}
                      />
                    );
                  })()}
@@ -642,40 +642,44 @@ const WorkoutLogger = () => {
                     </div>
                     
                     {/* Weight Input */}
-                    <div className="col-span-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1 justify-center">
-                        <QuickIncrementCompact
-                          value={set.weight || 0}
-                          onChange={(value) => updateSet(exerciseIndex, setIndex, { weight: value })}
-                          increments={[2.5, 5, 10]}
-                          min={0}
-                          max={999}
-                          units={settings.units}
-                        />
-                        {/* Calculator Button */}
-                        {set.weight > 0 && !set.completed && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setCalculatorTarget(set.weight); }}
-                              className="w-8 h-8 flex items-center justify-center rounded bg-[#111] border border-[#333] text-primary hover:text-white transition-colors"
-                              aria-label="Open plate calculator"
-                            >
-                                <Calculator size={16} />
-                            </button>
-                        )}
-                      </div>
+                    <div className="col-span-3 relative">
+                      <input
+                        type="number"
+                        value={set.weight || ''}
+                        onChange={(e) => updateSet(exerciseIndex, setIndex, { weight: parseFloat(e.target.value) })}
+                        placeholder={previousSet ? `${previousSet.weight}` : "0"}
+                        aria-label={`Weight for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
+                        inputMode="decimal"
+                        className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      {/* Calculator Button */}
+                      {set.weight > 0 && !set.completed && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setCalculatorTarget(set.weight); }}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors bg-black/50 p-1 rounded"
+                            aria-label="Open plate calculator"
+                          >
+                              <Calculator size={16} />
+                          </button>
+                      )}
+
                       {previousSet && !set.weight && (
                           <div className="text-[9px] text-[#444] text-center mt-1 font-mono">{previousSet.weight}</div>
                       )}
                     </div>
 
                     {/* Reps Input */}
-                    <div className="col-span-3" onClick={(e) => e.stopPropagation()}>
-                      <QuickIncrementCompact
-                        value={set.reps || 0}
-                        onChange={(value) => updateSet(exerciseIndex, setIndex, { reps: value })}
-                        increments={[1, 2, 5]}
-                        min={0}
-                        max={999}
+                    <div className="col-span-3">
+                      <input
+                        type="number"
+                        value={set.reps || ''}
+                        onChange={(e) => updateSet(exerciseIndex, setIndex, { reps: parseFloat(e.target.value) })}
+                        placeholder={previousSet ? `${previousSet.reps}` : "0"}
+                        aria-label={`Repetitions for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
+                        inputMode="numeric"
+                        className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
+                        onClick={(e) => e.stopPropagation()}
                       />
                        {previousSet && !set.reps && (
                           <div className="text-[9px] text-[#444] text-center mt-1 font-mono">{previousSet.reps}</div>

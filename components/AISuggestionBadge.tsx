@@ -17,13 +17,15 @@ interface AISuggestionBadgeProps {
   onApply?: () => void;
   showApplyButton?: boolean;
   compact?: boolean;
+  units?: 'kg' | 'lbs';
 }
 
 export const AISuggestionBadge: React.FC<AISuggestionBadgeProps> = ({
   suggestion,
   onApply,
   showApplyButton = true,
-  compact = false
+  compact = false,
+  units = 'lbs'
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -43,7 +45,7 @@ export const AISuggestionBadge: React.FC<AISuggestionBadgeProps> = ({
     return (
       <div className={`inline-flex items-center gap-1.5 px-2 py-1 bg-black/50 border ${confidenceColor} text-[10px] font-bold uppercase tracking-wider`}>
         <Sparkles size={10} className="shrink-0" />
-        <span>{suggestion.weight}lbs × {suggestion.reps[0]}-{suggestion.reps[1]}</span>
+        <span>{suggestion.weight}{units} × {suggestion.reps[0]}-{suggestion.reps[1]}</span>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -76,7 +78,7 @@ export const AISuggestionBadge: React.FC<AISuggestionBadgeProps> = ({
               AI Suggests
             </span>
             <span className="text-lg font-black italic">
-              {suggestion.weight} <span className="text-xs font-normal">LBS</span> × {suggestion.reps[0]}-{suggestion.reps[1]} <span className="text-xs font-normal">REPS</span>
+              {suggestion.weight} <span className="text-xs font-normal">{units.toUpperCase()}</span> × {suggestion.reps[0]}-{suggestion.reps[1]} <span className="text-xs font-normal">REPS</span>
             </span>
           </div>
         </div>
