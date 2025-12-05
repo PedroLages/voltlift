@@ -176,7 +176,7 @@ const WorkoutLogger = () => {
     if (confirm("Are you sure you want to discard this workout? All progress will be lost.")) {
       cancelWorkout();
       setShowCompletionModal(false);
-      navigate('/');
+      navigate('/lift');
     }
   };
 

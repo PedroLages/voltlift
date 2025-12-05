@@ -183,15 +183,24 @@ const ProgramBrowser = () => {
               </div>
             </div>
 
-            {/* Enroll Button */}
-            {!isActiveProgram(selectedProgram.id) && (
+            {/* Action Buttons */}
+            <div className="space-y-3">
               <button
-                onClick={() => navigate(`/program-enroll/${selectedProgram.id}`)}
-                className="w-full py-4 bg-primary text-black font-black italic uppercase text-lg tracking-widest hover:bg-white transition-colors"
+                onClick={() => navigate(`/program/${selectedProgram.id}`)}
+                className="w-full py-3 border border-white text-white font-bold uppercase text-sm tracking-widest hover:border-primary hover:text-primary transition-colors"
               >
-                Start {selectedProgram.name}
+                View Full Program
               </button>
-            )}
+
+              {!isActiveProgram(selectedProgram.id) && (
+                <button
+                  onClick={() => navigate(`/program-enroll/${selectedProgram.id}`)}
+                  className="w-full py-4 bg-primary text-black font-black italic uppercase text-lg tracking-widest hover:bg-white transition-colors"
+                >
+                  Start {selectedProgram.name}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

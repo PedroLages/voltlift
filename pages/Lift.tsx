@@ -123,6 +123,41 @@ const Lift = () => {
         </button>
       </div>
 
+      {/* Active Program (Condensed) - Only shows if user has an active program */}
+      {settings.activeProgram && (
+        <section className="mb-10">
+          <div className="flex justify-between items-end mb-4 border-b border-[#222] pb-2">
+            <h2 className="text-xl volt-header text-white">ACTIVE PROGRAM</h2>
+          </div>
+
+          {(() => {
+            const activeProg = programs.find(p => p.id === settings.activeProgram?.programId);
+            if (!activeProg) return null;
+
+            return (
+              <div className="bg-[#0a0a0a] p-5 border-l-4 border-primary bg-[#111] flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-white uppercase italic tracking-wide text-lg">{activeProg.name}</h3>
+                    <p className="text-[10px] text-[#888] font-mono uppercase mt-1">
+                      Week {settings.activeProgram.currentWeek} / Session {settings.activeProgram.currentSessionIndex + 1}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-black uppercase bg-primary text-black px-2 py-1">Active</span>
+                </div>
+
+                <button
+                  onClick={() => navigate(`/program/${activeProg.id}`)}
+                  className="text-xs font-bold uppercase text-white hover:text-primary transition-colors border border-white hover:border-primary px-3 py-2 text-center"
+                >
+                  View Full Program
+                </button>
+              </div>
+            );
+          })()}
+        </section>
+      )}
+
       {/* Protocols List - Moved to top for quick access */}
       <section className="mb-10">
         <div className="flex justify-between items-end mb-4 border-b border-[#222] pb-2">
@@ -181,41 +216,6 @@ const Lift = () => {
             ))}
         </div>
       </section>
-
-      {/* Active Program (Condensed) - Only shows if user has an active program */}
-      {settings.activeProgram && (
-        <section className="mb-10">
-          <div className="flex justify-between items-end mb-4 border-b border-[#222] pb-2">
-            <h2 className="text-xl volt-header text-white">ACTIVE PROGRAM</h2>
-          </div>
-
-          {(() => {
-            const activeProg = programs.find(p => p.id === settings.activeProgram?.programId);
-            if (!activeProg) return null;
-
-            return (
-              <div className="bg-[#0a0a0a] p-5 border-l-4 border-primary bg-[#111] flex flex-col gap-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-white uppercase italic tracking-wide text-lg">{activeProg.name}</h3>
-                    <p className="text-[10px] text-[#888] font-mono uppercase mt-1">
-                      Week {settings.activeProgram.currentWeek} / Session {settings.activeProgram.currentSessionIndex + 1}
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-black uppercase bg-primary text-black px-2 py-1">Active</span>
-                </div>
-
-                <button
-                  onClick={() => navigate(`/program/${activeProg.id}`)}
-                  className="text-xs font-bold uppercase text-white hover:text-primary transition-colors border border-white hover:border-primary px-3 py-2 text-center"
-                >
-                  View Full Program
-                </button>
-              </div>
-            );
-          })()}
-        </section>
-      )}
 
       {/* Program Detail Modal */}
       {selectedProgram && (

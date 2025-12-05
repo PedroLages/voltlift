@@ -4,7 +4,6 @@ import { useStore } from '../store/useStore';
 import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
-import PlateCalculator from '../components/PlateCalculator';
 import NotificationSettings from '../components/NotificationSettings';
 import BodyMetricsLogger from '../components/BodyMetricsLogger';
 import BodyweightChart from '../components/BodyweightChart';
@@ -245,19 +244,19 @@ const Profile = () => {
           </div>
           <div className="p-5 flex justify-between items-center">
             <span className="font-bold uppercase text-sm">Bar Weight</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                inputMode="decimal"
-                min="10"
-                max="100"
-                step="0.5"
-                placeholder={settings.units === 'kg' ? '20' : '45'}
-                value={settings.barWeight || ''}
-                onChange={(e) => updateSettings({ barWeight: parseFloat(e.target.value) || (settings.units === 'kg' ? 20 : 45) })}
-                className="bg-[#222] text-white font-mono text-right px-3 py-1 outline-none text-sm uppercase w-20 focus:border focus:border-primary"
-              />
-              <span className="text-xs text-[#666] font-mono">{settings.units.toUpperCase()}</span>
+            <div className="flex bg-[#222] p-1">
+              <button
+                onClick={() => updateSettings({ barWeight: settings.units === 'kg' ? 20 : 45 })}
+                className={`px-3 py-1 text-xs font-bold uppercase ${settings.barWeight === (settings.units === 'kg' ? 20 : 45) ? 'bg-primary text-black' : 'text-[#666]'}`}
+              >
+                {settings.units === 'kg' ? '20KG' : '45LBS'}
+              </button>
+              <button
+                onClick={() => updateSettings({ barWeight: settings.units === 'kg' ? 15 : 35 })}
+                className={`px-3 py-1 text-xs font-bold uppercase ${settings.barWeight === (settings.units === 'kg' ? 15 : 35) ? 'bg-primary text-black' : 'text-[#666]'}`}
+              >
+                {settings.units === 'kg' ? '15KG' : '35LBS'}
+              </button>
             </div>
           </div>
 
@@ -417,12 +416,6 @@ const Profile = () => {
       {/* Notification Settings Section */}
       <section className="mt-10">
           <NotificationSettings />
-      </section>
-
-      {/* Plate Calculator Section */}
-      <section className="mt-10">
-          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Plate Calculator</h3>
-          <PlateCalculator units={settings.units} />
       </section>
 
       <div className="mt-12 text-center">
