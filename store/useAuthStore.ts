@@ -4,6 +4,7 @@ import { useStore } from './useStore';
 
 interface AuthState {
   isAuthenticated: boolean;
+  isAuthLoading: boolean; // Track Firebase auth initialization
   isLoading: boolean;
   user: { id: string; email: string; name: string; photoURL?: string } | null;
   error: string | null;
@@ -22,6 +23,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: backend.auth.isLoggedIn,
+  isAuthLoading: true, // Start as true, will be set to false once Firebase initializes
   isLoading: false,
   user: backend.auth.user,
   error: null,
@@ -227,6 +229,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 backend.auth.onAuthChange((user) => {
   useAuthStore.setState({
     isAuthenticated: !!user,
+    isAuthLoading: false, // Auth state has been determined
     user,
   });
 });

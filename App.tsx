@@ -128,7 +128,12 @@ const LinkItem = ({ to, icon, label, active }: { to: string, icon: React.ReactNo
 
 // Onboarding guard - only allows authenticated users
 const OnboardingRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isAuthLoading } = useAuthStore();
+
+  // Wait for Firebase to check persisted auth state
+  if (isAuthLoading) {
+    return <PageLoader />;
+  }
 
   // Must be authenticated to access onboarding
   if (!isAuthenticated) {
@@ -141,8 +146,13 @@ const OnboardingRoute = ({ children }: { children: React.ReactNode }) => {
 // Auth guard component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { settings } = useStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isAuthLoading } = useAuthStore();
   const location = useLocation();
+
+  // Wait for Firebase to check persisted auth state
+  if (isAuthLoading) {
+    return <PageLoader />;
+  }
 
   // First check: Must be authenticated
   if (!isAuthenticated) {
