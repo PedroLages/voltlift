@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
 import { EXERCISE_LIBRARY } from '../constants';
-import { Check, Plus, MoreHorizontal, Timer, Sparkles, X, AlertTriangle, RefreshCw, Trash2, StickyNote, Trophy, ArrowRight, Calculator, ChevronDown, Link as LinkIcon, Unlink, Heart } from 'lucide-react';
+import { Check, Plus, MoreHorizontal, Timer, Sparkles, X, AlertTriangle, RefreshCw, Trash2, StickyNote, Trophy, ArrowRight, Calculator, ChevronDown, ChevronUp, Link as LinkIcon, Unlink, Heart, Copy } from 'lucide-react';
 import { getProgressiveOverloadTip } from '../services/geminiService';
 import { sendRestTimerAlert, sendPRCelebration } from '../services/notificationService';
 import { SetType } from '../types';
@@ -11,23 +11,54 @@ import { formatTime } from '../utils/formatters';
 import { calculatePlateLoading, formatWeight } from '../utils/conversions';
 import { AISuggestionBadge, VolumeWarningBadge, RecoveryScore } from '../components/AISuggestionBadge';
 import { checkAllPRs, PRDetection } from '../services/strengthScore';
-import PRCelebration from '../components/PRCelebration';
-import SetTypeSelector from '../components/SetTypeSelector';
-import WorkoutCompletionModal from '../components/WorkoutCompletionModal';
 import SwipeableRow from '../components/SwipeableRow';
+import Toast from '../components/Toast';
+import { Skeleton } from '../components/Skeleton';
+
+// Lazy load heavy components
+const PRCelebration = lazy(() => import('../components/PRCelebration'));
+const SetTypeSelector = lazy(() => import('../components/SetTypeSelector'));
+const WorkoutCompletionModal = lazy(() => import('../components/WorkoutCompletionModal'));
+const AMAPCompletionModal = lazy(() => import('../components/AMAPCompletionModal'));
+const CycleCompletionModal = lazy(() => import('../components/CycleCompletionModal'));
 
 const WorkoutLogger = () => {
-  const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning } = useStore();
+  const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning, undoStack, restoreLastDeleted, clearUndoStack, toggleFavoriteExercise } = useStore();
   const navigate = useNavigate();
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [swapTargetLogId, setSwapTargetLogId] = useState<string | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+  // Phase 5: AMAP Modal State
+  const [amapModalData, setAmapModalData] = useState<{
+    exerciseId: string;
+    exerciseName: string;
+    currentTM: number;
+    amapReps: number;
+    setData: {
+      completedSets: number;
+      totalSets: number;
+      averageRPE?: number;
+      missedReps: number;
+    };
+  } | null>(null);
+
+  // Phase 5: Cycle Completion Modal State
+  const [cycleModalData, setCycleModalData] = useState<{
+    programName: string;
+    cyclesCompleted: number;
+    tmUpdates?: Record<string, { old: number; new: number }>;
+  } | null>(null);
 
   const [aiTip, setAiTip] = useState<{id: string, text: string} | null>(null);
   const [loadingAi, setLoadingAi] = useState<string | null>(null);
 
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [showNotesId, setShowNotesId] = useState<string | null>(null);
+
+  // Set Context Menu State
+  const [activeSetMenu, setActiveSetMenu] = useState<{ exerciseIndex: number; setIndex: number } | null>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Plate Calculator State
   const [calculatorTarget, setCalculatorTarget] = useState<number | null>(null);
@@ -38,11 +69,17 @@ const WorkoutLogger = () => {
   // PR Celebration State (Enhanced Multi-PR Detection)
   const [activePRs, setActivePRs] = useState<{ prs: PRDetection[]; exerciseName: string } | null>(null);
 
+  // Track celebrated PRs in this workout session (to avoid duplicate celebrations)
+  const [celebratedPRs, setCelebratedPRs] = useState<Set<string>>(new Set());
+
   // Live Heart Rate Simulation State
   const [bpm, setBpm] = useState(70);
 
   // Track if notification was sent for current rest timer session
   const [notificationSent, setNotificationSent] = useState(false);
+
+  // Timer Visibility Toggle State
+  const [timerMinimized, setTimerMinimized] = useState(false);
 
   // Audio Oscillator for Beep
   const playTimerSound = () => {
@@ -168,7 +205,50 @@ const WorkoutLogger = () => {
   const handleCompleteWorkout = () => {
     finishWorkout();
     setShowCompletionModal(false);
+
+    // Phase 5: Check if this was a Greg Nuckols program cycle completion
+    // TODO: Add cycle tracking logic here
+
     navigate('/history');
+  };
+
+  // Phase 5: AMAP Modal Handlers
+  const handleAmapConfirm = (newTM: number) => {
+    if (!amapModalData) return;
+
+    // Update Training Max in settings
+    useStore.getState().updateSettings({
+      trainingMaxes: {
+        ...settings.trainingMaxes,
+        [amapModalData.exerciseId]: {
+          exerciseId: amapModalData.exerciseId,
+          value: newTM,
+          lastUpdated: Date.now(),
+          history: [
+            ...(settings.trainingMaxes?.[amapModalData.exerciseId]?.history || []),
+            {
+              value: newTM,
+              date: Date.now(),
+              calculatedFrom: {
+                type: 'AMAP',
+                value: amapModalData.amapReps,
+                reps: amapModalData.amapReps
+              },
+              reason: `AMAP Test: ${amapModalData.amapReps} reps`
+            }
+          ]
+        }
+      }
+    });
+
+    setAmapModalData(null);
+  };
+
+  // Phase 5: Cycle Completion Modal Handlers
+  const handleStartNextCycle = (shouldDeload: boolean) => {
+    // TODO: Implement cycle progression logic
+    // For now, just close the modal
+    setCycleModalData(null);
   };
 
   const handleSaveDraft = () => {
@@ -200,24 +280,41 @@ const WorkoutLogger = () => {
               const detectedPRs = checkAllPRs(currentSet, prHistory);
 
               if (detectedPRs.length > 0) {
-                  const exerciseName = EXERCISE_LIBRARY.find(e => e.id === exerciseId)?.name || 'Exercise';
-                  setActivePRs({ prs: detectedPRs, exerciseName });
+                  // Filter out PRs that have already been celebrated in this workout session
+                  const newPRs = detectedPRs.filter(pr => {
+                      const prKey = `${exerciseId}-${pr.type}-${pr.newValue}`;
+                      return !celebratedPRs.has(prKey);
+                  });
 
-                  // Send PR celebration notification
-                  if (settings.notifications?.enabled && settings.notifications?.prCelebrations) {
-                      // Send notification for the most significant PR
-                      const primaryPR = detectedPRs[0];
-                      const achievement = primaryPR.type === 'weight'
-                          ? `${primaryPR.newValue}${settings.units} x ${reps}`
-                          : primaryPR.type === 'reps'
-                          ? `${reps} reps @ ${weight}${settings.units}`
-                          : `${primaryPR.newValue}${settings.units} volume`;
+                  // Only show celebration if there are truly new PRs
+                  if (newPRs.length > 0) {
+                      const exerciseName = EXERCISE_LIBRARY.find(e => e.id === exerciseId)?.name || 'Exercise';
+                      setActivePRs({ prs: newPRs, exerciseName });
 
-                      sendPRCelebration(
-                          detectedPRs.length > 1 ? `${detectedPRs.length} PRs` : primaryPR.type,
-                          exerciseName,
-                          achievement
-                      );
+                      // Mark these PRs as celebrated
+                      const updatedCelebratedPRs = new Set(celebratedPRs);
+                      newPRs.forEach(pr => {
+                          const prKey = `${exerciseId}-${pr.type}-${pr.newValue}`;
+                          updatedCelebratedPRs.add(prKey);
+                      });
+                      setCelebratedPRs(updatedCelebratedPRs);
+
+                      // Send PR celebration notification
+                      if (settings.notifications?.enabled && settings.notifications?.prCelebrations) {
+                          // Send notification for the most significant PR
+                          const primaryPR = newPRs[0];
+                          const achievement = primaryPR.type === 'weight'
+                              ? `${primaryPR.newValue}${settings.units} x ${reps}`
+                              : primaryPR.type === 'reps'
+                              ? `${reps} reps @ ${weight}${settings.units}`
+                              : `${primaryPR.newValue}${settings.units} volume`;
+
+                          sendPRCelebration(
+                              newPRs.length > 1 ? `${newPRs.length} PRs` : primaryPR.type,
+                              exerciseName,
+                              achievement
+                          );
+                      }
                   }
               }
           }
@@ -273,26 +370,65 @@ const WorkoutLogger = () => {
       setActiveMenuId(null);
   };
 
-  // Plate Calc Logic using unit-aware conversion utility
-  const getPlates = (target: number) => {
+  // Long-press handlers for set context menu
+  const handleLongPressStart = (exerciseIndex: number, setIndex: number) => {
+      longPressTimer.current = setTimeout(() => {
+          setActiveSetMenu({ exerciseIndex, setIndex });
+          if (navigator.vibrate) navigator.vibrate(50);
+      }, 500); // 500ms long press
+  };
+
+  const handleLongPressEnd = () => {
+      if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+      }
+  };
+
+  // Plate Calc Logic using unit-aware conversion utility (Memoized)
+  const getPlates = useCallback((target: number) => {
       const bar = settings.barWeight || (settings.units === 'kg' ? 20 : 45);
       const customPlates = settings.availablePlates?.[settings.units];
       return calculatePlateLoading(target, bar, settings.units, customPlates);
-  };
+  }, [settings.barWeight, settings.units, settings.availablePlates]);
 
-  // Rest Timer Progress Percentage
-  const timerProgress = Math.min(100, Math.max(0, (timeLeft / restDuration) * 100));
+  // Rest Timer Progress Percentage (Memoized)
+  const timerProgress = useMemo(() =>
+    Math.min(100, Math.max(0, (timeLeft / restDuration) * 100)),
+    [timeLeft, restDuration]
+  );
+
+  // Memoize volume warnings and suggestions per exercise (expensive calculations)
+  const exerciseData = useMemo(() => {
+    if (!activeWorkout) return {};
+
+    const data: Record<string, {
+      volumeWarning: ReturnType<typeof getVolumeWarning>;
+      suggestion: ReturnType<typeof getProgressiveSuggestion>;
+    }> = {};
+
+    activeWorkout.logs.forEach(log => {
+      data[log.exerciseId] = {
+        volumeWarning: getVolumeWarning(log.exerciseId),
+        suggestion: getProgressiveSuggestion(log.exerciseId)
+      };
+    });
+
+    return data;
+  }, [activeWorkout?.logs, getVolumeWarning, getProgressiveSuggestion]);
 
   return (
     <div className="pb-32 bg-background min-h-screen" onClick={() => setActiveMenuId(null)}>
       {/* Enhanced PR Celebration (Multi-PR Detection + Confetti + Haptic) */}
       {activePRs && (
-          <PRCelebration
-              prs={activePRs.prs}
-              exerciseName={activePRs.exerciseName}
-              onClose={() => setActivePRs(null)}
-              autoCloseDuration={5000}
-          />
+          <Suspense fallback={<div />}>
+            <PRCelebration
+                prs={activePRs.prs}
+                exerciseName={activePRs.exerciseName}
+                onClose={() => setActivePRs(null)}
+                autoCloseDuration={5000}
+            />
+          </Suspense>
       )}
       
       {/* Plate Calculator Modal */}
@@ -304,7 +440,7 @@ const WorkoutLogger = () => {
                   
                   <div className="flex justify-between items-end border-b border-[#333] pb-4 mb-6">
                       <span className="text-[#888] font-mono text-sm uppercase">TARGET</span>
-                      <span className="text-4xl font-black italic text-primary">{calculatorTarget} <span className="text-lg text-white">{settings.units.toUpperCase()}</span></span>
+                      <span className="text-4xl font-black italic text-primary">{calculatorTarget} <span className="text-lg text-white">{(settings.units || 'lbs').toUpperCase()}</span></span>
                   </div>
                   
                   <div className="flex justify-center items-center gap-2 mb-8 flex-wrap">
@@ -325,7 +461,7 @@ const WorkoutLogger = () => {
                   </div>
                   
                   <div className="text-center text-[#666] font-mono text-[10px] uppercase">
-                      Based on {settings.barWeight}{settings.units.toUpperCase()} Bar • Per Side Shown
+                      Based on {settings.barWeight}{(settings.units || 'lbs').toUpperCase()} Bar • Per Side Shown
                   </div>
               </div>
           </div>
@@ -335,52 +471,71 @@ const WorkoutLogger = () => {
       {restTimerStart !== null && (
           <div className={`fixed bottom-24 left-4 right-4 bg-[#0a0a0a] border ${timeLeft === 0 ? 'border-primary animate-pulse' : 'border-[#333]'} p-0 z-40 shadow-2xl overflow-hidden animate-slide-up rounded-lg`}>
               {/* Progress Bar Background */}
-              <div 
-                className="absolute top-0 left-0 bottom-0 bg-[#222] transition-all duration-500 ease-linear z-0" 
+              <div
+                className="absolute top-0 left-0 bottom-0 bg-[#222] transition-all duration-500 ease-linear z-0"
                 style={{ width: `${timerProgress}%` }}
               />
-              
-              <div className="relative z-10 p-4 flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                      <div className={`w-3 h-3 rounded-full ${timeLeft === 0 ? 'bg-primary' : 'bg-[#ccff00] animate-pulse'}`}></div>
-                      <div>
-                          <span className="text-[10px] font-bold text-[#888] uppercase tracking-widest block mb-0.5">Recovery Mode</span>
-                          <span className={`text-3xl font-black italic font-mono leading-none ${timeLeft === 0 ? 'text-primary' : 'text-white'}`}>
+
+              {timerMinimized ? (
+                  // Minimized View - Compact Bar
+                  <button
+                    onClick={() => setTimerMinimized(false)}
+                    className="relative z-10 w-full p-2 flex items-center justify-between hover:bg-[#111] transition-colors"
+                  >
+                      <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${timeLeft === 0 ? 'bg-primary' : 'bg-[#ccff00] animate-pulse'}`}></div>
+                          <span className={`text-sm font-black italic font-mono ${timeLeft === 0 ? 'text-primary' : 'text-white'}`}>
                               {timeLeft === 0 ? "GO!" : formatTime(timeLeft)}
                           </span>
                       </div>
+                      <ChevronUp size={16} className="text-[#666]" />
+                  </button>
+              ) : (
+                  // Expanded View - Full Timer
+                  <div className="relative z-10 p-4 flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                          <div className={`w-3 h-3 rounded-full ${timeLeft === 0 ? 'bg-primary' : 'bg-[#ccff00] animate-pulse'}`}></div>
+                          <div>
+                              <span className="text-[10px] font-bold text-[#888] uppercase tracking-widest block mb-0.5">Recovery Mode</span>
+                              <span className={`text-3xl font-black italic font-mono leading-none ${timeLeft === 0 ? 'text-primary' : 'text-white'}`}>
+                                  {timeLeft === 0 ? "GO!" : formatTime(timeLeft)}
+                              </span>
+                          </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                           <button
+                            onClick={() => setTimerMinimized(true)}
+                            className="w-10 h-10 bg-black border border-[#333] text-[#666] hover:text-white hover:border-white flex items-center justify-center rounded transition-colors"
+                            aria-label="Minimize timer"
+                           >
+                               <ChevronDown size={16} />
+                           </button>
+                           <button
+                            onClick={() => {
+                                startRestTimer(restDuration + 30);
+                            }}
+                            className="w-10 h-10 bg-black border border-[#333] text-white hover:text-primary hover:border-primary flex items-center justify-center rounded transition-colors"
+                            aria-label="Add 30 seconds"
+                           >
+                               <span className="text-[10px] font-bold">+30</span>
+                           </button>
+                           <button
+                            onClick={() => stopRestTimer()}
+                            className="w-10 h-10 bg-black border border-[#333] text-[#666] hover:text-white hover:border-white flex items-center justify-center rounded transition-colors"
+                            aria-label="Skip rest timer"
+                           >
+                               <ArrowRight size={16} />
+                           </button>
+                      </div>
                   </div>
-                  
-                  <div className="flex gap-2">
-                       <button 
-                        onClick={() => {
-                            startRestTimer(restDuration + 30);
-                        }} 
-                        className="w-10 h-10 bg-black border border-[#333] text-white hover:text-primary hover:border-primary flex items-center justify-center rounded transition-colors"
-                       >
-                           <span className="text-[10px] font-bold">+30</span>
-                       </button>
-                       <button 
-                        onClick={() => stopRestTimer()} 
-                        className="w-10 h-10 bg-black border border-[#333] text-[#666] hover:text-white hover:border-white flex items-center justify-center rounded transition-colors"
-                       >
-                           <ArrowRight size={16} />
-                       </button>
-                  </div>
-              </div>
+              )}
           </div>
       )}
 
       {/* Top Bar */}
       <div className="sticky top-0 z-40 bg-black/95 border-b border-[#333] p-4 flex justify-between items-center safe-area-top" role="banner">
         <div className="flex items-center gap-4">
-            <button
-              onClick={(e) => { e.stopPropagation(); if(confirm("ABORT SESSION?")) { cancelWorkout(); navigate('/lift'); } }}
-              aria-label="Abort workout session"
-              className="text-[#666] text-xs font-bold uppercase tracking-wider hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-            Abort
-            </button>
             {/* Live HR Monitor */}
             <div className="flex items-center gap-2 bg-[#111] px-2 py-1 rounded border border-[#222]" role="status" aria-live="polite" aria-label={`Heart rate: ${bpm} beats per minute`}>
                 <Heart size={12} className="text-red-500 animate-pulse" fill="currentColor" aria-hidden="true" />
@@ -486,11 +641,10 @@ const WorkoutLogger = () => {
                             </div>
                         )}
                         <h3 className="volt-header text-xl text-white">{exerciseDef?.name || 'Unknown Exercise'}</h3>
-                        {/* Volume Warning Badge */}
-                        {(() => {
-                            const volumeWarning = getVolumeWarning(log.exerciseId);
-                            return volumeWarning && <VolumeWarningBadge warning={volumeWarning} />;
-                        })()}
+                        {/* Volume Warning Badge (Memoized) */}
+                        {exerciseData[log.exerciseId]?.volumeWarning && (
+                            <VolumeWarningBadge warning={exerciseData[log.exerciseId].volumeWarning} />
+                        )}
                     </div>
                     {prevBestSet && (
                         <p className="text-[10px] text-[#666] font-mono mt-1 uppercase">
@@ -556,11 +710,10 @@ const WorkoutLogger = () => {
                 </div>
               </div>
 
-              {/* AI Progressive Overload Suggestion */}
+              {/* AI Progressive Overload Suggestion (Memoized) */}
               <div className="px-4 pt-3">
-                 {(() => {
-                   const suggestion = getProgressiveSuggestion(log.exerciseId);
-                   if (!suggestion) return null;
+                 {exerciseData[log.exerciseId]?.suggestion && (() => {
+                   const suggestion = exerciseData[log.exerciseId].suggestion;
 
                    const handleApplySuggestion = () => {
                      // Find first uncompleted set
@@ -591,14 +744,18 @@ const WorkoutLogger = () => {
                      <Sparkles size={14} className="shrink-0 mt-0.5" />
                      {aiTip.text}
                    </div>
+                 ) : loadingAi === log.exerciseId ? (
+                   <div className="text-xs text-primary bg-primary/5 p-3 border border-primary/20 flex gap-2 items-center font-mono">
+                     <Sparkles size={14} className="shrink-0 animate-spin" />
+                     <span className="animate-pulse">Analyzing workout data...</span>
+                   </div>
                  ) : (
                    <button
-                    disabled={loadingAi === log.exerciseId}
                     onClick={(e) => { e.stopPropagation(); handleGetAiTip(log.exerciseId); }}
-                    className="text-[10px] font-bold uppercase tracking-widest text-[#666] flex items-center gap-1 hover:text-primary transition-colors disabled:opacity-50"
+                    className="text-[10px] font-bold uppercase tracking-widest text-[#666] flex items-center gap-1 hover:text-primary transition-colors"
                    >
                      <Sparkles size={10} />
-                     {loadingAi === log.exerciseId ? 'ANALYZING...' : 'GEMINI COACH (BETA)'}
+                     GEMINI COACH (BETA)
                    </button>
                  )}
               </div>
@@ -618,7 +775,7 @@ const WorkoutLogger = () => {
               {/* Sets Header */}
               <div className="grid grid-cols-12 gap-2 p-3 text-[10px] font-bold text-[#666] uppercase tracking-widest text-center mt-2">
                 <div className="col-span-1">TAG</div>
-                <div className="col-span-3">{settings.units.toUpperCase()}</div>
+                <div className="col-span-3">{(settings.units || 'lbs').toUpperCase()}</div>
                 <div className="col-span-3">REPS</div>
                 <div className="col-span-2">RPE</div>
                 <div className="col-span-3">DONE</div>
@@ -636,28 +793,63 @@ const WorkoutLogger = () => {
                     onDuplicate={() => duplicateSet(exerciseIndex, setIndex)}
                     disabled={set.completed}
                   >
-                  <div className={`grid grid-cols-12 gap-2 items-start ${set.completed ? 'opacity-40 grayscale' : ''}`}>
+                  <div
+                    className={`grid grid-cols-12 gap-2 items-start relative ${set.completed ? 'opacity-40 grayscale' : ''}`}
+                    onTouchStart={() => handleLongPressStart(exerciseIndex, setIndex)}
+                    onTouchEnd={handleLongPressEnd}
+                    onTouchCancel={handleLongPressEnd}
+                    onMouseDown={() => handleLongPressStart(exerciseIndex, setIndex)}
+                    onMouseUp={handleLongPressEnd}
+                    onMouseLeave={handleLongPressEnd}
+                  >
                     {/* Set Type Selector */}
                     <div className="col-span-1 flex justify-center pt-2">
-                      <SetTypeSelector
-                        value={set.type}
-                        onChange={(newType) => handleSetTypeChange(exerciseIndex, setIndex, newType)}
-                        compact={true}
-                        disabled={set.completed}
-                      />
+                      <Suspense fallback={<Skeleton variant="circle" width={24} height={24} />}>
+                        <SetTypeSelector
+                          value={set.type}
+                          onChange={(newType) => handleSetTypeChange(exerciseIndex, setIndex, newType)}
+                          compact={true}
+                          disabled={set.completed}
+                        />
+                      </Suspense>
                     </div>
                     
                     {/* Weight Input */}
                     <div className="col-span-3 relative">
                       <input
+                        ref={(el) => {
+                          // Auto-focus first uncompleted set's weight input
+                          if (el && !set.completed && !set.weight && setIndex === log.sets.findIndex(s => !s.completed)) {
+                            setTimeout(() => el.focus(), 100);
+                          }
+                        }}
                         type="number"
                         value={set.weight || ''}
-                        onChange={(e) => updateSet(exerciseIndex, setIndex, { weight: parseFloat(e.target.value) })}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value);
+                          // Prevent negative weights
+                          if (!isNaN(value) && value >= 0) {
+                            updateSet(exerciseIndex, setIndex, { weight: value });
+                          } else if (e.target.value === '') {
+                            updateSet(exerciseIndex, setIndex, { weight: 0 });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          // Enter key: move to reps input
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const repsInput = e.currentTarget.parentElement?.nextElementSibling?.querySelector('input');
+                            if (repsInput) (repsInput as HTMLInputElement).focus();
+                          }
+                        }}
                         placeholder={previousSet ? `${previousSet.weight}` : "0"}
                         aria-label={`Weight for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
                         inputMode="decimal"
+                        min="0"
+                        step="0.5"
                         className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
                         onClick={(e) => e.stopPropagation()}
+                        disabled={set.completed}
                       />
                       {/* Calculator Button */}
                       {set.weight > 0 && !set.completed && (
@@ -680,12 +872,32 @@ const WorkoutLogger = () => {
                       <input
                         type="number"
                         value={set.reps || ''}
-                        onChange={(e) => updateSet(exerciseIndex, setIndex, { reps: parseFloat(e.target.value) })}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value);
+                          // Prevent negative reps and enforce minimum of 1
+                          if (!isNaN(value) && value >= 0) {
+                            updateSet(exerciseIndex, setIndex, { reps: value });
+                          } else if (e.target.value === '') {
+                            updateSet(exerciseIndex, setIndex, { reps: 0 });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          // Enter key: complete the set (if weight and reps are valid)
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (set.weight > 0 && set.reps > 0 && !set.completed) {
+                              handleSetComplete(exerciseIndex, setIndex, true, set.weight, set.reps, log.exerciseId);
+                            }
+                          }
+                        }}
                         placeholder={previousSet ? `${previousSet.reps}` : "0"}
                         aria-label={`Repetitions for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
                         inputMode="numeric"
+                        min="1"
+                        step="1"
                         className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
                         onClick={(e) => e.stopPropagation()}
+                        disabled={set.completed}
                       />
                        {previousSet && !set.reps && (
                           <div className="text-[9px] text-[#444] text-center mt-1 font-mono">{previousSet.reps}</div>
@@ -708,18 +920,80 @@ const WorkoutLogger = () => {
                         </select>
                     </div>
 
-                    {/* Completion Check */}
-                    <div className="col-span-3 flex justify-center">
-                       <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleSetComplete(exerciseIndex, setIndex, !set.completed, set.weight, set.reps, log.exerciseId);
-                        }}
-                        className={`w-full h-10 flex items-center justify-center transition-all ${set.completed ? 'bg-primary text-black' : 'bg-[#222] text-[#444] hover:bg-[#333]'}`}
-                       >
-                         <Check size={20} strokeWidth={3} />
-                       </button>
+                    {/* Completion Check / Duplicate Button */}
+                    <div className="col-span-3 flex justify-center gap-1">
+                       {!set.completed ? (
+                         <button
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              handleSetComplete(exerciseIndex, setIndex, true, set.weight, set.reps, log.exerciseId);
+                          }}
+                          className="w-full h-10 flex items-center justify-center transition-all bg-[#222] text-[#444] hover:bg-[#333]"
+                         >
+                           <Check size={20} strokeWidth={3} />
+                         </button>
+                       ) : (
+                         <>
+                           <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                duplicateSet(exerciseIndex, setIndex);
+                            }}
+                            className="flex-1 h-10 flex items-center justify-center transition-all bg-primary/20 text-primary hover:bg-primary hover:text-black border border-primary/30"
+                            aria-label="Duplicate this set"
+                           >
+                             <Copy size={16} strokeWidth={2.5} />
+                           </button>
+                           <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetComplete(exerciseIndex, setIndex, false, set.weight, set.reps, log.exerciseId);
+                            }}
+                            className="w-10 h-10 flex items-center justify-center transition-all bg-primary text-black hover:bg-white"
+                            aria-label="Mark as incomplete"
+                           >
+                             <Check size={16} strokeWidth={3} />
+                           </button>
+                         </>
+                       )}
                     </div>
+
+                    {/* Long-Press Context Menu */}
+                    {activeSetMenu?.exerciseIndex === exerciseIndex && activeSetMenu?.setIndex === setIndex && (
+                      <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-[#111] border border-primary shadow-2xl min-w-[200px] flex flex-col">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              duplicateSet(exerciseIndex, setIndex);
+                              setActiveSetMenu(null);
+                            }}
+                            className="px-4 py-3 text-left text-sm font-bold uppercase tracking-wider text-white hover:bg-[#222] flex items-center gap-2 border-b border-[#333]"
+                          >
+                            <Copy size={16} className="text-primary" /> Duplicate Set
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeSet(exerciseIndex, setIndex);
+                              setActiveSetMenu(null);
+                            }}
+                            className="px-4 py-3 text-left text-sm font-bold uppercase tracking-wider text-red-500 hover:bg-[#1a0000] flex items-center gap-2"
+                          >
+                            <Trash2 size={16} /> Delete Set
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveSetMenu(null);
+                            }}
+                            className="px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-[#666] hover:bg-[#222] border-t border-[#333]"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   </SwipeableRow>
                 )})}
@@ -756,31 +1030,71 @@ const WorkoutLogger = () => {
               <button onClick={() => setShowExerciseSelector(false)} className="text-white"><X size={24} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
-              {EXERCISE_LIBRARY.map(ex => (
-                <button
-                  key={ex.id}
-                  onClick={() => {
-                    if (swapTargetLogId) {
-                        swapExercise(swapTargetLogId, ex.id);
-                    } else {
-                        addExerciseToActive(ex.id);
-                    }
-                    setShowExerciseSelector(false);
-                    setSwapTargetLogId(null);
-                  }}
-                  className="w-full text-left p-4 hover:bg-[#222] flex justify-between items-center group border-b border-[#222]"
-                >
-                  <div>
-                    <h4 className="font-bold text-white uppercase italic group-hover:text-primary transition-colors">{ex.name}</h4>
-                    <span className="text-[10px] text-[#666] font-mono">{ex.muscleGroup} // {ex.equipment}</span>
-                  </div>
-                  {swapTargetLogId ? (
-                      <RefreshCw size={18} className="text-[#444] group-hover:text-primary" />
-                  ) : (
-                      <Plus size={18} className="text-[#444] group-hover:text-primary" />
-                  )}
-                </button>
-              ))}
+              {[...EXERCISE_LIBRARY]
+                .sort((a, b) => {
+                  const aFav = settings.favoriteExercises?.includes(a.id) ?? false;
+                  const bFav = settings.favoriteExercises?.includes(b.id) ?? false;
+                  if (aFav && !bFav) return -1;
+                  if (!aFav && bFav) return 1;
+                  return 0;
+                })
+                .map(ex => {
+                  const isFavorite = settings.favoriteExercises?.includes(ex.id) ?? false;
+                  return (
+                    <div
+                      key={ex.id}
+                      className="flex items-center gap-2 border-b border-[#222] hover:bg-[#222] group"
+                    >
+                      {/* Star Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavoriteExercise(ex.id);
+                        }}
+                        className="p-4 hover:bg-[#333] transition-colors"
+                        aria-label={isFavorite ? 'Unfavorite' : 'Favorite'}
+                      >
+                        <Heart
+                          size={18}
+                          className={isFavorite ? 'text-primary fill-primary' : 'text-[#444] group-hover:text-[#666]'}
+                        />
+                      </button>
+
+                      {/* Exercise Info */}
+                      <button
+                        onClick={() => {
+                          if (swapTargetLogId) {
+                            swapExercise(swapTargetLogId, ex.id);
+                          } else {
+                            addExerciseToActive(ex.id);
+                          }
+                          setShowExerciseSelector(false);
+                          setSwapTargetLogId(null);
+                        }}
+                        className="flex-1 text-left py-4 pr-4 flex justify-between items-center"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-white uppercase italic group-hover:text-primary transition-colors">
+                              {ex.name}
+                            </h4>
+                            {isFavorite && (
+                              <span className="text-[9px] text-primary font-mono uppercase tracking-wider">
+                                FAVORITE
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-[#666] font-mono">{ex.muscleGroup} // {ex.equipment}</span>
+                        </div>
+                        {swapTargetLogId ? (
+                          <RefreshCw size={18} className="text-[#444] group-hover:text-primary" />
+                        ) : (
+                          <Plus size={18} className="text-[#444] group-hover:text-primary" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
@@ -788,11 +1102,58 @@ const WorkoutLogger = () => {
 
       {/* Workout Completion Modal */}
       {showCompletionModal && (
-        <WorkoutCompletionModal
-          onFinish={handleCompleteWorkout}
-          onSaveDraft={handleSaveDraft}
-          onCancel={handleDiscardWorkout}
-          onDismiss={() => setShowCompletionModal(false)}
+        <Suspense fallback={<div />}>
+          <WorkoutCompletionModal
+            onFinish={handleCompleteWorkout}
+            onSaveDraft={handleSaveDraft}
+            onCancel={handleDiscardWorkout}
+            onDismiss={() => setShowCompletionModal(false)}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 5: AMAP Completion Modal */}
+      {amapModalData && (
+        <Suspense fallback={<div />}>
+          <AMAPCompletionModal
+            isOpen={true}
+            onClose={() => setAmapModalData(null)}
+            onConfirm={handleAmapConfirm}
+            exerciseId={amapModalData.exerciseId}
+            exerciseName={amapModalData.exerciseName}
+            currentTM={amapModalData.currentTM}
+            amapReps={amapModalData.amapReps}
+            setData={amapModalData.setData}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 5: Cycle Completion Modal */}
+      {cycleModalData && (
+        <Suspense fallback={<div />}>
+          <CycleCompletionModal
+            isOpen={true}
+            onClose={() => setCycleModalData(null)}
+            onStartNextCycle={handleStartNextCycle}
+            cyclesCompleted={cycleModalData.cyclesCompleted}
+            programName={cycleModalData.programName}
+            recentSessions={history.slice(0, 12)}
+            tmUpdates={cycleModalData.tmUpdates}
+          />
+        </Suspense>
+      )}
+
+      {/* Undo Toast */}
+      {undoStack && (
+        <Toast
+          message={undoStack.type === 'set' ? 'Set deleted' : 'Exercise removed'}
+          action={{
+            label: 'UNDO',
+            onClick: restoreLastDeleted,
+          }}
+          onClose={clearUndoStack}
+          type="warning"
+          duration={5000}
         />
       )}
     </div>

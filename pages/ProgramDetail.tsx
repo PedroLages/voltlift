@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { EXERCISE_LIBRARY } from '../constants';
+import { getProgramMethodology } from '../utils/programMethodologies';
 import {
   ArrowLeft,
   Calendar,
@@ -13,7 +14,9 @@ import {
   ChevronUp,
   Play,
   Dumbbell,
-  ExternalLink
+  ExternalLink,
+  AlertCircle,
+  Info
 } from 'lucide-react';
 
 const ProgramDetail = () => {
@@ -25,6 +28,8 @@ const ProgramDetail = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'workouts'>('workouts');
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [acknowledged, setAcknowledged] = useState(false);
 
   // Find the program
   const program = useMemo(() => {
@@ -93,10 +98,33 @@ const ProgramDetail = () => {
 
   // Handle join program
   const handleJoinProgram = () => {
-    if (program) {
-      activateProgram(program.id);
-      navigate('/');
+    if (!acknowledged) {
+      alert('Please acknowledge the commitment to this program');
+      return;
     }
+
+    if (program) {
+      // Activate the program
+      activateProgram(program.id);
+
+      // Auto-start the first session
+      const firstSession = program.sessions.find(s => s.week === 1 && s.day === 1);
+      if (firstSession) {
+        startWorkout(firstSession.templateId);
+        navigate('/workout');
+      } else {
+        navigate('/');
+      }
+    }
+  };
+
+  // Calculate estimated completion date
+  const getCompletionDate = () => {
+    if (!program) return '';
+    const start = new Date(startDate);
+    const endDate = new Date(start);
+    endDate.setDate(endDate.getDate() + (program.weeks * 7));
+    return endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
   // Handle start workout
@@ -133,6 +161,9 @@ const ProgramDetail = () => {
   const sessionsPerWeek = getSessionsPerWeek(program);
   const difficulty = getDifficulty(program);
 
+  // Get program-specific methodology
+  const methodology = getProgramMethodology(program.id);
+
   // Get sessions grouped by week
   const sessionsByWeek = useMemo(() => {
     const grouped: Record<number, typeof program.sessions> = {};
@@ -143,7 +174,7 @@ const ProgramDetail = () => {
   }, [program]);
 
   return (
-    <div className="min-h-screen bg-black font-sans text-white pb-24">
+    <div className="min-h-screen bg-black font-sans text-white pb-40">
       {/* Header */}
       <div className="sticky top-0 bg-black z-20 border-b border-[#222]">
         <div className="flex items-center justify-between p-4">
@@ -270,24 +301,119 @@ const ProgramDetail = () => {
               </div>
             </div>
 
-            {/* What to Expect */}
-            <div className="bg-[#111] border border-[#222] p-5 rounded">
-              <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-3">What to Expect</h3>
-              <ul className="space-y-2 text-sm text-[#aaa]">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>Consistent progression over {program.weeks} weeks</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>{sessionsPerWeek} training days per week with adequate recovery</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>Structured volume and intensity management</span>
-                </li>
-              </ul>
+            {/* Program Methodology & Philosophy */}
+            <div className="bg-[#111] border-l-4 border-primary p-5 rounded">
+              <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4 italic">Training Philosophy</h3>
+
+              <div className="space-y-4">
+                {/* Philosophy */}
+                <div>
+                  <h4 className="text-xs font-bold text-[#888] uppercase tracking-wider mb-2">Approach</h4>
+                  <p className="text-sm text-[#ccc] font-mono leading-relaxed">
+                    {methodology.approach}
+                  </p>
+                </div>
+
+                {/* Goals */}
+                <div>
+                  <h4 className="text-xs font-bold text-[#888] uppercase tracking-wider mb-2">Primary Goals</h4>
+                  <ul className="text-sm text-[#ccc] space-y-1.5 font-mono leading-relaxed">
+                    {methodology.goals.map((goal, idx) => (
+                      <li key={idx}>• {goal}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Key Instructions */}
+                <div>
+                  <h4 className="text-xs font-bold text-[#888] uppercase tracking-wider mb-2">Execution Guidelines</h4>
+                  <ul className="text-sm text-[#ccc] space-y-1.5 font-mono leading-relaxed">
+                    {methodology.guidelines.map((guideline, idx) => (
+                      <li key={idx}>• {guideline}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Training Principles */}
+                <div>
+                  <h4 className="text-xs font-bold text-[#888] uppercase tracking-wider mb-2">Core Principles</h4>
+                  <ul className="text-sm text-[#ccc] space-y-1.5 font-mono leading-relaxed">
+                    {methodology.principles.map((principle, idx) => (
+                      <li key={idx}>• <span className="text-primary font-bold">{principle.name}:</span> {principle.description}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </div>
+
+            {/* Enrollment Section - Only show if not already enrolled */}
+            {!isActiveProgram && (
+              <>
+                {/* Start Date Configuration */}
+                <div>
+                  <label className="text-xs font-bold text-[#666] uppercase tracking-widest mb-3 block">Start Date</label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full bg-[#111] border-2 border-[#222] p-4 text-white font-mono focus:border-primary outline-none"
+                    />
+                    <Calendar size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#444] pointer-events-none" />
+                  </div>
+                  <p className="text-[10px] text-[#444] font-mono mt-2">
+                    Estimated completion: {getCompletionDate()}
+                  </p>
+                </div>
+
+                {/* What Happens Next */}
+                <div className="bg-[#111] border-l-4 border-primary p-5">
+                  <div className="flex items-start gap-3 mb-3">
+                    <Info size={18} className="text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-xs font-bold text-primary uppercase tracking-widest mb-2">What Happens Next</h3>
+                      <ol className="text-sm text-[#ccc] space-y-2 font-mono leading-relaxed list-decimal list-inside">
+                        <li>Your first workout starts immediately after enrollment</li>
+                        <li>Follow the program schedule in the order provided</li>
+                        <li>Track all sets and reps for progression tracking</li>
+                        <li>Access your active program from the dashboard</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Important Notes */}
+                <div className="bg-[#111] border-l-4 border-yellow-500 p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle size={20} className="text-yellow-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-2">Important Commitment</h3>
+                      <ul className="text-sm text-[#aaa] space-y-2 font-mono leading-relaxed">
+                        <li>• This program requires {program.frequency} sessions per week for {program.weeks} weeks</li>
+                        <li>• Consistency is critical - follow the prescribed order and rest days</li>
+                        <li>• Your first workout begins immediately after clicking "Start Program"</li>
+                        <li>• You can pause or deactivate the program anytime from your profile</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Acknowledgement Checkbox */}
+                <div>
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={acknowledged}
+                      onChange={(e) => setAcknowledged(e.target.checked)}
+                      className="w-5 h-5 mt-0.5 accent-primary cursor-pointer"
+                    />
+                    <span className="text-sm text-[#aaa] font-mono leading-relaxed group-hover:text-white transition-colors">
+                      I understand this program requires {program.frequency} training sessions per week for {program.weeks} weeks. I commit to following the program as designed and tracking my progress accurately. I understand my first workout will start immediately upon enrollment.
+                    </span>
+                  </label>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           /* Workouts Tab */
@@ -302,11 +428,11 @@ const ProgramDetail = () => {
                 return (
                   <div key={weekNum}>
                     {/* Week Header */}
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-xl font-bold text-white">Week {weekNum}</h2>
+                    <div className="flex items-center justify-between mb-3 border-l-4 border-primary pl-3 bg-[#0a0a0a] py-2 pr-3">
+                      <h2 className="text-lg font-black text-primary uppercase tracking-wider italic">Week {weekNum}</h2>
                       <button
                         onClick={() => expandAllInWeek(weekNum)}
-                        className="text-xs text-primary font-medium hover:text-white transition-colors"
+                        className="text-xs text-primary font-bold uppercase tracking-wider hover:text-white transition-colors"
                       >
                         {weekSessions.every(s => expandedDays.has(`${s.week}-${s.day}`)) ? 'Collapse All' : 'Expand All'}
                       </button>
@@ -330,9 +456,14 @@ const ProgramDetail = () => {
                               onClick={() => toggleDay(dayKey)}
                               className="w-full px-4 py-4 flex items-center justify-between hover:bg-[#1a1a1a] transition-colors"
                             >
-                              <div>
-                                <h3 className="text-base font-bold text-white text-left">Day {idx + 1}</h3>
-                                <p className="text-xs text-[#666] mt-0.5">{exerciseCount} exercises</p>
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1a1a1a] to-black border-2 border-[#333] flex items-center justify-center shadow-lg flex-shrink-0">
+                                  <span className="text-primary font-black text-base">{idx + 1}</span>
+                                </div>
+                                <div className="text-left">
+                                  <h3 className="text-sm font-bold text-white uppercase">{template?.name || `Day ${idx + 1}`}</h3>
+                                  <p className="text-[10px] text-[#666] font-mono mt-0.5">{exerciseCount} exercises</p>
+                                </div>
                               </div>
                               {isExpanded ? (
                                 <ChevronUp size={20} className="text-[#666]" />
@@ -394,19 +525,28 @@ const ProgramDetail = () => {
         )}
       </div>
 
-      {/* Sticky Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-[#222]">
+      {/* Sticky Bottom Button - Positioned above bottom nav */}
+      <div
+        className="fixed left-0 right-0 px-4 pt-3 pb-2 bg-black border-t border-[#222] z-[60]"
+        style={{ bottom: 'max(110px, calc(94px + env(safe-area-inset-bottom)))' }}
+      >
         {!isActiveProgram ? (
           <button
             onClick={handleJoinProgram}
-            className="w-full py-4 bg-[#6366f1] text-white font-bold rounded-lg text-base tracking-wide hover:bg-[#5558e3] transition-colors"
+            disabled={!acknowledged}
+            className={`w-full py-4 font-black italic uppercase text-lg tracking-widest transition-all flex items-center justify-center gap-2 ${
+              acknowledged
+                ? 'bg-primary text-black hover:bg-white shadow-[0_0_20px_rgba(204,255,0,0.3)]'
+                : 'bg-[#222] text-[#444] cursor-not-allowed'
+            }`}
           >
-            Join Program
+            <CheckCircle2 size={20} />
+            {acknowledged ? `Start ${program.name} Now` : 'Acknowledge Commitment to Continue'}
           </button>
         ) : (
           <button
             onClick={() => navigate('/')}
-            className="w-full py-4 bg-primary text-black font-bold rounded-lg text-base tracking-wide hover:bg-white transition-colors"
+            className="w-full py-4 bg-primary text-black font-black italic uppercase text-lg tracking-widest hover:bg-white transition-colors"
           >
             Go to Dashboard
           </button>
