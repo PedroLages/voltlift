@@ -8,6 +8,8 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
+  setPersistence,
+  browserLocalPersistence,
   User as FirebaseUser,
   Auth,
 } from 'firebase/auth';
@@ -59,6 +61,11 @@ export class FirebaseBackend implements BackendService {
     this.authInstance = getAuth(this.app);
     this.db = getFirestore(this.app);
     this.storageInstance = getStorage(this.app);
+
+    // Enable persistent auth sessions (survives browser restarts)
+    setPersistence(this.authInstance, browserLocalPersistence).catch((error) => {
+      console.error('Failed to enable auth persistence:', error);
+    });
 
     // Initialize current user from Firebase Auth
     onAuthStateChanged(this.authInstance, (user) => {
