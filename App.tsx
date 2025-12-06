@@ -49,8 +49,11 @@ const BottomNav = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Hide nav on onboarding, welcome, and login
-  if (location.pathname === '/onboarding' || location.pathname === '/welcome' || location.pathname === '/login') return null;
+  // Hide nav on onboarding, welcome, login, and desktop routes
+  if (location.pathname === '/onboarding' ||
+      location.pathname === '/welcome' ||
+      location.pathname === '/login' ||
+      location.pathname.startsWith('/desktop')) return null;
 
   // Check if there's an active program and get next session
   let nextProgramTemplate = null;
