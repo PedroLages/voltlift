@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Activity, Flame, ChevronRight, Play, Clock, BarChart2, Timer, Brain, Calendar, Cloud, Moon, Droplets, Dumbbell, AlertCircle } from 'lucide-react';
+import { TrendingUp, Activity, Flame, ChevronRight, Play, Clock, BarChart2, Timer, Brain, Calendar, Cloud, Moon, Droplets, Dumbbell, AlertCircle, Monitor, X } from 'lucide-react';
 import { getWorkoutMotivation } from '../services/geminiService';
 import { EXERCISE_LIBRARY } from '../constants';
 import EmptyState from '../components/EmptyState';
@@ -17,6 +17,19 @@ const Dashboard = () => {
   const [motivation, setMotivation] = useState("LOADING PROTOCOL...");
   const [elapsedTime, setElapsedTime] = useState(0);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
+  const [showDesktopBanner, setShowDesktopBanner] = useState(false);
+
+  // Check if user is on desktop and hasn't dismissed the banner
+  useEffect(() => {
+    const isDesktop = window.innerWidth >= 1024;
+    const hasDismissed = localStorage.getItem('desktopBannerDismissed') === 'true';
+    setShowDesktopBanner(isDesktop && !hasDismissed);
+  }, []);
+
+  const dismissDesktopBanner = () => {
+    localStorage.setItem('desktopBannerDismissed', 'true');
+    setShowDesktopBanner(false);
+  };
 
   const workoutsThisWeek = history.filter(h => {
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -154,6 +167,35 @@ const Dashboard = () => {
 
   return (
     <div className="p-6 space-y-8 animate-fade-in pb-32">
+      {/* Desktop Banner */}
+      {showDesktopBanner && (
+        <div className="bg-primary/10 border-2 border-primary p-4 -mx-6 -mt-6 mb-4">
+          <div className="flex items-start gap-3">
+            <Monitor size={24} className="text-primary flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-sm font-black uppercase text-white mb-1">
+                Desktop Dashboard Available
+              </h3>
+              <p className="text-xs text-[#888] mb-3">
+                You're on a desktop. Try our powerful desktop dashboard with advanced analytics, calendar view, and data management.
+              </p>
+              <button
+                onClick={() => navigate('/desktop')}
+                className="px-4 py-2 bg-primary text-black font-bold uppercase text-xs hover:bg-white transition-colors"
+              >
+                Open Desktop View
+              </button>
+            </div>
+            <button
+              onClick={dismissDesktopBanner}
+              className="text-[#666] hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex justify-between items-start pt-4">
         <div>

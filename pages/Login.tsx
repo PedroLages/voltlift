@@ -28,6 +28,13 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
+  // Get return URL from localStorage or default to '/'
+  const getReturnUrl = () => {
+    const returnUrl = localStorage.getItem('returnUrl');
+    localStorage.removeItem('returnUrl'); // Clean up
+    return returnUrl || '/';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -39,21 +46,21 @@ const Login = () => {
     }
 
     if (success) {
-      navigate('/');
+      navigate(getReturnUrl());
     }
   };
 
   const handleGoogleLogin = async () => {
     const success = await loginWithGoogle();
     if (success) {
-      navigate('/');
+      navigate(getReturnUrl());
     }
   };
 
   const handleAppleLogin = async () => {
     const success = await loginWithApple();
     if (success) {
-      navigate('/');
+      navigate(getReturnUrl());
     }
   };
 

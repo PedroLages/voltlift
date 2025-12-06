@@ -139,9 +139,12 @@ const OnboardingRoute = ({ children }: { children: React.ReactNode }) => {
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { settings } = useStore();
   const { isAuthenticated } = useAuthStore();
+  const location = useLocation();
 
   // First check: Must be authenticated
   if (!isAuthenticated) {
+    // Save current path to localStorage so we can return here after login
+    localStorage.setItem('returnUrl', location.pathname);
     return <Navigate to="/welcome" replace />;
   }
 
