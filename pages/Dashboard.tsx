@@ -1,8 +1,8 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Activity, Flame, ChevronRight, Play, Clock, BarChart2, Timer, Brain, Calendar, Cloud, Moon, Droplets, Dumbbell, AlertCircle, Monitor, X } from 'lucide-react';
+import { TrendingUp, Activity, Flame, ChevronRight, Play, Clock, BarChart2, Timer, Brain, Calendar, Cloud, Moon, Droplets, Dumbbell, AlertCircle, Monitor, X, Repeat, Target } from 'lucide-react';
 import { getWorkoutMotivation } from '../services/geminiService';
 import { EXERCISE_LIBRARY } from '../constants';
 import EmptyState from '../components/EmptyState';
@@ -10,6 +10,9 @@ import { formatTime } from '../utils/formatters';
 import { RecoveryScore } from '../components/AISuggestionBadge';
 import { StrengthScore } from '../components/StrengthScore';
 import ResumeWorkoutBanner from '../components/ResumeWorkoutBanner';
+import { getPeriodizationStatus } from '../services/periodization';
+import { getQuickRecoveryStatus } from '../services/adaptiveRecovery';
+import { getTopWeakPoint } from '../services/workoutIntelligence';
 
 const Dashboard = () => {
   const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, resumeWorkout, syncStatus, logDailyBio, dailyLogs, getVolumeWarning } = useStore();
@@ -99,6 +102,42 @@ const Dashboard = () => {
 
   const recoveryScore = getRecoveryScore();
   const volumeWarnings = getVolumeWarnings();
+
+  // Phase 3: Periodization Status
+  const periodizationStatus = useMemo(() => {
+    if (history.length < 3) return null;
+    const dailyLogsArray = Object.values(dailyLogs).map(log => ({
+      date: new Date(log.date).getTime(),
+      sleepHours: log.sleepHours,
+      mood: log.mood,
+      stressLevel: log.stressLevel,
+      energyLevel: log.energyLevel,
+      notes: log.notes || '',
+      waterLitres: log.waterLitres
+    }));
+    return getPeriodizationStatus(history, dailyLogsArray, settings.experienceLevel);
+  }, [history, dailyLogs, settings.experienceLevel]);
+
+  // Phase 3: Recovery Status
+  const quickRecoveryStatus = useMemo(() => {
+    if (history.length < 2) return null;
+    const dailyLogsArray = Object.values(dailyLogs).map(log => ({
+      date: new Date(log.date).getTime(),
+      sleepHours: log.sleepHours,
+      mood: log.mood,
+      stressLevel: log.stressLevel,
+      energyLevel: log.energyLevel,
+      notes: log.notes || '',
+      waterLitres: log.waterLitres
+    }));
+    return getQuickRecoveryStatus(history, dailyLogsArray, settings.experienceLevel);
+  }, [history, dailyLogs, settings.experienceLevel]);
+
+  // Phase 3: Weak Point
+  const topWeakPoint = useMemo(() => {
+    if (history.length < 5) return null;
+    return getTopWeakPoint(history, settings.experienceLevel);
+  }, [history, settings.experienceLevel]);
 
   useEffect(() => {
     getWorkoutMotivation(settings.name).then(setMotivation);
@@ -282,6 +321,76 @@ const Dashboard = () => {
               )}
           </div>
       </div>
+
+      {/* Phase 3: Periodization Status Widget */}
+      {periodizationStatus && (
+        <div className="bg-[#111] border border-[#222] p-4">
+          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-3 flex items-center gap-2">
+            <Repeat size={14} /> Training Cycle
+          </h3>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Current Phase */}
+            <div className="bg-[#0a0a0a] border border-[#333] p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar size={16} className="text-primary" />
+                <span className="text-[10px] font-bold text-[#888] uppercase">Current Phase</span>
+              </div>
+              <div className="text-xl font-black uppercase italic" style={{
+                color: periodizationStatus.currentPhase === 'accumulation' ? '#4ade80' :
+                       periodizationStatus.currentPhase === 'intensification' ? '#f59e0b' :
+                       periodizationStatus.currentPhase === 'deload' ? '#60a5fa' : '#888'
+              }}>
+                {periodizationStatus.currentPhase}
+              </div>
+              <p className="text-[9px] text-[#555] font-mono uppercase mt-1">
+                {periodizationStatus.currentPhase === 'accumulation' ? 'Building volume' :
+                 periodizationStatus.currentPhase === 'intensification' ? 'Peak intensity' :
+                 periodizationStatus.currentPhase === 'deload' ? 'Recovery week' : 'Maintain'}
+              </p>
+            </div>
+
+            {/* Days Until Deload */}
+            <div className="bg-[#0a0a0a] border border-[#333] p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock size={16} className={periodizationStatus.daysUntilDeload <= 3 ? 'text-orange-400' : 'text-[#666]'} />
+                <span className="text-[10px] font-bold text-[#888] uppercase">Next Deload</span>
+              </div>
+              <div className={`text-xl font-black italic ${periodizationStatus.daysUntilDeload <= 3 ? 'text-orange-400' : 'text-white'}`}>
+                {periodizationStatus.daysUntilDeload} Days
+              </div>
+              <p className="text-[9px] text-[#555] font-mono uppercase mt-1">
+                {periodizationStatus.daysUntilDeload === 0 ? 'Deload now!' : 'Until recovery'}
+              </p>
+            </div>
+          </div>
+
+          {periodizationStatus.needsDeload && (
+            <div className="mt-3 bg-orange-500/10 border border-orange-500/30 p-3 flex items-center gap-2">
+              <AlertCircle size={14} className="text-orange-400" />
+              <span className="text-[10px] text-orange-400 font-bold uppercase">Deload Week Recommended</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Phase 3: Weak Point Alert */}
+      {topWeakPoint && topWeakPoint !== 'No weak points detected - training is balanced!' && (
+        <div className="bg-[#111] border border-primary/30 p-4">
+          <h3 className="text-xs font-bold text-primary uppercase tracking-widest mb-3 flex items-center gap-2">
+            <Target size={14} /> Priority Focus
+          </h3>
+          <p className="text-sm text-white font-mono leading-relaxed">
+            {topWeakPoint}
+          </p>
+          <button
+            onClick={() => navigate('/profile')}
+            className="mt-3 text-[10px] text-primary underline font-mono uppercase"
+          >
+            View Full Analysis →
+          </button>
+        </div>
+      )}
 
       {/* Bio-Feedback / Recovery Protocol */}
       <div className="bg-[#111] border border-[#222] p-4">

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { EXERCISE_LIBRARY } from '../constants';
-import { ArrowLeft, TrendingUp, BarChart2, Calendar, Activity, Zap, Dumbbell } from 'lucide-react';
+import { ArrowLeft, TrendingUp, BarChart2, Calendar, Activity, Zap, Dumbbell, AlertTriangle, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BodyHeatmap from '../components/BodyHeatmap';
 import PRHistoryTimeline from '../components/PRHistoryTimeline';
@@ -16,9 +16,11 @@ import {
   calculateVolumeBalanceScore,
   getWeeklyVolumeBreakdown
 } from '../services/progressionData';
+import { assessInjuryRisk, RiskLevel } from '../services/injuryRisk';
+import { forecastPR } from '../services/prForecasting';
 
 const Analytics = () => {
-  const { history, settings } = useStore();
+  const { history, settings, dailyLogs } = useStore();
   const navigate = useNavigate();
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>(EXERCISE_LIBRARY[0]?.id || 'e1');
   const [dateRange, setDateRange] = useState<30 | 60 | 90>(90);
@@ -56,6 +58,39 @@ const Analytics = () => {
     return getWeeklyVolumeBreakdown(history, EXERCISE_LIBRARY, 12);
   }, [history]);
 
+  // Convert dailyLogs object to array
+  const dailyLogsArray = useMemo(() => {
+    return Object.values(dailyLogs).map(log => ({
+      date: new Date(log.date).getTime(),
+      sleepHours: log.sleepHours,
+      mood: log.mood,
+      stressLevel: log.stressLevel,
+      energyLevel: log.energyLevel,
+      notes: log.notes || '',
+      waterLitres: log.waterLitres
+    }));
+  }, [dailyLogs]);
+
+  // Injury risk assessment
+  const injuryRiskAssessment = useMemo(() => {
+    if (history.length < 3) return null;
+    return assessInjuryRisk(history, dailyLogsArray, 4);
+  }, [history, dailyLogsArray]);
+
+  // PR Forecast for selected exercise
+  const prForecast = useMemo(() => {
+    const selectedExercise = EXERCISE_LIBRARY.find(e => e.id === selectedExerciseId);
+    if (!selectedExercise || history.length < 4) return null;
+
+    return forecastPR(
+      selectedExerciseId,
+      selectedExercise.name,
+      history,
+      settings.experienceLevel || 'intermediate',
+      8
+    );
+  }, [history, selectedExerciseId, settings.experienceLevel]);
+
   // 2. Prepare Data for Heatmap (Last 7 Days)
   const muscleIntensity = useMemo(() => {
       const intensity: Record<string, number> = {};
@@ -78,7 +113,21 @@ const Analytics = () => {
   }, [history]);
 
 
-  const exercisePRHistory = settings.personalRecords[selectedExerciseId];
+  const exercisePRHistory = settings.personalRecords?.[selectedExerciseId];
+
+  // Helper to get risk styling
+  const getRiskStyling = (risk: RiskLevel) => {
+    switch (risk) {
+      case 'critical':
+        return { bg: 'bg-red-900/20', border: 'border-red-500', text: 'text-red-500', icon: AlertTriangle };
+      case 'high':
+        return { bg: 'bg-orange-900/20', border: 'border-orange-500', text: 'text-orange-500', icon: AlertTriangle };
+      case 'moderate':
+        return { bg: 'bg-yellow-900/20', border: 'border-yellow-500', text: 'text-yellow-500', icon: AlertTriangle };
+      case 'low':
+        return { bg: 'bg-green-900/20', border: 'border-primary', text: 'text-primary', icon: Shield };
+    }
+  };
 
   return (
     <div className="p-6 pb-24 min-h-screen bg-black">
@@ -103,6 +152,76 @@ const Analytics = () => {
         </div>
       ) : (
         <div>
+
+      {/* Injury Risk Warning Section */}
+      {injuryRiskAssessment && (
+        <div className="mb-10">
+          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4 flex items-center gap-2">
+            <Shield size={14} /> Injury Risk Assessment
+          </h3>
+          {(() => {
+            const styling = getRiskStyling(injuryRiskAssessment.overallRisk);
+            const RiskIcon = styling.icon;
+            return (
+              <div className={`${styling.bg} border-l-4 ${styling.border} p-5`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <RiskIcon className={styling.text} size={24} />
+                    <div>
+                      <h4 className={`${styling.text} font-black uppercase text-sm italic`}>
+                        {injuryRiskAssessment.overallRisk.toUpperCase()} RISK
+                      </h4>
+                      <p className="text-[10px] text-[#666] font-mono">
+                        Risk Score: {injuryRiskAssessment.riskScore}/100
+                      </p>
+                    </div>
+                  </div>
+                  {injuryRiskAssessment.needsDeload && (
+                    <div className="bg-red-500 text-black px-3 py-1 text-[10px] font-black uppercase">
+                      DELOAD NOW
+                    </div>
+                  )}
+                </div>
+
+                {/* Risk Factors */}
+                {injuryRiskAssessment.riskFactors.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    <p className="text-[10px] font-bold text-white uppercase tracking-wide">
+                      Detected Issues:
+                    </p>
+                    {injuryRiskAssessment.riskFactors.map((factor, idx) => (
+                      <div key={idx} className="bg-black/30 p-2 border-l-2 border-[#333]">
+                        <p className="text-xs text-white font-mono">{factor.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-white uppercase tracking-wide">
+                    Recommendations:
+                  </p>
+                  {injuryRiskAssessment.recommendations.map((rec, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <div className={`${styling.text} mt-0.5`}>•</div>
+                      <p className="text-xs text-[#ccc] font-mono flex-1">{rec}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {!injuryRiskAssessment.needsDeload && injuryRiskAssessment.daysUntilRecommendedDeload > 0 && (
+                  <div className="mt-4 pt-3 border-t border-[#333]">
+                    <p className="text-[10px] text-[#666] font-mono">
+                      Next deload recommended in {injuryRiskAssessment.daysUntilRecommendedDeload} days
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* Muscle Heatmap Section */}
       <div className="mb-10">
@@ -265,6 +384,115 @@ const Analytics = () => {
             units={settings.units}
           />
       </div>
+
+      {/* PR Forecast Section */}
+      {prForecast && (
+        <div className="mb-8 border-t border-[#222] pt-8">
+          <h2 className="text-2xl font-black italic uppercase text-white mb-6 flex items-center gap-2">
+            <TrendingUp size={24} /> PR Forecast (8 Weeks)
+          </h2>
+
+          {/* Forecast Summary Cards */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-[#111] p-4 border-l-4 border-primary">
+              <p className="text-[10px] text-[#666] uppercase font-bold mb-1">Current PR</p>
+              <p className="text-3xl font-black italic text-white">
+                {prForecast.currentPR}
+                <span className="text-sm not-italic text-[#666] font-medium ml-1">LBS</span>
+              </p>
+            </div>
+            <div className="bg-[#111] p-4 border-l-4 border-primary">
+              <p className="text-[10px] text-[#666] uppercase font-bold mb-1">Predicted PR</p>
+              <p className="text-3xl font-black italic text-white">
+                {prForecast.predictedPR}
+                <span className="text-sm not-italic text-[#666] font-medium ml-1">LBS</span>
+              </p>
+              <p className="text-[10px] text-primary font-mono mt-1">
+                +{prForecast.predictedPR - prForecast.currentPR} lbs in {prForecast.weeksToTarget} weeks
+              </p>
+            </div>
+          </div>
+
+          {/* Confidence & Achievability */}
+          <div className="mb-6">
+            <div className={`p-4 border-l-4 ${
+              prForecast.isAchievable ? 'bg-green-900/20 border-green-500' : 'bg-orange-900/20 border-orange-500'
+            }`}>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-xs font-bold text-white uppercase">
+                    Confidence: {(prForecast.confidence * 100).toFixed(0)}%
+                  </p>
+                  <p className={`text-[10px] font-mono ${
+                    prForecast.isAchievable ? 'text-green-400' : 'text-orange-400'
+                  }`}>
+                    {prForecast.isAchievable ? '✓ Achievable Target' : '⚠ Ambitious Target'}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2 h-8 ${
+                        i < Math.round(prForecast.confidence * 5) ? 'bg-primary' : 'bg-[#333]'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-[#ccc] font-mono leading-relaxed">
+                {prForecast.reasoning}
+              </p>
+            </div>
+          </div>
+
+          {/* Projection Graph - Simple Visualization */}
+          {prForecast.projectionCurve.length > 0 && (
+            <div className="bg-[#111] p-6 border border-[#222]">
+              <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">
+                8-Week Projection Curve
+              </h3>
+              <div className="relative h-48">
+                {/* Simple bar chart visualization */}
+                <div className="flex items-end justify-between h-full gap-2">
+                  {prForecast.projectionCurve.map((point, idx) => {
+                    const maxWeight = Math.max(...prForecast.projectionCurve.map(p => p.weight));
+                    const minWeight = Math.min(...prForecast.projectionCurve.map(p => p.weight));
+                    const range = maxWeight - minWeight || 1;
+                    const heightPercent = ((point.weight - minWeight) / range) * 100;
+
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-2">
+                        <div className="relative w-full">
+                          <div
+                            className={`w-full transition-all ${
+                              idx === 0 ? 'bg-[#666]' : 'bg-primary'
+                            }`}
+                            style={{ height: `${Math.max(10, heightPercent)}%` }}
+                          />
+                          {idx === prForecast.projectionCurve.length - 1 && (
+                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-[10px] font-black text-primary">
+                              {point.weight}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[8px] text-[#666] font-mono">
+                          {idx === 0 ? 'Now' : `W${idx}`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-[#222]">
+                <p className="text-[10px] text-[#666] font-mono">
+                  Projection based on exponential curve fitting with {(prForecast.confidence * 100).toFixed(0)}% confidence
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Muscle Group Volume Analytics */}
       <div className="mb-8 border-t border-[#222] pt-8">

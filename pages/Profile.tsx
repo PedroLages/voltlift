@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut, Trash2, AlertTriangle } from 'lucide-react';
+import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut, Trash2, AlertTriangle, Target, Calendar, Activity, Repeat } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
 import NotificationSettings from '../components/NotificationSettings';
@@ -12,10 +12,14 @@ import BodyweightChart from '../components/BodyweightChart';
 import ProgressPhotos from '../components/ProgressPhotos';
 import MeasurementTrends from '../components/MeasurementTrends';
 import BodyLiftCorrelation from '../components/BodyLiftCorrelation';
+import { getPeriodizationStatus, generateMesocyclePlan } from '../services/periodization';
+import { getRecoveryAssessment } from '../services/adaptiveRecovery';
+import { analyzeWeakPoints, suggestExerciseVariations } from '../services/workoutIntelligence';
+import { calculateVolumeLandmarks, getVolumeRecommendation } from '../services/volumeOptimization';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData, resetAllData } = useStore();
+  const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData, resetAllData, dailyLogs } = useStore();
   const { isAuthenticated, user, logout } = useAuthStore();
   const [generatingBatch, setGeneratingBatch] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -23,6 +27,7 @@ const Profile = () => {
   const [showPlateConfig, setShowPlateConfig] = useState(false);
   const [bodyMetricsTab, setBodyMetricsTab] = useState<'logger' | 'trends' | 'photos' | 'correlation'>('logger');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [intelligenceTab, setIntelligenceTab] = useState<'periodization' | 'recovery' | 'weak-points' | 'variations'>('periodization');
 
   const totalWorkouts = history.length;
   const totalVolume = history.reduce((acc, sess) => {
@@ -43,6 +48,44 @@ const Profile = () => {
 
   const exercisesWithoutVisuals = EXERCISE_LIBRARY.filter(ex => !customExerciseVisuals[ex.id]);
   const progressPercent = Math.round((Object.keys(customExerciseVisuals).length / EXERCISE_LIBRARY.length) * 100);
+
+  // Phase 3: Training Intelligence Data
+  const dailyLogsArray = useMemo(() => {
+    return Object.values(dailyLogs).map(log => ({
+      date: new Date(log.date).getTime(),
+      sleepHours: log.sleepHours,
+      mood: log.mood,
+      stressLevel: log.stressLevel,
+      energyLevel: log.energyLevel,
+      notes: log.notes || '',
+      waterLitres: log.waterLitres
+    }));
+  }, [dailyLogs]);
+
+  const periodizationStatus = useMemo(() => {
+    if (history.length < 3) return null;
+    return getPeriodizationStatus(history, dailyLogsArray, settings.experienceLevel);
+  }, [history, dailyLogsArray, settings.experienceLevel]);
+
+  const mesocyclePlan = useMemo(() => {
+    if (!periodizationStatus) return null;
+    return generateMesocyclePlan(periodizationStatus, settings.experienceLevel);
+  }, [periodizationStatus, settings.experienceLevel]);
+
+  const recoveryAssessment = useMemo(() => {
+    if (history.length < 2) return null;
+    return getRecoveryAssessment(history, dailyLogsArray, settings.experienceLevel);
+  }, [history, dailyLogsArray, settings.experienceLevel]);
+
+  const weakPointAnalysis = useMemo(() => {
+    if (history.length < 5) return null;
+    return analyzeWeakPoints(history, settings.experienceLevel);
+  }, [history, settings.experienceLevel]);
+
+  const exerciseVariations = useMemo(() => {
+    if (history.length < 3) return null;
+    return suggestExerciseVariations(history, 8);
+  }, [history]);
 
   const handleBatchGenerate = async () => {
       // API Key Check for Paid Model
@@ -145,7 +188,7 @@ const Profile = () => {
             <div className="text-[10px] text-[#666] uppercase tracking-widest mt-1">Sessions Complete</div>
           </div>
           <div className="bg-[#111] p-6 border border-[#222]">
-            <div className="text-primary mb-2 font-black italic text-xl">{settings.units.toUpperCase()}</div>
+            <div className="text-primary mb-2 font-black italic text-xl">{(settings.units || 'lbs').toUpperCase()}</div>
             <div className="text-4xl font-black italic text-white leading-none">{(totalVolume / 1000).toFixed(0)}K</div>
             <div className="text-[10px] text-[#666] uppercase tracking-widest mt-1">Total Volume</div>
           </div>
@@ -213,6 +256,328 @@ const Profile = () => {
           {bodyMetricsTab === 'correlation' && <BodyLiftCorrelation />}
         </div>
       </section>
+
+      {/* Phase 3: Training Intelligence Section */}
+      {(periodizationStatus || recoveryAssessment || weakPointAnalysis || exerciseVariations) && (
+        <section className="mb-10">
+          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Training Intelligence</h3>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-4 overflow-x-auto">
+            <button
+              onClick={() => setIntelligenceTab('periodization')}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+                intelligenceTab === 'periodization'
+                  ? 'bg-primary text-black'
+                  : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
+              }`}
+            >
+              Periodization
+            </button>
+            <button
+              onClick={() => setIntelligenceTab('recovery')}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+                intelligenceTab === 'recovery'
+                  ? 'bg-primary text-black'
+                  : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
+              }`}
+            >
+              Recovery
+            </button>
+            <button
+              onClick={() => setIntelligenceTab('weak-points')}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+                intelligenceTab === 'weak-points'
+                  ? 'bg-primary text-black'
+                  : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
+              }`}
+            >
+              Weak Points
+            </button>
+            <button
+              onClick={() => setIntelligenceTab('variations')}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+                intelligenceTab === 'variations'
+                  ? 'bg-primary text-black'
+                  : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
+              }`}
+            >
+              Variations
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="space-y-4">
+            {/* Periodization Tab */}
+            {intelligenceTab === 'periodization' && periodizationStatus && mesocyclePlan && (
+              <>
+                {/* Current Status */}
+                <div className="bg-[#111] border border-[#222] p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Repeat size={18} className="text-primary" />
+                    <h4 className="text-sm font-bold uppercase text-white">Current Cycle Status</h4>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-[10px] text-[#666] uppercase mb-1">Phase</div>
+                      <div className="text-2xl font-black uppercase italic" style={{
+                        color: periodizationStatus.currentPhase === 'accumulation' ? '#4ade80' :
+                               periodizationStatus.currentPhase === 'intensification' ? '#f59e0b' :
+                               periodizationStatus.currentPhase === 'deload' ? '#60a5fa' : '#888'
+                      }}>
+                        {periodizationStatus.currentPhase}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[#666] uppercase mb-1">Days Until Deload</div>
+                      <div className={`text-2xl font-black italic ${periodizationStatus.daysUntilDeload <= 3 ? 'text-orange-400' : 'text-white'}`}>
+                        {periodizationStatus.daysUntilDeload}
+                      </div>
+                    </div>
+                  </div>
+
+                  {periodizationStatus.needsDeload && (
+                    <div className="mt-4 bg-orange-500/10 border border-orange-500/30 p-3">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle size={14} className="text-orange-400" />
+                        <span className="text-xs text-orange-400 font-bold uppercase">Deload Week Recommended</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mesocycle Plan */}
+                <div className="bg-[#111] border border-[#222] p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Calendar size={18} className="text-primary" />
+                    <h4 className="text-sm font-bold uppercase text-white">Current {mesocyclePlan.durationWeeks} Week Block</h4>
+                  </div>
+
+                  <div className="bg-[#0a0a0a] border border-[#333] p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-sm font-bold uppercase" style={{
+                        color: mesocyclePlan.phase === 'accumulation' ? '#4ade80' :
+                               mesocyclePlan.phase === 'intensification' ? '#f59e0b' :
+                               mesocyclePlan.phase === 'deload' ? '#60a5fa' : '#888'
+                      }}>
+                        {mesocyclePlan.phase}
+                      </div>
+                      <div className="text-[10px] text-[#666] font-mono">
+                        {mesocyclePlan.durationWeeks} weeks
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-[#888] font-mono leading-relaxed mb-3">
+                      {mesocyclePlan.focus}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      <div className="bg-black border border-[#222] p-2">
+                        <div className="text-[9px] text-[#666] uppercase mb-1">Volume</div>
+                        <div className="text-xs font-bold text-white uppercase">{mesocyclePlan.volumeProgression}</div>
+                      </div>
+                      <div className="bg-black border border-[#222] p-2">
+                        <div className="text-[9px] text-[#666] uppercase mb-1">Intensity</div>
+                        <div className="text-xs font-bold text-white uppercase">{mesocyclePlan.intensityProgression}</div>
+                      </div>
+                    </div>
+                    {mesocyclePlan.deloadScheduled && (
+                      <div className="mt-3 p-2 bg-blue-500/10 border border-blue-500/30">
+                        <span className="text-xs font-bold uppercase text-blue-400">Deload Scheduled</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Recovery Tab */}
+            {intelligenceTab === 'recovery' && recoveryAssessment && (
+              <>
+                {/* Overall Recovery Score */}
+                <div className="bg-[#111] border border-[#222] p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Activity size={18} className="text-primary" />
+                    <h4 className="text-sm font-bold uppercase text-white">Recovery Status</h4>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <div className="text-[10px] text-[#666] uppercase mb-1">Recovery Score</div>
+                      <div className={`text-3xl font-black italic ${recoveryAssessment.overallRecoveryScore >= 70 ? 'text-green-500' : recoveryAssessment.overallRecoveryScore >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                        {recoveryAssessment.overallRecoveryScore}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[#666] uppercase mb-1">Sleep Debt</div>
+                      <div className={`text-3xl font-black italic ${recoveryAssessment.sleepDebt > 5 ? 'text-red-500' : 'text-white'}`}>
+                        {recoveryAssessment.sleepDebt.toFixed(1)}h
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[#666] uppercase mb-1">Training Stress</div>
+                      <div className={`text-3xl font-black italic ${recoveryAssessment.trainingStress > 75 ? 'text-orange-400' : 'text-white'}`}>
+                        {recoveryAssessment.trainingStress}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={`text-center p-3 border ${recoveryAssessment.readyToTrain ? 'border-green-500/30 bg-green-500/10' : 'border-red-500/30 bg-red-500/10'}`}>
+                    <span className={`text-sm font-bold uppercase ${recoveryAssessment.readyToTrain ? 'text-green-400' : 'text-red-400'}`}>
+                      {recoveryAssessment.readyToTrain ? '✓ Ready to Train' : '⚠ Need More Recovery'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Recovery Recommendations */}
+                <div className="bg-[#111] border border-[#222] p-6">
+                  <h4 className="text-xs font-bold uppercase text-[#666] mb-3">Recommendations</h4>
+                  <div className="space-y-3">
+                    {recoveryAssessment.recommendations.slice(0, 5).map((rec, idx) => (
+                      <div key={idx} className="bg-[#0a0a0a] border border-[#333] p-4">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 ${rec.priority === 'critical' ? 'bg-red-500' : rec.priority === 'high' ? 'bg-orange-400' : rec.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`} />
+                          <div className="flex-1">
+                            <div className="text-sm font-bold text-white uppercase mb-1">{rec.title}</div>
+                            <div className="text-[10px] text-[#888] font-mono mb-2">{rec.description}</div>
+                            <ul className="space-y-1">
+                              {rec.actionItems.map((item, i) => (
+                                <li key={i} className="text-[10px] text-[#666] font-mono flex items-start gap-2">
+                                  <span className="text-primary">→</span>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Weak Points Tab */}
+            {intelligenceTab === 'weak-points' && weakPointAnalysis && (
+              <>
+                {/* Overall Balance Score */}
+                <div className="bg-[#111] border border-[#222] p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Target size={18} className="text-primary" />
+                    <h4 className="text-sm font-bold uppercase text-white">Training Balance</h4>
+                  </div>
+
+                  <div className="text-center mb-4">
+                    <div className={`text-5xl font-black italic ${weakPointAnalysis.overallBalance >= 80 ? 'text-green-500' : weakPointAnalysis.overallBalance >= 60 ? 'text-yellow-500' : 'text-orange-400'}`}>
+                      {weakPointAnalysis.overallBalance}
+                    </div>
+                    <div className="text-[10px] text-[#666] uppercase mt-1">Balance Score</div>
+                  </div>
+
+                  {weakPointAnalysis.priorityAreas.length > 0 && (
+                    <div className="bg-[#0a0a0a] border border-[#333] p-3">
+                      <div className="text-[10px] text-[#888] uppercase mb-2">Priority Areas:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {weakPointAnalysis.priorityAreas.map(area => (
+                          <span key={area} className="px-2 py-1 bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold uppercase">
+                            {area}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Weak Points List */}
+                <div className="bg-[#111] border border-[#222] p-6">
+                  <h4 className="text-xs font-bold uppercase text-[#666] mb-3">Detected Weak Points</h4>
+                  {weakPointAnalysis.weakPoints.length === 0 ? (
+                    <div className="text-center p-6 text-[#666]">
+                      <Check size={24} className="mx-auto mb-2 text-green-500" />
+                      <div className="text-sm uppercase">No Weak Points Detected!</div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {weakPointAnalysis.weakPoints.slice(0, 10).map((wp, idx) => (
+                        <div key={idx} className="bg-[#0a0a0a] border border-[#333] p-4">
+                          <div className="flex items-start gap-2 mb-2">
+                            <div className={`w-2 h-2 rounded-full mt-1.5 ${wp.severity === 'severe' ? 'bg-red-500' : wp.severity === 'moderate' ? 'bg-orange-400' : 'bg-yellow-500'}`} />
+                            <div className="flex-1">
+                              <div className="text-sm font-bold text-white uppercase mb-1">{wp.description}</div>
+                              <ul className="space-y-1">
+                                {wp.recommendations.map((rec, i) => (
+                                  <li key={i} className="text-[10px] text-[#666] font-mono flex items-start gap-2">
+                                    <span className="text-primary">→</span>
+                                    <span>{rec}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Variations Tab */}
+            {intelligenceTab === 'variations' && exerciseVariations && (
+              <div className="bg-[#111] border border-[#222] p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Repeat size={18} className="text-primary" />
+                  <h4 className="text-sm font-bold uppercase text-white">Suggested Variations</h4>
+                </div>
+
+                {exerciseVariations.length === 0 ? (
+                  <div className="text-center p-6 text-[#666]">
+                    <Check size={24} className="mx-auto mb-2 text-green-500" />
+                    <div className="text-sm uppercase">Exercise Selection Looks Good!</div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {exerciseVariations.slice(0, 8).map((variation, idx) => (
+                      <div key={idx} className="bg-[#0a0a0a] border border-[#333] p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="text-sm font-bold text-white uppercase">
+                              {variation.currentExercise.name}
+                            </div>
+                            <div className="text-[10px] text-[#666] font-mono mt-1">
+                              {variation.weeksSinceVariation} weeks • {variation.isPlateaued ? 'Plateaued' : 'Due for change'}
+                            </div>
+                          </div>
+                          {variation.isPlateaued && (
+                            <span className="px-2 py-1 bg-red-500/10 border border-red-500/30 text-red-400 text-[9px] font-bold uppercase">
+                              Stalled
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 my-3">
+                          <div className="h-px flex-1 bg-[#333]" />
+                          <span className="text-[10px] text-primary font-mono">→</span>
+                          <div className="h-px flex-1 bg-[#333]" />
+                        </div>
+
+                        <div className="mb-2">
+                          <div className="text-sm font-bold text-primary uppercase">
+                            {variation.suggestedVariation.name}
+                          </div>
+                        </div>
+
+                        <div className="text-[10px] text-[#888] font-mono leading-relaxed">
+                          {variation.reason}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* VoltCloud Sync Section */}
       <section className="mb-10">
@@ -466,7 +831,7 @@ const Profile = () => {
                 onChange={(e) => updateSettings({ bodyweight: parseFloat(e.target.value) || undefined })}
                 className="bg-[#222] text-white font-mono text-right px-3 py-1 outline-none text-sm uppercase w-20 focus:border focus:border-primary"
               />
-              <span className="text-xs text-[#666] font-mono">{settings.units.toUpperCase()}</span>
+              <span className="text-xs text-[#666] font-mono">{(settings.units || 'lbs').toUpperCase()}</span>
             </div>
           </div>
           <div className="p-5 flex justify-between items-center">
