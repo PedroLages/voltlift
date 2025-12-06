@@ -1728,6 +1728,86 @@ export const INITIAL_TEMPLATES: WorkoutSession[] = [
           { id: 'n2_sumo', exerciseId: 'e22', sets: Array(8).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) },
           { id: 'n2_acc1', exerciseId: 'e9', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) },
       ]
+  },
+
+  // --- EVIDENCE-BASED HYPERTROPHY ---
+  {
+      id: 'ebh_upper_a',
+      name: 'EBH: Upper A',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'ebh_u1_bp', exerciseId: 'e1', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Bench Press 3x10
+          { id: 'ebh_u1_row', exerciseId: 'e19', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Barbell Row 3x10
+          { id: 'ebh_u1_ohp', exerciseId: 'e16', sets: Array(3).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // OHP 3x8
+          { id: 'ebh_u1_pu', exerciseId: 'e3', sets: Array(3).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // Pull Ups 3x8
+          { id: 'ebh_u1_lat', exerciseId: 'e12', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Lateral Raise 3x12
+          { id: 'ebh_u1_curl', exerciseId: 'e8', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Bicep Curl 2x12
+      ]
+  },
+  {
+      id: 'ebh_lower_a',
+      name: 'EBH: Lower A',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'ebh_l1_sq', exerciseId: 'e4', sets: Array(4).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // Squat 4x8
+          { id: 'ebh_l1_rdl', exerciseId: 'e11', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // RDL 3x10
+          { id: 'ebh_l1_lp', exerciseId: 'e13', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Leg Press 3x12
+          { id: 'ebh_l1_ext', exerciseId: 'e9', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Leg Extension 3x15
+          { id: 'ebh_l1_calf', exerciseId: 'e20', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Calf Raise 3x15
+      ]
+  },
+  {
+      id: 'ebh_upper_b',
+      name: 'EBH: Upper B',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'ebh_u2_inc', exerciseId: 'e2', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Incline DB Press 3x10
+          { id: 'ebh_u2_lat', exerciseId: 'e18', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Lat Pulldown 3x10
+          { id: 'ebh_u2_dbp', exerciseId: 'e6', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // DB Shoulder Press 3x10
+          { id: 'ebh_u2_fly', exerciseId: 'e24', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Cable Chest Fly 3x12
+          { id: 'ebh_u2_face', exerciseId: 'e14', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Face Pull 3x15
+          { id: 'ebh_u2_tri', exerciseId: 'e7', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Tricep Pushdown 3x12
+      ]
+  },
+  {
+      id: 'ebh_lower_b',
+      name: 'EBH: Lower B',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'ebh_l2_dl', exerciseId: 'e5', sets: Array(3).fill({ id: 's', reps: 6, weight: 0, completed: false, type: 'N' }) }, // Deadlift 3x6
+          { id: 'ebh_l2_bss', exerciseId: 'e17', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Bulgarian Split Squat 3x10
+          { id: 'ebh_l2_rdl', exerciseId: 'e11', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // RDL 3x12
+          { id: 'ebh_l2_ext', exerciseId: 'e9', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Leg Extension 3x15
+          { id: 'ebh_l2_calf', exerciseId: 'e20', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Calf Raise 3x15
+      ]
+  },
+  {
+      id: 'ebh_upper_deload',
+      name: 'EBH: Upper Deload',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'ebh_ud_bp', exerciseId: 'e1', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Bench Press 2x12
+          { id: 'ebh_ud_row', exerciseId: 'e19', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Barbell Row 2x12
+          { id: 'ebh_ud_ohp', exerciseId: 'e16', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // OHP 2x12
+          { id: 'ebh_ud_lat', exerciseId: 'e12', sets: Array(2).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Lateral Raise 2x15
+      ]
+  },
+  {
+      id: 'ebh_lower_deload',
+      name: 'EBH: Lower Deload',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'ebh_ld_sq', exerciseId: 'e4', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Squat 2x12
+          { id: 'ebh_ld_rdl', exerciseId: 'e11', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // RDL 2x12
+          { id: 'ebh_ld_lp', exerciseId: 'e13', sets: Array(2).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Leg Press 2x15
+          { id: 'ebh_ld_calf', exerciseId: 'e20', sets: Array(2).fill({ id: 's', reps: 20, weight: 0, completed: false, type: 'N' }) }, // Calf Raise 2x20
+      ]
   }
 ];
 
