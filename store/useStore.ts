@@ -75,6 +75,9 @@ interface AppState {
   getOverallStrengthScore: () => number;
   getVolumeWarning: (exerciseId: string) => { warning: boolean; message: string; sets: number } | null;
   checkDeloadNeeded: () => { shouldDeload: boolean; reasoning: string };
+
+  // Data Management
+  resetAllData: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -887,6 +890,30 @@ export const useStore = create<AppState>()(
       checkDeloadNeeded: () => {
           const { history, dailyLogs } = get();
           return shouldDeloadWeek(history, dailyLogs);
+      },
+
+      // Data Management
+      resetAllData: () => {
+          const { settings } = get();
+          set({
+              // Reset all data
+              history: [],
+              activeWorkout: null,
+              dailyLogs: {},
+              customExerciseVisuals: {},
+              activeBiometrics: [],
+              restTimerStart: null,
+              restDuration: 90,
+              // Reset templates and programs to defaults
+              templates: INITIAL_TEMPLATES,
+              programs: INITIAL_PROGRAMS,
+              // Keep basic user settings but reset records and programs
+              settings: {
+                  ...settings,
+                  personalRecords: {},
+                  activeProgram: undefined,
+              }
+          });
       }
     }),
     {

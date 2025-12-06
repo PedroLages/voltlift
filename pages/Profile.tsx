@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut } from 'lucide-react';
+import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut, Trash2, AlertTriangle } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
 import NotificationSettings from '../components/NotificationSettings';
@@ -15,13 +15,14 @@ import BodyLiftCorrelation from '../components/BodyLiftCorrelation';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData } = useStore();
+  const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData, resetAllData } = useStore();
   const { isAuthenticated, user, logout } = useAuthStore();
   const [generatingBatch, setGeneratingBatch] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [batchSize, setBatchSize] = useState<'1K' | '2K' | '4K'>('1K');
   const [showPlateConfig, setShowPlateConfig] = useState(false);
   const [bodyMetricsTab, setBodyMetricsTab] = useState<'logger' | 'trends' | 'photos' | 'correlation'>('logger');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const totalWorkouts = history.length;
   const totalVolume = history.reduce((acc, sess) => {
@@ -75,12 +76,17 @@ const Profile = () => {
   };
   
   const toggleIronCloud = () => {
-      updateSettings({ 
+      updateSettings({
           ironCloud: {
               ...settings.ironCloud,
               enabled: !settings.ironCloud?.enabled
-          } 
+          }
       });
+  };
+
+  const handleResetAllData = () => {
+      resetAllData();
+      setShowResetConfirm(false);
   };
 
   return (
@@ -509,6 +515,94 @@ const Profile = () => {
       <section className="mt-10">
           <NotificationSettings />
       </section>
+
+      {/* Danger Zone */}
+      <section className="mt-10 mb-10">
+        <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Danger Zone</h3>
+        <div className="bg-[#111] border border-red-900/30 p-6">
+          <div className="flex items-start gap-4 mb-4">
+            <AlertTriangle size={24} className="text-red-500 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h4 className="text-sm font-bold uppercase text-white mb-2">Reset All Data</h4>
+              <p className="text-xs text-[#888] mb-3">
+                Permanently delete all workout history, templates, body metrics, photos, and progress data.
+                This action cannot be undone. Your account and basic settings will be preserved.
+              </p>
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="px-4 py-2 bg-red-900/20 border border-red-900 text-red-500 font-bold uppercase text-xs hover:bg-red-900/40 transition-colors flex items-center gap-2"
+              >
+                <Trash2 size={14} />
+                Reset All Data
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6">
+          <div className="bg-[#111] border-2 border-red-900 max-w-md w-full">
+            {/* Header */}
+            <div className="flex items-center gap-3 p-6 border-b border-red-900/30 bg-red-900/10">
+              <AlertTriangle size={32} className="text-red-500" />
+              <div>
+                <h3 className="text-lg font-black uppercase text-white">CONFIRM RESET</h3>
+                <p className="text-xs text-red-400">This action cannot be undone</p>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-sm text-white mb-4">
+                Are you absolutely sure you want to reset all data? This will permanently delete:
+              </p>
+              <ul className="space-y-2 mb-6 text-xs text-[#888]">
+                <li className="flex items-center gap-2">
+                  <span className="text-red-500">✗</span>
+                  All workout history and logs
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-red-500">✗</span>
+                  Personal records and strength scores
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-red-500">✗</span>
+                  Body measurements and progress photos
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-red-500">✗</span>
+                  Custom templates and programs
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-red-500">✗</span>
+                  All daily logs and biometric data
+                </li>
+              </ul>
+              <p className="text-xs text-primary mb-6">
+                Your account, email, and basic settings will be preserved.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="flex-1 py-3 bg-[#222] text-white font-bold uppercase text-xs border border-[#333] hover:bg-[#333] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResetAllData}
+                  className="flex-1 py-3 bg-red-900 text-white font-bold uppercase text-xs hover:bg-red-800 transition-colors"
+                >
+                  Reset Everything
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-12 text-center">
         <p className="text-[10px] text-[#333] font-mono uppercase">VoltLift Sys v1.0.4</p>
