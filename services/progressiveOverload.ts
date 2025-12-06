@@ -89,10 +89,22 @@ export function getSuggestion(
 
   // No previous workout data → Conservative starting point
   if (!lastWorkout || lastWorkout.sets.length === 0) {
+    // ALWAYS start conservative for new exercises, regardless of difficulty
+    // Users should learn form first, then add weight
+    let startingWeight = 20; // Default: Empty bar or light dumbbells
+
+    if (exercise?.difficulty === 'Beginner') {
+      startingWeight = 20; // Empty bar (20kg/45lbs)
+    } else if (exercise?.difficulty === 'Intermediate') {
+      startingWeight = 30; // Bar + small plates
+    } else {
+      startingWeight = 40; // Still conservative for advanced movements
+    }
+
     return {
-      weight: exercise?.difficulty === 'Beginner' ? 45 : 95, // Bar weight or light starting
+      weight: startingWeight,
       reps: [8, 12],
-      reasoning: 'First time logging this exercise. Start conservative to learn form.',
+      reasoning: `First time logging this exercise. Start light (${startingWeight}kg) to master form before adding weight.`,
       confidence: 'low',
       recoveryScore
     };
