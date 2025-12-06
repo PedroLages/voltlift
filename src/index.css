@@ -6,4 +6,28 @@
   body {
     @apply bg-black text-white;
   }
+
+  /* iOS Safari touch fixes */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: rgba(204, 255, 0, 0.2);
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+
+  /* Prevent iOS Safari from applying default button styles */
+  button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* Ensure clicks are registered on iOS */
+  input, textarea, select {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }

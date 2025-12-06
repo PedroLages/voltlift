@@ -9,6 +9,9 @@ import { generateExerciseVisual } from '../services/geminiService';
 import NotificationSettings from '../components/NotificationSettings';
 import BodyMetricsLogger from '../components/BodyMetricsLogger';
 import BodyweightChart from '../components/BodyweightChart';
+import ProgressPhotos from '../components/ProgressPhotos';
+import MeasurementTrends from '../components/MeasurementTrends';
+import BodyLiftCorrelation from '../components/BodyLiftCorrelation';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -18,6 +21,7 @@ const Profile = () => {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [batchSize, setBatchSize] = useState<'1K' | '2K' | '4K'>('1K');
   const [showPlateConfig, setShowPlateConfig] = useState(false);
+  const [bodyMetricsTab, setBodyMetricsTab] = useState<'logger' | 'trends' | 'photos' | 'correlation'>('logger');
 
   const totalWorkouts = history.length;
   const totalVolume = history.reduce((acc, sess) => {
@@ -145,9 +149,62 @@ const Profile = () => {
       {/* Body Metrics Section */}
       <section className="mb-10">
         <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Body Metrics</h3>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-4 overflow-x-auto">
+          <button
+            onClick={() => setBodyMetricsTab('logger')}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+              bodyMetricsTab === 'logger'
+                ? 'bg-primary text-black'
+                : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
+            }`}
+          >
+            Logger
+          </button>
+          <button
+            onClick={() => setBodyMetricsTab('trends')}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+              bodyMetricsTab === 'trends'
+                ? 'bg-primary text-black'
+                : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
+            }`}
+          >
+            Trends
+          </button>
+          <button
+            onClick={() => setBodyMetricsTab('photos')}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+              bodyMetricsTab === 'photos'
+                ? 'bg-primary text-black'
+                : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
+            }`}
+          >
+            Photos
+          </button>
+          <button
+            onClick={() => setBodyMetricsTab('correlation')}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+              bodyMetricsTab === 'correlation'
+                ? 'bg-primary text-black'
+                : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
+            }`}
+          >
+            Correlation
+          </button>
+        </div>
+
+        {/* Tab Content */}
         <div className="space-y-4">
-          <BodyweightChart days={30} />
-          <BodyMetricsLogger />
+          {bodyMetricsTab === 'logger' && (
+            <>
+              <BodyweightChart days={30} />
+              <BodyMetricsLogger />
+            </>
+          )}
+          {bodyMetricsTab === 'trends' && <MeasurementTrends />}
+          {bodyMetricsTab === 'photos' && <ProgressPhotos />}
+          {bodyMetricsTab === 'correlation' && <BodyLiftCorrelation />}
         </div>
       </section>
 

@@ -97,12 +97,29 @@ export interface Program {
   sessions: ProgramSession[];
 }
 
+export interface BodyMeasurements {
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  leftArm?: number;
+  rightArm?: number;
+  leftThigh?: number;
+  rightThigh?: number;
+  neck?: number;
+  shoulders?: number;
+  leftCalf?: number;
+  rightCalf?: number;
+}
+
 export interface DailyLog {
     date: string; // YYYY-MM-DD
     sleepHours?: number;
     proteinGrams?: number;
     waterLitres?: number;
     stressLevel?: number;
+    bodyweight?: number; // Bodyweight in lbs or kg
+    measurements?: BodyMeasurements; // Body measurements in inches/cm
+    progressPhoto?: string; // Base64 encoded image or URL
 }
 
 export interface NotificationSettings {
