@@ -6,6 +6,7 @@ import { useStore } from './store/useStore';
 import { useAuthStore } from './store/useAuthStore';
 import NotificationScheduler from './components/NotificationScheduler';
 import { initializeNotificationListeners } from './services/notificationService';
+import DesktopLayout from './components/desktop/DesktopLayout';
 
 // Lazy load pages for better performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -23,6 +24,13 @@ const ProgramDetail = lazy(() => import('./pages/ProgramDetail'));
 const ProgramEnroll = lazy(() => import('./pages/ProgramEnroll'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Login = lazy(() => import('./pages/Login'));
+
+// Desktop Dashboard Pages
+const DesktopOverview = lazy(() => import('./pages/desktop/Overview'));
+const DesktopAnalytics = lazy(() => import('./pages/desktop/Analytics'));
+const DesktopCalendar = lazy(() => import('./pages/desktop/Calendar'));
+const DesktopPrograms = lazy(() => import('./pages/desktop/Programs'));
+const DesktopData = lazy(() => import('./pages/desktop/Data'));
 
 // Loading component
 const PageLoader = () => (
@@ -157,6 +165,15 @@ const AppContent = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/welcome" element={<Landing4 />} />
             <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
+
+            {/* Desktop Dashboard Routes */}
+            <Route path="/desktop" element={<ProtectedRoute><DesktopLayout><DesktopOverview /></DesktopLayout></ProtectedRoute>} />
+            <Route path="/desktop/analytics" element={<ProtectedRoute><DesktopLayout><DesktopAnalytics /></DesktopLayout></ProtectedRoute>} />
+            <Route path="/desktop/calendar" element={<ProtectedRoute><DesktopLayout><DesktopCalendar /></DesktopLayout></ProtectedRoute>} />
+            <Route path="/desktop/programs" element={<ProtectedRoute><DesktopLayout><DesktopPrograms /></DesktopLayout></ProtectedRoute>} />
+            <Route path="/desktop/data" element={<ProtectedRoute><DesktopLayout><DesktopData /></DesktopLayout></ProtectedRoute>} />
+
+            {/* Mobile App Routes */}
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/lift" element={<ProtectedRoute><Lift /></ProtectedRoute>} />
             <Route path="/builder" element={<ProtectedRoute><ProgramBuilder /></ProtectedRoute>} />
