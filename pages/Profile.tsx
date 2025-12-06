@@ -1,9 +1,10 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut, Trash2, AlertTriangle, Target, Calendar, Activity, Repeat } from 'lucide-react';
+import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut, Trash2, AlertTriangle, Target, Calendar, Activity, Repeat, Camera } from 'lucide-react';
+import { saveImageToDB, getImageFromDB } from '../utils/db';
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
 import NotificationSettings from '../components/NotificationSettings';
@@ -16,6 +17,7 @@ import { getPeriodizationStatus, generateMesocyclePlan } from '../services/perio
 import { getRecoveryAssessment } from '../services/adaptiveRecovery';
 import { analyzeWeakPoints, suggestExerciseVariations } from '../services/workoutIntelligence';
 import { calculateVolumeLandmarks, getVolumeRecommendation } from '../services/volumeOptimization';
+import PerformanceInsights from '../components/PerformanceInsights';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -28,6 +30,57 @@ const Profile = () => {
   const [bodyMetricsTab, setBodyMetricsTab] = useState<'logger' | 'trends' | 'photos' | 'correlation'>('logger');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [intelligenceTab, setIntelligenceTab] = useState<'periodization' | 'recovery' | 'weak-points' | 'variations'>('periodization');
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+
+  // Load profile picture on mount
+  useEffect(() => {
+    getImageFromDB('profile-picture').then((data) => {
+      if (data) setProfilePicture(data);
+    }).catch(err => console.error('Error loading profile picture:', err));
+  }, []);
+
+  // Handle profile picture upload
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploadingPicture(true);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string;
+
+        // Save to IndexedDB
+        await saveImageToDB('profile-picture', base64);
+        setProfilePicture(base64);
+        setUploadingPicture(false);
+      };
+      reader.onerror = () => {
+        alert('Error reading file');
+        setUploadingPicture(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      alert('Failed to upload profile picture');
+      setUploadingPicture(false);
+    }
+  };
 
   const totalWorkouts = history.length;
   const totalVolume = history.reduce((acc, sess) => {
@@ -137,8 +190,36 @@ const Profile = () => {
       <h1 className="text-4xl volt-header mb-8">ATHLETE ID</h1>
 
       <div className="flex items-center gap-6 mb-10 border-b border-[#222] pb-8">
-        <div className="w-24 h-24 bg-primary flex items-center justify-center text-5xl font-black italic text-black">
-          {(settings.name || 'A').charAt(0)}
+        <div className="relative group">
+          {profilePicture ? (
+            <img
+              src={profilePicture}
+              alt="Profile"
+              className="w-24 h-24 object-cover rounded-sm border-2 border-primary"
+            />
+          ) : (
+            <div className="w-24 h-24 bg-primary flex items-center justify-center text-5xl font-black italic text-black rounded-sm">
+              {(settings.name || 'A').charAt(0)}
+            </div>
+          )}
+          {/* Upload button overlay */}
+          <label
+            htmlFor="profile-picture-upload"
+            className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-sm"
+          >
+            {uploadingPicture ? (
+              <RefreshCw size={24} className="text-primary animate-spin" />
+            ) : (
+              <Camera size={24} className="text-primary" />
+            )}
+          </label>
+          <input
+            id="profile-picture-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleProfilePictureUpload}
+            className="hidden"
+          />
         </div>
         <div>
           <h2 className="text-2xl font-bold uppercase tracking-tight text-white">{settings.name || 'Athlete'}</h2>
@@ -575,6 +656,31 @@ const Profile = () => {
                 )}
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* Phase 5: Performance Insights Section (Greg Nuckols & Training Max Analysis) */}
+      {settings.trainingMaxes && Object.keys(settings.trainingMaxes).length > 0 && (
+        <section className="mb-10">
+          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Performance Insights</h3>
+          <div className="space-y-4">
+            {Object.values(settings.trainingMaxes)
+              .filter(tm => tm.history && tm.history.length >= 2)
+              .map(tm => {
+                const exercise = EXERCISE_LIBRARY.find(ex => ex.id === tm.exerciseId);
+                if (!exercise) return null;
+
+                return (
+                  <PerformanceInsights
+                    key={tm.exerciseId}
+                    exerciseId={tm.exerciseId}
+                    exerciseName={exercise.name}
+                    trainingMax={tm}
+                    recentSessions={history.slice(0, 12)}
+                  />
+                );
+              })}
           </div>
         </section>
       )}

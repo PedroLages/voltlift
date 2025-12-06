@@ -10,9 +10,10 @@
  * - RPE-based progression (experience-dependent accuracy)
  * - Volume tracking per muscle group (MEV/MAV/MRV framework)
  * - Conservative defaults to prevent injury
+ * - Phase 2: Personalized learning from user behavior
  */
 
-import { SetLog, ExerciseLog, DailyLog, WorkoutSession, MuscleGroup } from '../types';
+import { SetLog, ExerciseLog, DailyLog, WorkoutSession, MuscleGroup, SuggestionFeedback } from '../types';
 import { EXERCISE_LIBRARY } from '../constants';
 
 export type Confidence = 'high' | 'medium' | 'low';
@@ -24,6 +25,135 @@ export interface ProgressiveSuggestion {
   confidence: Confidence;
   recoveryScore: number; // 0-10 scale
   shouldDeload?: boolean;
+
+  // NEW: Explainability fields (Phase 1 AI Improvements)
+  estimated1RM?: number;
+  currentIntensity?: number; // % of 1RM
+  progressionRate?: number; // % increase
+  mathExplanation?: string; // "75% of 120kg 1RM = 90kg"
+}
+
+/**
+ * Estimate 1RM using validated formulas
+ *
+ * Based on research:
+ * - Brzycki: Most accurate for 1-5 reps (more conservative)
+ * - Epley: Accurate for 2-10 reps (more aggressive)
+ *
+ * Research sources:
+ * - Brzycki formula has lowest error for low reps (<5)
+ * - Epley and Brzycki converge at 10 reps
+ */
+export function estimate1RM(weight: number, reps: number): number {
+  if (reps === 1) return weight;
+
+  // Brzycki formula (most accurate for <5 reps)
+  // Formula: weight * (36 / (37 - reps))
+  if (reps <= 5) {
+    return Math.round(weight * (36 / (37 - reps)));
+  }
+
+  // Epley formula (accurate for 2-10 reps)
+  // Formula: weight * (1 + reps/30)
+  return Math.round(weight * (1 + reps / 30));
+}
+
+/**
+ * Phase 2 AI: Adjust suggestion bias based on user acceptance patterns
+ *
+ * Analyzes recent suggestions for an exercise to learn user preferences.
+ * If user consistently lifts heavier than suggested, increase bias.
+ * If user consistently lifts lighter, decrease bias.
+ *
+ * @param exerciseId - The exercise to analyze
+ * @param suggestionHistory - Recent suggestion feedback
+ * @returns Bias multiplier (1.0 = neutral, >1.0 = user lifts heavier, <1.0 = lighter)
+ */
+export function adjustSuggestionBias(
+  exerciseId: string,
+  suggestionHistory: SuggestionFeedback[] | undefined
+): number {
+  if (!suggestionHistory || suggestionHistory.length === 0) {
+    return 1.0; // Neutral bias - no data yet
+  }
+
+  // Filter to this exercise only, get last 10 suggestions
+  const exerciseFeedback = suggestionHistory
+    .filter(f => f.exerciseId === exerciseId)
+    .slice(-10);
+
+  if (exerciseFeedback.length < 3) {
+    return 1.0; // Need at least 3 data points
+  }
+
+  // Calculate average weight deviation
+  let totalDeviation = 0;
+  let validCount = 0;
+
+  exerciseFeedback.forEach(feedback => {
+    if (feedback.suggestedWeight > 0) {
+      const deviation = (feedback.actualWeight - feedback.suggestedWeight) / feedback.suggestedWeight;
+      totalDeviation += deviation;
+      validCount++;
+    }
+  });
+
+  if (validCount === 0) return 1.0;
+
+  const avgDeviation = totalDeviation / validCount;
+
+  // Convert deviation to bias multiplier
+  // If user lifts 10% heavier on average, bias = 1.1
+  // If user lifts 5% lighter on average, bias = 0.95
+  // Cap at ±15% to prevent extreme adjustments
+  const bias = 1.0 + Math.max(-0.15, Math.min(0.15, avgDeviation));
+
+  return Math.round(bias * 100) / 100; // Round to 2 decimals
+}
+
+/**
+ * Phase 2 AI: Get progression rate based on training age
+ *
+ * Adjusts progression rates based on user experience level:
+ * - Beginner: Faster progression (5-7.5%) - linear gains phase
+ * - Intermediate: Moderate progression (2.5-4%) - standard periodization
+ * - Advanced: Slower progression (1.25-2.5%) - precise increments
+ *
+ * Also factors in recent success rate to auto-regulate.
+ *
+ * @param experienceLevel - User's training age
+ * @param suggestionHistory - Recent suggestion feedback for success rate
+ * @returns Base progression rate as decimal (0.025 = 2.5%)
+ */
+export function getProgressionRate(
+  experienceLevel: 'Beginner' | 'Intermediate' | 'Advanced',
+  suggestionHistory: SuggestionFeedback[] | undefined
+): number {
+  // Base rates by experience level (research-backed)
+  const baseRates = {
+    'Beginner': 0.05,      // 5% - beginners can progress faster
+    'Intermediate': 0.025, // 2.5% - standard linear progression
+    'Advanced': 0.0125     // 1.25% - slower, more precise
+  };
+
+  let baseRate = baseRates[experienceLevel];
+
+  // Auto-regulate based on recent success
+  if (suggestionHistory && suggestionHistory.length >= 5) {
+    const recent = suggestionHistory.slice(-5);
+    const successRate = recent.filter(f => f.accepted).length / recent.length;
+
+    // If user is successfully accepting most suggestions (>80%), can be more aggressive
+    if (successRate >= 0.8) {
+      baseRate *= 1.2; // Increase by 20%
+    }
+    // If user is rejecting most suggestions (<40%), be more conservative
+    else if (successRate < 0.4) {
+      baseRate *= 0.8; // Decrease by 20%
+    }
+  }
+
+  return baseRate;
 }
 
 /**
@@ -66,13 +196,16 @@ export function calculateRecoveryScore(
  * - Fitbod: 27% faster gains with AI suggestions
  * - Alpha Progression: RPE-based periodization
  * - Dr. Mike Israetel: Volume landmarks (MEV/MAV/MRV)
+ * - Phase 2: Personalized learning from user behavior
  */
 export function getSuggestion(
   exerciseId: string,
   lastWorkout: ExerciseLog | undefined,
   dailyLog: DailyLog | undefined,
   history: WorkoutSession[],
-  currentSessionStart: number
+  currentSessionStart: number,
+  experienceLevel: 'Beginner' | 'Intermediate' | 'Advanced' = 'Intermediate',
+  suggestionHistory?: SuggestionFeedback[]
 ): ProgressiveSuggestion {
   const exercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
 
@@ -129,10 +262,19 @@ export function getSuggestion(
 
   const { weight, reps, rpe } = topSet;
 
+  // Calculate estimated 1RM and current intensity
+  const estimated1RM = estimate1RM(weight, reps);
+  const currentIntensity = Math.round((weight / estimated1RM) * 100);
+
+  // Phase 2: Personalized learning
+  const userBias = adjustSuggestionBias(exerciseId, suggestionHistory);
+  const baseProgressionRate = getProgressionRate(experienceLevel, suggestionHistory);
+
   // HEURISTIC 1: Under-Recovered → Deload or Maintain
   if (recoveryScore < 5) {
+    const deloadWeight = Math.round(weight * 0.85);
     return {
-      weight: Math.round(weight * 0.85), // 15% deload
+      weight: deloadWeight,
       reps: [6, 8],
       reasoning: `Low recovery score (${recoveryScore}/10). ${
         dailyLog?.sleepHours && dailyLog.sleepHours < 6
@@ -141,70 +283,123 @@ export function getSuggestion(
       }`,
       confidence: 'high',
       recoveryScore,
-      shouldDeload: true
+      shouldDeload: true,
+      estimated1RM,
+      currentIntensity: Math.round((deloadWeight / estimated1RM) * 100),
+      progressionRate: -15,
+      mathExplanation: `Last: ${weight}kg × ${reps} reps (est. 1RM: ${estimated1RM}kg). Deload to ${deloadWeight}kg (${Math.round((deloadWeight / estimated1RM) * 100)}% intensity) for recovery.`
     };
   }
 
-  // HEURISTIC 2: RPE-Based Progression (Gold Standard for Auto-Regulation)
-  // If RPE < 8 (RIR > 2) → Room to push harder
+  // HEURISTIC 2: Intensity-Based Progression (Research-Backed Thresholds)
+  // Start with personalized base rate, then adjust for intensity
+  let progressionRate = baseProgressionRate;
+  let targetReps = [reps, reps + 1];
+
+  // Low intensity (<70%) + room to push → Use base rate or increase if conservative
+  if (currentIntensity < 70 && rpe && rpe < 7 && recoveryScore >= 7) {
+    // If base rate is already aggressive (beginner), keep it; otherwise increase
+    progressionRate = Math.max(baseProgressionRate, 0.05);
+    targetReps = [reps - 2, reps]; // Slightly lower reps at higher weight
+  }
+  // Moderate intensity (70-85%) → Use personalized base rate
+  else if (currentIntensity >= 70 && currentIntensity < 85) {
+    progressionRate = baseProgressionRate;
+    targetReps = [reps, reps + 1];
+  }
+  // High intensity (≥85%) → More conservative
+  else if (currentIntensity >= 85) {
+    // Cap at 1.25% for safety near max
+    progressionRate = Math.min(baseProgressionRate, 0.0125);
+    targetReps = [reps - 1, reps]; // Lower reps to maintain technique
+  }
+
+  // RPE override: If RPE very high (≥9.5), maintain weight
+  if (rpe && rpe >= 9.5) {
+    return {
+      weight: weight,
+      reps: [reps, reps],
+      reasoning: `RPE ${rpe}/10 is very high. Maintain weight to prevent overtraining.`,
+      confidence: 'medium',
+      recoveryScore,
+      estimated1RM,
+      currentIntensity,
+      progressionRate: 0,
+      mathExplanation: `Current: ${weight}kg at ${currentIntensity}% intensity (${estimated1RM}kg 1RM). RPE too high for progression.`
+    };
+  }
+
+  // Apply progression with intensity-based logic + user bias
   if (rpe && rpe < 7 && recoveryScore >= 7) {
     // User left reps in the tank + well recovered → PUSH
-    const newWeight = Math.round(weight * 1.05); // 5% increase
+    const baseWeight = Math.round(weight * (1 + progressionRate));
+    const newWeight = Math.round(baseWeight * userBias);
     return {
       weight: newWeight,
-      reps: [reps - 2, reps], // Slightly lower reps at higher weight
-      reasoning: `RPE ${rpe}/10 + excellent recovery (${recoveryScore}/10) = ready to push! +5% weight.`,
+      reps: targetReps,
+      reasoning: `RPE ${rpe}/10 + excellent recovery (${recoveryScore}/10) at ${currentIntensity}% intensity = ready to push! +${(progressionRate * 100).toFixed(1)}% weight${userBias !== 1.0 ? ` (personalized ${userBias > 1.0 ? '+' : ''}${((userBias - 1) * 100).toFixed(0)}%)` : ''}.`,
       confidence: 'high',
-      recoveryScore
+      recoveryScore,
+      estimated1RM,
+      currentIntensity: Math.round((newWeight / estimated1RM) * 100),
+      progressionRate: progressionRate * 100,
+      mathExplanation: `Last: ${weight}kg × ${reps} reps (${currentIntensity}% of ${estimated1RM}kg 1RM). Next: ${newWeight}kg = ${Math.round((newWeight / estimated1RM) * 100)}% intensity${userBias !== 1.0 ? ` (adjusted for your preference: ${userBias}x)` : ''}.`
     };
   }
 
   if (rpe && rpe >= 8 && rpe <= 9 && recoveryScore >= 7) {
     // Perfect intensity + good recovery → Small progression
-    const newWeight = Math.round(weight * 1.025); // 2.5% increase
+    const baseWeight = Math.round(weight * (1 + progressionRate));
+    const newWeight = Math.round(baseWeight * userBias);
     return {
       weight: newWeight,
-      reps: [reps, reps + 1],
-      reasoning: `RPE ${rpe}/10 (optimal intensity). Small progression +2.5% to maintain stimulus.`,
+      reps: targetReps,
+      reasoning: `RPE ${rpe}/10 (optimal) at ${currentIntensity}% intensity. +${(progressionRate * 100).toFixed(1)}% progression to maintain stimulus${userBias !== 1.0 ? ` (personalized)` : ''}.`,
       confidence: 'high',
-      recoveryScore
-    };
-  }
-
-  if (rpe && rpe >= 9.5) {
-    // Near-failure training → Fatigue accumulation risk
-    return {
-      weight: weight, // Maintain
-      reps: [reps, reps],
-      reasoning: `RPE ${rpe}/10 is very high. Maintain weight to prevent overtraining.`,
-      confidence: 'medium',
-      recoveryScore
+      recoveryScore,
+      estimated1RM,
+      currentIntensity: Math.round((newWeight / estimated1RM) * 100),
+      progressionRate: progressionRate * 100,
+      mathExplanation: `Last: ${weight}kg × ${reps} reps (${currentIntensity}% of ${estimated1RM}kg 1RM). Next: ${newWeight}kg = ${Math.round((newWeight / estimated1RM) * 100)}% intensity${userBias !== 1.0 ? ` (learned from your behavior)` : ''}.`
     };
   }
 
   // HEURISTIC 3: Rep-Based Progression (When RPE not tracked)
+  // Use personalized progression rates even without RPE
   if (!rpe) {
     if (reps >= 12 && recoveryScore >= 6) {
       // High reps achieved → Increase weight, lower reps
-      const newWeight = Math.round(weight * 1.05);
+      // Use personalized rate or cap at 5% if at high intensity
+      let repProgRate = currentIntensity >= 85 ? Math.min(baseProgressionRate, 0.025) : Math.max(baseProgressionRate, 0.05);
+      const baseWeight = Math.round(weight * (1 + repProgRate));
+      const newWeight = Math.round(baseWeight * userBias);
       return {
         weight: newWeight,
         reps: [6, 10],
-        reasoning: `Completed ${reps} reps last time. Increase weight to build strength.`,
+        reasoning: `Completed ${reps} reps last time at ${currentIntensity}% intensity. Increase weight to build strength${userBias !== 1.0 ? ` (personalized)` : ''}.`,
         confidence: 'medium',
-        recoveryScore
+        recoveryScore,
+        estimated1RM,
+        currentIntensity: Math.round((newWeight / estimated1RM) * 100),
+        progressionRate: repProgRate * 100,
+        mathExplanation: `Last: ${weight}kg × ${reps} reps (${currentIntensity}% of ${estimated1RM}kg 1RM). Next: ${newWeight}kg for strength focus${userBias !== 1.0 ? ` (${userBias}x bias)` : ''}.`
       };
     }
 
     if (reps >= 8 && reps <= 11 && recoveryScore >= 6) {
-      // In hypertrophy range → Small progression
-      const newWeight = Math.round(weight * 1.025);
+      // In hypertrophy range → Use personalized progression
+      const baseWeight = Math.round(weight * (1 + progressionRate));
+      const newWeight = Math.round(baseWeight * userBias);
       return {
         weight: newWeight,
         reps: [reps, reps + 1],
-        reasoning: `Good rep range (${reps}). Small weight increase for progressive overload.`,
+        reasoning: `Good rep range (${reps}) at ${currentIntensity}% intensity. +${(progressionRate * 100).toFixed(1)}% for progressive overload${userBias !== 1.0 ? ` (personalized)` : ''}.`,
         confidence: 'medium',
-        recoveryScore
+        recoveryScore,
+        estimated1RM,
+        currentIntensity: Math.round((newWeight / estimated1RM) * 100),
+        progressionRate: progressionRate * 100,
+        mathExplanation: `Last: ${weight}kg × ${reps} reps (${currentIntensity}% of ${estimated1RM}kg 1RM). Next: ${newWeight}kg = ${Math.round((newWeight / estimated1RM) * 100)}% intensity${userBias !== 1.0 ? ` (learned bias: ${userBias}x)` : ''}.`
       };
     }
 
@@ -213,20 +408,30 @@ export function getSuggestion(
       return {
         weight: weight,
         reps: [6, 8],
-        reasoning: `Only ${reps} reps last time. Maintain weight and aim for more reps.`,
+        reasoning: `Only ${reps} reps last time at ${currentIntensity}% intensity. Maintain weight and aim for more reps.`,
         confidence: 'low',
-        recoveryScore
+        recoveryScore,
+        estimated1RM,
+        currentIntensity,
+        progressionRate: 0,
+        mathExplanation: `Current: ${weight}kg at ${currentIntensity}% intensity (${estimated1RM}kg 1RM). Focus on rep volume before adding weight.`
       };
     }
   }
 
-  // HEURISTIC 4: Default Conservative Progression
+  // HEURISTIC 4: Default Conservative Progression with Personalization
+  const baseWeight = Math.round(weight * (1 + progressionRate));
+  const defaultNewWeight = Math.round(baseWeight * userBias);
   return {
-    weight: Math.round(weight * 1.025), // 2.5% increase
-    reps: [reps, reps + 1],
-    reasoning: `Moderate recovery (${recoveryScore}/10). Conservative progression +2.5%.`,
+    weight: defaultNewWeight,
+    reps: [reps, reps + 1] as [number, number],
+    reasoning: `Moderate recovery (${recoveryScore}/10) at ${currentIntensity}% intensity. Conservative progression +${(progressionRate * 100).toFixed(1)}%${userBias !== 1.0 ? ` (personalized for you)` : ''}.`,
     confidence: 'medium',
-    recoveryScore
+    recoveryScore,
+    estimated1RM,
+    currentIntensity: Math.round((defaultNewWeight / estimated1RM) * 100),
+    progressionRate: progressionRate * 100,
+    mathExplanation: `Last: ${weight}kg × ${reps} reps (${currentIntensity}% of ${estimated1RM}kg 1RM). Next: ${defaultNewWeight}kg = ${Math.round((defaultNewWeight / estimated1RM) * 100)}% intensity${userBias !== 1.0 ? ` (adjusted ${userBias}x based on your history)` : ''}.`
   };
 }
 

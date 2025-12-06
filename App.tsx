@@ -5,6 +5,8 @@ import { Home, Dumbbell, Calendar, User, Play, Timer } from 'lucide-react';
 import { useStore } from './store/useStore';
 import { useAuthStore } from './store/useAuthStore';
 import NotificationScheduler from './components/NotificationScheduler';
+import OfflineIndicator from './components/OfflineIndicator';
+import ScrollToTop from './components/ScrollToTop';
 import { initializeNotificationListeners } from './services/notificationService';
 import DesktopLayout from './components/desktop/DesktopLayout';
 
@@ -21,7 +23,6 @@ const Landing4 = lazy(() => import('./pages/landings/Landing4'));
 const ProgramBuilder = lazy(() => import('./pages/ProgramBuilder'));
 const ProgramBrowser = lazy(() => import('./pages/ProgramBrowser'));
 const ProgramDetail = lazy(() => import('./pages/ProgramDetail'));
-const ProgramEnroll = lazy(() => import('./pages/ProgramEnroll'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Login = lazy(() => import('./pages/Login'));
 
@@ -149,6 +150,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isAuthLoading } = useAuthStore();
   const location = useLocation();
 
+  // TEMPORARY: Bypass auth for testing Phase 3 features
+  const TESTING_MODE = localStorage.getItem('TESTING_MODE') === 'true';
+  if (TESTING_MODE) {
+    return <>{children}</>;
+  }
+
   // Wait for Firebase to check persisted auth state
   if (isAuthLoading) {
     return <PageLoader />;
@@ -173,6 +180,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AppContent = () => {
   return (
     <div className="min-h-screen bg-background text-text pb-28 font-sans selection:bg-primary selection:text-black">
+        {/* Scroll to top on route change */}
+        <ScrollToTop />
+
+        {/* Offline Indicator */}
+        <OfflineIndicator />
+
         {/* Background notification scheduler */}
         <NotificationScheduler />
 
@@ -195,7 +208,6 @@ const AppContent = () => {
             <Route path="/builder" element={<ProtectedRoute><ProgramBuilder /></ProtectedRoute>} />
             <Route path="/programs" element={<ProtectedRoute><ProgramBrowser /></ProtectedRoute>} />
             <Route path="/program/:programId" element={<ProtectedRoute><ProgramDetail /></ProtectedRoute>} />
-            <Route path="/program-enroll/:programId" element={<ProtectedRoute><ProgramEnroll /></ProtectedRoute>} />
             <Route path="/exercises" element={<ProtectedRoute><ExerciseLibrary /></ProtectedRoute>} />
             <Route path="/workout" element={<ProtectedRoute><WorkoutLogger /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />

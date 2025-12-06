@@ -1,7 +1,7 @@
 # 🤖 AI Coach Integration Test Plan
 
 ## Test Environment
-- **URL:** http://localhost:3005/
+- **URL:** http://localhost:3000/
 - **Browser:** Chrome/Safari (mobile viewport recommended)
 - **Prerequisites:** Fresh localStorage (or existing workout history)
 

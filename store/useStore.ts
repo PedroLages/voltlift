@@ -8,6 +8,15 @@ import { backend } from '../services/backend';
 import { getSuggestion, checkVolumeWarning, shouldDeloadWeek, ProgressiveSuggestion } from '../services/progressiveOverload';
 import { calculate1RM, getBest1RM, classifyStrengthLevel, calculateOverallStrengthScore, OneRepMax } from '../services/strengthScore';
 
+interface UndoableAction {
+  type: 'set' | 'exercise';
+  data: any;
+  exerciseIndex?: number;
+  setIndex?: number;
+  logId?: string;
+  timestamp: number;
+}
+
 interface AppState {
   settings: UserSettings;
   history: WorkoutSession[];
@@ -15,12 +24,15 @@ interface AppState {
   programs: Program[];
   activeWorkout: WorkoutSession | null;
   customExerciseVisuals: Record<string, string>;
-  
+
   // Phase 4: Bio-Feedback & Cloud
   dailyLogs: Record<string, DailyLog>;
   syncStatus: 'synced' | 'syncing' | 'offline' | 'error';
   activeBiometrics: BiometricPoint[];
-  
+
+  // Undo Stack for deletions
+  undoStack: UndoableAction | null;
+
   // Global Rest Timer State
   restTimerStart: number | null;
   restDuration: number;
@@ -36,6 +48,9 @@ interface AppState {
   addSet: (exerciseIndex: number) => void;
   duplicateSet: (exerciseIndex: number, setIndex: number) => void;
   removeSet: (exerciseIndex: number, setIndex: number) => void;
+  restoreLastDeleted: () => void;
+  clearUndoStack: () => void;
+  toggleFavoriteExercise: (exerciseId: string) => void;
   updateSettings: (settings: Partial<UserSettings>) => void;
   completeOnboarding: (name: string, goal: Goal, experience: 'Beginner' | 'Intermediate' | 'Advanced', equipment: string[]) => void;
   saveExerciseVisual: (exerciseId: string, url: string) => void;
@@ -104,7 +119,9 @@ export const useStore = create<AppState>()(
       dailyLogs: {},
       syncStatus: 'synced',
       activeBiometrics: [],
-      
+
+      undoStack: null,
+
       restTimerStart: null,
       restDuration: 90,
 
@@ -428,6 +445,19 @@ export const useStore = create<AppState>()(
          if (!activeWorkout) return;
 
          const newLogs = [...activeWorkout.logs];
+         const deletedSet = newLogs[exerciseIndex].sets[setIndex];
+
+         // Save to undo stack before removing
+         set({
+           undoStack: {
+             type: 'set',
+             data: deletedSet,
+             exerciseIndex,
+             setIndex,
+             timestamp: Date.now(),
+           },
+         });
+
          newLogs[exerciseIndex].sets.splice(setIndex, 1);
          set({ activeWorkout: { ...activeWorkout, logs: newLogs } });
       },
@@ -460,6 +490,24 @@ export const useStore = create<AppState>()(
         if (newSettings.ironCloud) {
             get().syncData();
         }
+      },
+
+      toggleFavoriteExercise: (exerciseId) => {
+        set((state) => {
+          const currentFavorites = state.settings.favoriteExercises || [];
+          const isFavorite = currentFavorites.includes(exerciseId);
+
+          const newFavorites = isFavorite
+            ? currentFavorites.filter(id => id !== exerciseId)
+            : [...currentFavorites, exerciseId];
+
+          return {
+            settings: {
+              ...state.settings,
+              favoriteExercises: newFavorites,
+            },
+          };
+        });
       },
 
       completeOnboarding: (name, goal, experience, equipment) => {
@@ -637,8 +685,42 @@ export const useStore = create<AppState>()(
       removeExerciseLog: (logId) => {
           const { activeWorkout } = get();
           if (!activeWorkout) return;
+
+          const deletedLog = activeWorkout.logs.find(log => log.id === logId);
+          if (deletedLog) {
+            // Save to undo stack before removing
+            set({
+              undoStack: {
+                type: 'exercise',
+                data: deletedLog,
+                logId,
+                timestamp: Date.now(),
+              },
+            });
+          }
+
           const newLogs = activeWorkout.logs.filter(log => log.id !== logId);
           set({ activeWorkout: { ...activeWorkout, logs: newLogs } });
+      },
+
+      restoreLastDeleted: () => {
+        const { activeWorkout, undoStack } = get();
+        if (!activeWorkout || !undoStack) return;
+
+        if (undoStack.type === 'set' && undoStack.exerciseIndex !== undefined && undoStack.setIndex !== undefined) {
+          // Restore deleted set
+          const newLogs = [...activeWorkout.logs];
+          newLogs[undoStack.exerciseIndex].sets.splice(undoStack.setIndex, 0, undoStack.data);
+          set({ activeWorkout: { ...activeWorkout, logs: newLogs }, undoStack: null });
+        } else if (undoStack.type === 'exercise') {
+          // Restore deleted exercise
+          const newLogs = [...activeWorkout.logs, undoStack.data];
+          set({ activeWorkout: { ...activeWorkout, logs: newLogs }, undoStack: null });
+        }
+      },
+
+      clearUndoStack: () => {
+        set({ undoStack: null });
       },
 
       toggleSuperset: (logId) => {
@@ -918,9 +1000,28 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'voltlift-storage',
+      version: 2, // Increment when schema changes
       partialize: (state) => {
           const { customExerciseVisuals, restTimerStart, activeBiometrics, ...rest } = state;
           return rest;
+      },
+      migrate: (persistedState: any, version: number) => {
+        // Version 2: Programs now include filter metadata (goal, difficulty, splitType, frequency)
+        if (version < 2) {
+          // Check if programs are missing filter metadata
+          const needsMigration = persistedState.programs?.some((p: any) =>
+            !p.goal || !p.difficulty || !p.splitType || p.frequency === undefined
+          );
+
+          if (needsMigration) {
+            console.log('[Migration v2] Updating programs with filter metadata');
+            return {
+              ...persistedState,
+              programs: INITIAL_PROGRAMS, // Reset to current program definitions
+            };
+          }
+        }
+        return persistedState;
       }
     }
   )

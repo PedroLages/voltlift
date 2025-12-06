@@ -1,12 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Plus, ChevronRight, Dumbbell, PenTool, Trash2, Play, CalendarRange, X, Edit, Copy, FileText, Zap } from 'lucide-react';
 import { Program, WorkoutSession } from '../types';
 import { EXERCISE_LIBRARY } from '../constants';
-import TemplateEditor from '../components/TemplateEditor';
 import EmptyState from '../components/EmptyState';
+
+// Lazy load heavy components
+const TemplateEditor = lazy(() => import('../components/TemplateEditor'));
 
 const Lift = () => {
   const navigate = useNavigate();
@@ -384,10 +386,12 @@ const Lift = () => {
 
       {/* Template Editor Modal */}
       {editingTemplate && (
-        <TemplateEditor
-          template={editingTemplate}
-          onClose={() => setEditingTemplate(null)}
-        />
+        <Suspense fallback={<div />}>
+          <TemplateEditor
+            template={editingTemplate}
+            onClose={() => setEditingTemplate(null)}
+          />
+        </Suspense>
       )}
 
     </div>

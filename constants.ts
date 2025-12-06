@@ -1808,6 +1808,47 @@ export const INITIAL_TEMPLATES: WorkoutSession[] = [
           { id: 'ebh_ld_lp', exerciseId: 'e13', sets: Array(2).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Leg Press 2x15
           { id: 'ebh_ld_calf', exerciseId: 'e20', sets: Array(2).fill({ id: 's', reps: 20, weight: 0, completed: false, type: 'N' }) }, // Calf Raise 2x20
       ]
+  },
+
+  // --- GREG NUCKOLS BEGINNER 3-DAY ---
+  // Day 1: Squat Focus
+  {
+      id: 'gn_beg_squat',
+      name: 'GN Beginner: Squat Day',
+      startTime: 0,
+      status: 'template',
+      notes: 'Week 1-2: 3×5 @ 70%, 75%, 80% | Week 3: 3×5 @ 70%, 75%, 80% + 1×AMAP @ 85% | Week 4: 2×5 @ 60%',
+      logs: [
+          { id: 'gn_sq_1', exerciseId: 'e4', sets: Array(4).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // Squat 3-4 sets (varies by week)
+          { id: 'gn_sq_acc1', exerciseId: 'e13', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Leg Press 3x10
+          { id: 'gn_sq_acc2', exerciseId: 'e20', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Calf Raise 3x15
+      ]
+  },
+  // Day 2: Bench Focus
+  {
+      id: 'gn_beg_bench',
+      name: 'GN Beginner: Bench Day',
+      startTime: 0,
+      status: 'template',
+      notes: 'Week 1-2: 3×5 @ 70%, 75%, 80% | Week 3: 3×5 @ 70%, 75%, 80% + 1×AMAP @ 85% | Week 4: 2×5 @ 60%',
+      logs: [
+          { id: 'gn_bp_1', exerciseId: 'e1', sets: Array(4).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // Bench 3-4 sets
+          { id: 'gn_bp_acc1', exerciseId: 'e16', sets: Array(3).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // OHP 3x8
+          { id: 'gn_bp_acc2', exerciseId: 'e6', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Dips 3x12
+      ]
+  },
+  // Day 3: Deadlift Focus
+  {
+      id: 'gn_beg_deadlift',
+      name: 'GN Beginner: Deadlift Day',
+      startTime: 0,
+      status: 'template',
+      notes: 'Week 1-2: 3×5 @ 70%, 75%, 80% | Week 3: 3×5 @ 70%, 75%, 80% + 1×AMAP @ 85% | Week 4: 2×5 @ 60%',
+      logs: [
+          { id: 'gn_dl_1', exerciseId: 'e5', sets: Array(4).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // Deadlift 3-4 sets
+          { id: 'gn_dl_acc1', exerciseId: 'e19', sets: Array(3).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // Barbell Row 3x8
+          { id: 'gn_dl_acc2', exerciseId: 'e11', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // RDL 3x10
+      ]
   }
 ];
 
@@ -1818,6 +1859,10 @@ export const INITIAL_PROGRAMS: Program[] = [
         name: 'Reddit PPL',
         description: 'The most popular hypertrophy program on the internet. High frequency, linear progression. 6 days/week.',
         weeks: 8,
+        goal: 'Hypertrophy',
+        splitType: 'PPL',
+        difficulty: 'Intermediate',
+        frequency: 6,
         sessions: [
             // Week 1
             { templateId: 'ppl_push', week: 1, day: 1 },
@@ -1840,6 +1885,10 @@ export const INITIAL_PROGRAMS: Program[] = [
         name: 'StrongLifts 5x5',
         description: 'The ultimate beginner strength foundation. Master the big 5 compound lifts. 3 days/week.',
         weeks: 12,
+        goal: 'Strength',
+        splitType: 'Full Body',
+        difficulty: 'Beginner',
+        frequency: 3,
         sessions: [
             // Week 1 (A-B-A)
             { templateId: 'sl5x5_a', week: 1, day: 1 },
@@ -1856,6 +1905,10 @@ export const INITIAL_PROGRAMS: Program[] = [
         name: 'Arnold Golden Six',
         description: 'Arnold Schwarzeneggers favorite routine for mass. Full body, 3 times a week. Simple and brutal.',
         weeks: 8,
+        goal: 'Hypertrophy',
+        splitType: 'Full Body',
+        difficulty: 'Beginner',
+        frequency: 3,
         sessions: [
             { templateId: 'arnold_a', week: 1, day: 1 },
             { templateId: 'arnold_a', week: 1, day: 3 },
@@ -1870,6 +1923,10 @@ export const INITIAL_PROGRAMS: Program[] = [
         name: 'nSuns 5/3/1 (LP)',
         description: 'High volume power-building program. Famous for rapid bench press gains. Not for the faint of heart.',
         weeks: 6,
+        goal: 'Power-Building',
+        splitType: 'Full Body',
+        difficulty: 'Intermediate',
+        frequency: 4,
         sessions: [
             { templateId: 'nsuns_1', week: 1, day: 1 },
             { templateId: 'nsuns_2', week: 1, day: 2 },
@@ -1882,6 +1939,10 @@ export const INITIAL_PROGRAMS: Program[] = [
         name: 'Evidence-Based Hypertrophy',
         description: 'Science-backed program for returning lifters 35-50. Optimized recovery, progressive volume, built-in deloads. 4 days/week Upper/Lower.',
         weeks: 12,
+        goal: 'Hypertrophy',
+        splitType: 'Upper/Lower',
+        difficulty: 'Intermediate',
+        frequency: 4,
         sessions: [
             // MESOCYCLE 1: WEEKS 1-4 (MEV → MAV → MAV+ → DELOAD)
             // Week 1: MEV (Minimum Effective Volume)
@@ -1947,6 +2008,10 @@ export const INITIAL_PROGRAMS: Program[] = [
         name: 'GZCLP',
         description: 'Reddit\'s #1 recommended beginner-intermediate program by Cody Lefever. Learn the GZCL tier system: T1 main lifts (5×3), T2 secondary (3×10), T3 accessories (3×15). Built-in progression with failure protocols. 4 days/week.',
         weeks: 12,
+        goal: 'Strength',
+        splitType: 'Full Body',
+        difficulty: 'Beginner',
+        frequency: 4,
         sessions: [
             // Week 1
             { templateId: 'gzclp_day1', week: 1, day: 1 },
@@ -2015,6 +2080,10 @@ export const INITIAL_PROGRAMS: Program[] = [
         name: 'PHAT',
         description: 'Dr. Layne Norton\'s legendary powerbuilding program. Combines power days (3-5 reps) with hypertrophy days (8-20 reps) for maximum strength AND size. Natural bodybuilding champion proven. 5 days/week.',
         weeks: 12,
+        goal: 'Power-Building',
+        splitType: 'Body Part Split',
+        difficulty: 'Intermediate',
+        frequency: 5,
         sessions: [
             // Week 1
             { templateId: 'phat_upper_power', week: 1, day: 1 },
@@ -2095,6 +2164,10 @@ export const INITIAL_PROGRAMS: Program[] = [
         name: '5/3/1 for Beginners',
         description: 'Jim Wendler\'s most famous strength program. Wave loading with FSL (First Set Last) 5×5 supplemental work. Teaches submaximal training and long-term progression. Perfect for strength-focused beginners. 3 days/week.',
         weeks: 12,
+        goal: 'Strength',
+        splitType: 'Full Body',
+        difficulty: 'Beginner',
+        frequency: 3,
         sessions: [
             // Week 1
             { templateId: '531_day1', week: 1, day: 1 },
@@ -2144,6 +2217,34 @@ export const INITIAL_PROGRAMS: Program[] = [
             { templateId: '531_day1', week: 12, day: 1 },
             { templateId: '531_day2', week: 12, day: 3 },
             { templateId: '531_day3', week: 12, day: 5 },
+        ]
+    },
+    {
+        id: 'prog_gn_beginner',
+        name: 'Greg Nuckols Beginner',
+        description: 'Percentage-based strength building. Train squat, bench, and deadlift 3x/week with intelligent progression. 3 days/week, 4-week cycles with AMAP testing.',
+        weeks: 4,
+        goal: 'Strength',
+        splitType: 'Full Body',
+        difficulty: 'Beginner',
+        frequency: 3,
+        sessions: [
+            // Week 1 - Build Week (3×5 @ 70%, 75%, 80%)
+            { templateId: 'gn_beg_squat', week: 1, day: 1 },
+            { templateId: 'gn_beg_bench', week: 1, day: 3 },
+            { templateId: 'gn_beg_deadlift', week: 1, day: 5 },
+            // Week 2 - Peak Week (3×5 @ 75%, 80%, 85%)
+            { templateId: 'gn_beg_squat', week: 2, day: 1 },
+            { templateId: 'gn_beg_bench', week: 2, day: 3 },
+            { templateId: 'gn_beg_deadlift', week: 2, day: 5 },
+            // Week 3 - AMAP Test Week (3×5 @ 70%, 75%, 80% + 1×AMAP @ 85%)
+            { templateId: 'gn_beg_squat', week: 3, day: 1 },
+            { templateId: 'gn_beg_bench', week: 3, day: 3 },
+            { templateId: 'gn_beg_deadlift', week: 3, day: 5 },
+            // Week 4 - Deload (2×5 @ 60%)
+            { templateId: 'gn_beg_squat', week: 4, day: 1 },
+            { templateId: 'gn_beg_bench', week: 4, day: 3 },
+            { templateId: 'gn_beg_deadlift', week: 4, day: 5 },
         ]
     }
 ];

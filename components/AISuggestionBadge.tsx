@@ -118,7 +118,36 @@ export const AISuggestionBadge: React.FC<AISuggestionBadgeProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-[10px] border-t border-[#222] pt-3">
+          {/* NEW: Math Explanation (Phase 1 AI Transparency) */}
+          {suggestion.mathExplanation && (
+            <div className="mb-3 px-3 py-2 bg-[#0a0a0a] border border-[#222]">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles size={10} className="text-primary" />
+                <span className="text-[9px] text-[#666] uppercase font-bold tracking-widest">The Math</span>
+              </div>
+              <p className="text-[10px] font-mono text-white leading-relaxed">
+                {suggestion.mathExplanation}
+              </p>
+            </div>
+          )}
+
+          <div className={`grid ${suggestion.estimated1RM ? 'grid-cols-4' : 'grid-cols-2'} gap-3 text-[10px] border-t border-[#222] pt-3`}>
+            {suggestion.estimated1RM && (
+              <div>
+                <span className="text-[#666] uppercase block mb-1">Est. 1RM</span>
+                <span className="font-bold text-white">
+                  {suggestion.estimated1RM}{units}
+                </span>
+              </div>
+            )}
+            {suggestion.currentIntensity !== undefined && (
+              <div>
+                <span className="text-[#666] uppercase block mb-1">Intensity</span>
+                <span className="font-bold text-primary">
+                  {suggestion.currentIntensity}%
+                </span>
+              </div>
+            )}
             <div>
               <span className="text-[#666] uppercase block mb-1">Confidence</span>
               <span className={`font-bold uppercase ${confidenceColor.split(' ')[0]}`}>

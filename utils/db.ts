@@ -37,6 +37,20 @@ export const saveImageToDB = async (id: string, data: string): Promise<void> => 
   });
 };
 
+export const getImageFromDB = async (id: string): Promise<string | null> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(id);
+
+    request.onsuccess = () => {
+      resolve(request.result || null);
+    };
+    request.onerror = () => reject(request.error);
+  });
+};
+
 export const getAllImagesFromDB = async (): Promise<Record<string, string>> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -44,7 +58,7 @@ export const getAllImagesFromDB = async (): Promise<Record<string, string>> => {
     const store = tx.objectStore(STORE_NAME);
     const request = store.openCursor();
     const results: Record<string, string> = {};
-    
+
     request.onsuccess = (event) => {
       const cursor = (event.target as IDBRequest).result;
       if (cursor) {
@@ -54,7 +68,7 @@ export const getAllImagesFromDB = async (): Promise<Record<string, string>> => {
         resolve(results);
       }
     };
-    
+
     request.onerror = () => reject(request.error);
   });
 };

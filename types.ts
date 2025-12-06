@@ -15,9 +15,22 @@ export interface Exercise {
   commonMistakes: string[];
   tips: string[];
   gifUrl?: string; // Placeholder URL
+  videoUrl?: string; // YouTube video URL for exercise demonstration
 }
 
 export type SetType = 'N' | 'W' | 'D' | 'F'; // Normal, Warmup, Drop, Failure
+
+// Phase 2 AI: Track AI suggestion acceptance for learning
+export interface SuggestionFeedback {
+  exerciseId: string;
+  suggestedWeight: number;
+  actualWeight: number;
+  suggestedReps: [number, number];
+  actualReps: number;
+  accepted: boolean; // Did user use suggested weight?
+  timestamp: number;
+  confidence: 'high' | 'medium' | 'low';
+}
 
 export interface SetLog {
   id: string;
@@ -26,6 +39,15 @@ export interface SetLog {
   rpe?: number; // Rate of Perceived Exertion (1-10)
   type: SetType;
   completed: boolean;
+
+  // Phase 2 AI: Track AI suggestions and user acceptance
+  aiSuggestion?: {
+    weight: number;
+    reps: [number, number];
+    confidence: 'high' | 'medium' | 'low';
+    reasoning: string;
+  };
+  aiSuggestionAccepted?: boolean; // Did user accept the AI suggestion?
 }
 
 export interface ExerciseLog {
@@ -89,12 +111,21 @@ export interface ProgramSession {
   day: number;
 }
 
+export type ProgramGoal = 'Hypertrophy' | 'Strength' | 'Powerlifting' | 'Power-Building' | 'General Fitness';
+export type ProgramSplitType = 'PPL' | 'Upper/Lower' | 'Full Body' | 'Body Part Split';
+export type ProgramDifficulty = 'Beginner' | 'Intermediate' | 'Advanced';
+
 export interface Program {
   id: string;
   name: string;
   description: string;
   weeks: number;
   sessions: ProgramSession[];
+  // Metadata for filtering
+  goal: ProgramGoal;
+  splitType: ProgramSplitType;
+  difficulty: ProgramDifficulty;
+  frequency: number; // Sessions per week
 }
 
 export interface BodyMeasurements {
@@ -159,4 +190,82 @@ export interface UserSettings {
       lastSync?: number;
   };
   notifications?: NotificationSettings;
+  favoriteExercises?: string[]; // Array of exerciseIds that user has starred
+
+  // Phase 2 AI: Personalized learning from user behavior
+  suggestionBias?: Record<string, number>; // exerciseId -> bias multiplier (1.0 = neutral, >1.0 = user lifts heavier, <1.0 = lighter)
+  suggestionHistory?: SuggestionFeedback[]; // Store recent suggestion feedback for learning (last 50 per exercise)
+
+  // Percentage-Based Programming (Greg Nuckols)
+  trainingMaxes?: Record<string, TrainingMax>; // exerciseId -> Training Max
+  activeProgramCycle?: {
+    programId: string;
+    currentCycle: number;
+    cycleStartDate: number;
+    weekInCycle: number;
+  };
+}
+
+// ============================================
+// Percentage-Based Programming Types
+// ============================================
+
+export interface PercentageSet {
+  percentage: number;      // 70, 75, 80, etc.
+  reps: number | 'AMAP';   // 5, 8, or "AMAP"
+  rpe?: number;            // Optional RPE target
+  rest?: number;           // Rest time in seconds
+}
+
+export interface TrainingMaxHistory {
+  value: number;
+  date: number;
+  calculatedFrom?: {
+    type: '1RM' | '3RM' | '5RM' | 'AMAP' | 'manual';
+    value: number;
+    reps?: number;
+  };
+  reason?: string; // "Cycle completion", "Manual adjustment", "AMAP progression", etc.
+}
+
+export interface TrainingMax {
+  exerciseId: string;
+  value: number;           // Current Training Max value
+  lastUpdated: number;
+  calculatedFrom?: {
+    type: '1RM' | '3RM' | '5RM' | 'manual';
+    value: number;
+    date: number;
+  };
+  history: TrainingMaxHistory[]; // All historical TM values
+}
+
+export interface AMAPProgressionRule {
+  minReps: number;         // Minimum reps to qualify for this tier
+  maxReps?: number;        // Maximum reps (undefined = no max)
+  weightIncrease: number;  // Weight to add to TM (in lbs/kg)
+  description?: string;    // "Excellent", "Great", "Good", etc.
+}
+
+export type AMAPProgressionTable = AMAPProgressionRule[];
+
+// Extended SetLog for percentage-based workouts
+export interface PercentageSetLog extends SetLog {
+  prescribed?: PercentageSet;      // What was prescribed (e.g., "70% × 5")
+  calculatedWeight?: number;       // Auto-calculated weight from TM
+  trainingMaxUsed?: number;        // TM value used for calculation
+  isAMAP?: boolean;                // Was this an AMAP set?
+  percentageUsed?: number;         // Actual percentage used (if different from prescribed)
+}
+
+// Extended Program for percentage-based programming
+export interface PercentageProgram extends Program {
+  requiresTrainingMax?: boolean;                    // Does this program need TMs?
+  requiredExercises?: string[];                     // Which exercises need TMs?
+  cycleLength?: number;                             // Weeks per cycle (e.g., 4)
+  progressionType?: 'linear' | 'amap' | 'rm-based' | 'rpe'; // How progression works
+  amapTables?: Record<string, AMAPProgressionTable>; // exerciseId -> AMAP progression rules
+  tmMultiplier?: number;                            // TM = 1RM × multiplier (default 0.90)
+  deloadWeek?: number;                              // Which week is deload? (e.g., week 4)
+  testingWeek?: number;                             // Which week is testing? (e.g., week 4)
 }

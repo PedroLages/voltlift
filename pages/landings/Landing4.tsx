@@ -1,10 +1,22 @@
-import React, { useState } from 'react';
-import { Zap, Target, Brain, TrendingUp, X, Check, Dumbbell } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Zap, Target, Brain, TrendingUp, X, Check, Dumbbell, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Landing4 = () => {
   const navigate = useNavigate();
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [isReturningUser, setIsReturningUser] = useState(false);
+
+  useEffect(() => {
+    // Check if user has visited before
+    const hasVisited = localStorage.getItem('hasVisitedLanding');
+    setIsReturningUser(!!hasVisited);
+
+    // Mark as visited
+    if (!hasVisited) {
+      localStorage.setItem('hasVisitedLanding', 'true');
+    }
+  }, []);
 
   const painPoints = [
     "Forgetting what weight you used last week",
@@ -48,15 +60,28 @@ const Landing4 = () => {
           <Dumbbell className="text-[#ccff00]" size={24} />
           <span className="text-2xl font-black italic tracking-tighter text-[#ccff00]">IRONPATH</span>
         </div>
-        <button
-          onClick={() => navigate('/login')}
-          onTouchStart={() => navigate('/login')}
-          className="group relative px-6 py-2 bg-[#ccff00] text-black font-black text-sm uppercase tracking-wide overflow-hidden transition-all hover:px-8 cursor-pointer"
-          style={{ touchAction: 'manipulation' }}
-        >
-          <span className="relative z-10">Login</span>
-          <div className="absolute inset-0 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
-        </button>
+        <div className="flex items-center gap-3">
+          {isReturningUser && (
+            <button
+              onClick={() => navigate('/')}
+              onTouchStart={() => navigate('/')}
+              className="group flex items-center gap-2 px-4 py-2 border border-[#333] text-[#888] font-bold text-sm uppercase tracking-wide hover:border-[#ccff00] hover:text-[#ccff00] transition-all cursor-pointer"
+              style={{ touchAction: 'manipulation' }}
+            >
+              <span>Skip to App</span>
+              <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/login')}
+            onTouchStart={() => navigate('/login')}
+            className="group relative px-6 py-2 bg-[#ccff00] text-black font-black text-sm uppercase tracking-wide overflow-hidden transition-all hover:px-8 cursor-pointer"
+            style={{ touchAction: 'manipulation' }}
+          >
+            <span className="relative z-10">Login</span>
+            <div className="absolute inset-0 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+          </button>
+        </div>
       </nav>
 
       {/* Hero - Asymmetric */}
