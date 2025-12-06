@@ -10,6 +10,7 @@ import {
   signInWithPopup,
   setPersistence,
   browserLocalPersistence,
+  browserSessionPersistence,
   User as FirebaseUser,
   Auth,
 } from 'firebase/auth';
@@ -62,11 +63,6 @@ export class FirebaseBackend implements BackendService {
     this.db = getFirestore(this.app);
     this.storageInstance = getStorage(this.app);
 
-    // Enable persistent auth sessions (survives browser restarts)
-    setPersistence(this.authInstance, browserLocalPersistence).catch((error) => {
-      console.error('Failed to enable auth persistence:', error);
-    });
-
     // Initialize current user from Firebase Auth
     onAuthStateChanged(this.authInstance, (user) => {
       this.currentUser = user ? this.mapFirebaseUser(user) : null;
@@ -109,14 +105,22 @@ export class FirebaseBackend implements BackendService {
       return (this as any).currentUser;
     },
 
-    login: async (email: string, password: string): Promise<AuthResult> => {
+    login: async (email: string, password: string, rememberMe: boolean = true): Promise<AuthResult> => {
+      // Set persistence BEFORE signing in
+      const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(this.authInstance, persistence);
+
       const credential = await signInWithEmailAndPassword(this.authInstance, email, password);
       const user = this.mapFirebaseUser(credential.user);
       this.currentUser = user;
       return { user, token: await credential.user.getIdToken() };
     },
 
-    register: async (email: string, password: string, name: string): Promise<AuthResult> => {
+    register: async (email: string, password: string, name: string, rememberMe: boolean = true): Promise<AuthResult> => {
+      // Set persistence BEFORE signing up
+      const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(this.authInstance, persistence);
+
       const credential = await createUserWithEmailAndPassword(this.authInstance, email, password);
 
       // Set display name
@@ -135,7 +139,11 @@ export class FirebaseBackend implements BackendService {
       return { user, token: await credential.user.getIdToken() };
     },
 
-    loginWithGoogle: async (): Promise<AuthResult> => {
+    loginWithGoogle: async (rememberMe: boolean = true): Promise<AuthResult> => {
+      // Set persistence BEFORE signing in
+      const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(this.authInstance, persistence);
+
       const provider = new GoogleAuthProvider();
       const credential = await signInWithPopup(this.authInstance, provider);
       const user = this.mapFirebaseUser(credential.user);
@@ -152,7 +160,11 @@ export class FirebaseBackend implements BackendService {
       return { user, token: await credential.user.getIdToken() };
     },
 
-    loginWithApple: async (): Promise<AuthResult> => {
+    loginWithApple: async (rememberMe: boolean = true): Promise<AuthResult> => {
+      // Set persistence BEFORE signing in
+      const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(this.authInstance, persistence);
+
       // Apple Sign-In requires additional setup and OAuthProvider
       // For now, throw not implemented
       throw new Error('Apple Sign-In not yet implemented. Requires Apple Developer account setup.');

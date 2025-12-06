@@ -9,10 +9,10 @@ interface AuthState {
   error: string | null;
 
   // Actions
-  login: (email: string, password: string) => Promise<boolean>;
-  loginWithGoogle: () => Promise<boolean>;
-  loginWithApple: () => Promise<boolean>;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<boolean>;
+  loginWithGoogle: (rememberMe?: boolean) => Promise<boolean>;
+  loginWithApple: (rememberMe?: boolean) => Promise<boolean>;
+  register: (email: string, password: string, name: string, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
   checkAuth: () => void;
   syncFromCloud: () => Promise<void>;
@@ -26,10 +26,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: backend.auth.user,
   error: null,
 
-  login: async (email, password) => {
+  login: async (email, password, rememberMe = true) => {
     set({ isLoading: true, error: null });
     try {
-      const { user } = await backend.auth.login(email, password);
+      const { user } = await backend.auth.login(email, password, rememberMe);
       set({
         isAuthenticated: true,
         user,
@@ -47,10 +47,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  loginWithGoogle: async () => {
+  loginWithGoogle: async (rememberMe = true) => {
     set({ isLoading: true, error: null });
     try {
-      const { user } = await backend.auth.loginWithGoogle();
+      const { user } = await backend.auth.loginWithGoogle(rememberMe);
       set({
         isAuthenticated: true,
         user,
@@ -68,10 +68,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  loginWithApple: async () => {
+  loginWithApple: async (rememberMe = true) => {
     set({ isLoading: true, error: null });
     try {
-      const { user } = await backend.auth.loginWithApple();
+      const { user } = await backend.auth.loginWithApple(rememberMe);
       set({
         isAuthenticated: true,
         user,
@@ -89,10 +89,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  register: async (email, password, name) => {
+  register: async (email, password, name, rememberMe = true) => {
     set({ isLoading: true, error: null });
     try {
-      const { user } = await backend.auth.register(email, password, name);
+      const { user } = await backend.auth.register(email, password, name, rememberMe);
       set({
         isAuthenticated: true,
         user,

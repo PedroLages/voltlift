@@ -27,6 +27,11 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => {
+    // Load preference from localStorage, default to true
+    const saved = localStorage.getItem('rememberMe');
+    return saved === null ? true : saved === 'true';
+  });
 
   // Get return URL from localStorage or default to '/'
   const getReturnUrl = () => {
@@ -38,11 +43,14 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Save rememberMe preference
+    localStorage.setItem('rememberMe', rememberMe.toString());
+
     let success: boolean;
     if (isRegister) {
-      success = await register(email, password, name);
+      success = await register(email, password, name, rememberMe);
     } else {
-      success = await login(email, password);
+      success = await login(email, password, rememberMe);
     }
 
     if (success) {
@@ -51,14 +59,20 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-    const success = await loginWithGoogle();
+    // Save rememberMe preference
+    localStorage.setItem('rememberMe', rememberMe.toString());
+
+    const success = await loginWithGoogle(rememberMe);
     if (success) {
       navigate(getReturnUrl());
     }
   };
 
   const handleAppleLogin = async () => {
-    const success = await loginWithApple();
+    // Save rememberMe preference
+    localStorage.setItem('rememberMe', rememberMe.toString());
+
+    const success = await loginWithApple(rememberMe);
     if (success) {
       navigate(getReturnUrl());
     }
@@ -123,6 +137,20 @@ const Login = () => {
               required
               minLength={8}
             />
+          </div>
+
+          {/* Remember Me Checkbox */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 bg-[#111] border border-[#333] rounded text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black cursor-pointer"
+            />
+            <label htmlFor="rememberMe" className="text-sm text-[#888] cursor-pointer select-none">
+              Keep me signed in for 30 days
+            </label>
           </div>
 
           {error && (
