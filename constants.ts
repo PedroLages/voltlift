@@ -2006,12 +2006,127 @@ export const INITIAL_PROGRAMS: Program[] = [
     {
         id: 'prog_gzclp',
         name: 'GZCLP',
-        description: 'Reddit\'s #1 recommended beginner-intermediate program by Cody Lefever. Learn the GZCL tier system: T1 main lifts (5×3), T2 secondary (3×10), T3 accessories (3×15). Built-in progression with failure protocols. 4 days/week.',
+        description: 'Reddit\'s #1 recommended beginner-intermediate program by Cody Lefever. Learn the GZCL tier system: T1 main lifts (5×3), T2 secondary (3×10), T3 accessories (3×15). Built-in progression with failure protocols. Choose 3 or 4 days/week.',
         weeks: 12,
         goal: 'Strength',
         splitType: 'Full Body',
         difficulty: 'Beginner',
         frequency: 4,
+        supportedFrequencies: [3, 4],
+        frequencyVariants: {
+            3: {
+                description: 'Ideal for beginners or limited recovery - cycles through 4 workouts over 2 weeks',
+                sessions: [
+                    // Week 1-2 cycle: Day1→Day2→Day3→Day4→Day1→Day2
+                    { templateId: 'gzclp_day1', week: 1, day: 1 },
+                    { templateId: 'gzclp_day2', week: 1, day: 3 },
+                    { templateId: 'gzclp_day3', week: 1, day: 5 },
+                    { templateId: 'gzclp_day4', week: 2, day: 1 },
+                    { templateId: 'gzclp_day1', week: 2, day: 3 },
+                    { templateId: 'gzclp_day2', week: 2, day: 5 },
+                    // Week 3-4 cycle: Day3→Day4→Day1→Day2→Day3→Day4
+                    { templateId: 'gzclp_day3', week: 3, day: 1 },
+                    { templateId: 'gzclp_day4', week: 3, day: 3 },
+                    { templateId: 'gzclp_day1', week: 3, day: 5 },
+                    { templateId: 'gzclp_day2', week: 4, day: 1 },
+                    { templateId: 'gzclp_day3', week: 4, day: 3 },
+                    { templateId: 'gzclp_day4', week: 4, day: 5 },
+                    // Week 5-6 cycle
+                    { templateId: 'gzclp_day1', week: 5, day: 1 },
+                    { templateId: 'gzclp_day2', week: 5, day: 3 },
+                    { templateId: 'gzclp_day3', week: 5, day: 5 },
+                    { templateId: 'gzclp_day4', week: 6, day: 1 },
+                    { templateId: 'gzclp_day1', week: 6, day: 3 },
+                    { templateId: 'gzclp_day2', week: 6, day: 5 },
+                    // Week 7-8 cycle
+                    { templateId: 'gzclp_day3', week: 7, day: 1 },
+                    { templateId: 'gzclp_day4', week: 7, day: 3 },
+                    { templateId: 'gzclp_day1', week: 7, day: 5 },
+                    { templateId: 'gzclp_day2', week: 8, day: 1 },
+                    { templateId: 'gzclp_day3', week: 8, day: 3 },
+                    { templateId: 'gzclp_day4', week: 8, day: 5 },
+                    // Week 9-10 cycle
+                    { templateId: 'gzclp_day1', week: 9, day: 1 },
+                    { templateId: 'gzclp_day2', week: 9, day: 3 },
+                    { templateId: 'gzclp_day3', week: 9, day: 5 },
+                    { templateId: 'gzclp_day4', week: 10, day: 1 },
+                    { templateId: 'gzclp_day1', week: 10, day: 3 },
+                    { templateId: 'gzclp_day2', week: 10, day: 5 },
+                    // Week 11-12 cycle
+                    { templateId: 'gzclp_day3', week: 11, day: 1 },
+                    { templateId: 'gzclp_day4', week: 11, day: 3 },
+                    { templateId: 'gzclp_day1', week: 11, day: 5 },
+                    { templateId: 'gzclp_day2', week: 12, day: 1 },
+                    { templateId: 'gzclp_day3', week: 12, day: 3 },
+                    { templateId: 'gzclp_day4', week: 12, day: 5 },
+                ]
+            },
+            4: {
+                description: 'Standard GZCLP - best for most lifters with adequate recovery',
+                sessions: [
+                    // Week 1
+                    { templateId: 'gzclp_day1', week: 1, day: 1 },
+                    { templateId: 'gzclp_day2', week: 1, day: 2 },
+                    { templateId: 'gzclp_day3', week: 1, day: 4 },
+                    { templateId: 'gzclp_day4', week: 1, day: 5 },
+                    // Week 2
+                    { templateId: 'gzclp_day1', week: 2, day: 1 },
+                    { templateId: 'gzclp_day2', week: 2, day: 2 },
+                    { templateId: 'gzclp_day3', week: 2, day: 4 },
+                    { templateId: 'gzclp_day4', week: 2, day: 5 },
+                    // Week 3
+                    { templateId: 'gzclp_day1', week: 3, day: 1 },
+                    { templateId: 'gzclp_day2', week: 3, day: 2 },
+                    { templateId: 'gzclp_day3', week: 3, day: 4 },
+                    { templateId: 'gzclp_day4', week: 3, day: 5 },
+                    // Week 4
+                    { templateId: 'gzclp_day1', week: 4, day: 1 },
+                    { templateId: 'gzclp_day2', week: 4, day: 2 },
+                    { templateId: 'gzclp_day3', week: 4, day: 4 },
+                    { templateId: 'gzclp_day4', week: 4, day: 5 },
+                    // Week 5
+                    { templateId: 'gzclp_day1', week: 5, day: 1 },
+                    { templateId: 'gzclp_day2', week: 5, day: 2 },
+                    { templateId: 'gzclp_day3', week: 5, day: 4 },
+                    { templateId: 'gzclp_day4', week: 5, day: 5 },
+                    // Week 6
+                    { templateId: 'gzclp_day1', week: 6, day: 1 },
+                    { templateId: 'gzclp_day2', week: 6, day: 2 },
+                    { templateId: 'gzclp_day3', week: 6, day: 4 },
+                    { templateId: 'gzclp_day4', week: 6, day: 5 },
+                    // Week 7
+                    { templateId: 'gzclp_day1', week: 7, day: 1 },
+                    { templateId: 'gzclp_day2', week: 7, day: 2 },
+                    { templateId: 'gzclp_day3', week: 7, day: 4 },
+                    { templateId: 'gzclp_day4', week: 7, day: 5 },
+                    // Week 8
+                    { templateId: 'gzclp_day1', week: 8, day: 1 },
+                    { templateId: 'gzclp_day2', week: 8, day: 2 },
+                    { templateId: 'gzclp_day3', week: 8, day: 4 },
+                    { templateId: 'gzclp_day4', week: 8, day: 5 },
+                    // Week 9
+                    { templateId: 'gzclp_day1', week: 9, day: 1 },
+                    { templateId: 'gzclp_day2', week: 9, day: 2 },
+                    { templateId: 'gzclp_day3', week: 9, day: 4 },
+                    { templateId: 'gzclp_day4', week: 9, day: 5 },
+                    // Week 10
+                    { templateId: 'gzclp_day1', week: 10, day: 1 },
+                    { templateId: 'gzclp_day2', week: 10, day: 2 },
+                    { templateId: 'gzclp_day3', week: 10, day: 4 },
+                    { templateId: 'gzclp_day4', week: 10, day: 5 },
+                    // Week 11
+                    { templateId: 'gzclp_day1', week: 11, day: 1 },
+                    { templateId: 'gzclp_day2', week: 11, day: 2 },
+                    { templateId: 'gzclp_day3', week: 11, day: 4 },
+                    { templateId: 'gzclp_day4', week: 11, day: 5 },
+                    // Week 12
+                    { templateId: 'gzclp_day1', week: 12, day: 1 },
+                    { templateId: 'gzclp_day2', week: 12, day: 2 },
+                    { templateId: 'gzclp_day3', week: 12, day: 4 },
+                    { templateId: 'gzclp_day4', week: 12, day: 5 },
+                ]
+            }
+        },
         sessions: [
             // Week 1
             { templateId: 'gzclp_day1', week: 1, day: 1 },
