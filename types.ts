@@ -1,6 +1,7 @@
 
 export type MuscleGroup = 'Chest' | 'Back' | 'Legs' | 'Shoulders' | 'Arms' | 'Core' | 'Cardio';
 export type ExerciseCategory = 'Compound' | 'Isolation' | 'Cardio' | 'Machine' | 'Bodyweight' | 'Plyometric';
+export type ExperienceLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 
 export interface Exercise {
   id: string;
@@ -213,6 +214,29 @@ export interface UserSettings {
     cycleStartDate: number;
     weekInCycle: number;
   };
+
+  // Body Metrics Goals (P2 Enhancement)
+  bodyMetricsGoals?: BodyMetricsGoals;
+}
+
+// Body Metrics Goals
+export interface BodyMetricsGoals {
+  targetWeight?: {
+    value: number;
+    units: 'kg' | 'lbs';
+    startDate: number;
+    targetDate?: number; // Optional deadline
+    startWeight: number;
+    direction: 'lose' | 'gain' | 'maintain';
+  };
+  measurements?: {
+    chest?: { target: number; startValue: number; startDate: number };
+    waist?: { target: number; startValue: number; startDate: number };
+    hips?: { target: number; startValue: number; startDate: number };
+    arms?: { target: number; startValue: number; startDate: number };
+    thighs?: { target: number; startValue: number; startDate: number };
+  };
+  weeklyWeightChange?: number; // Target weekly change (0.5-1 lbs for healthy rate)
 }
 
 // ============================================

@@ -13,6 +13,7 @@ import ResumeWorkoutBanner from '../components/ResumeWorkoutBanner';
 import { getPeriodizationStatus } from '../services/periodization';
 import { getQuickRecoveryStatus } from '../services/adaptiveRecovery';
 import { getTopWeakPoint } from '../services/workoutIntelligence';
+import SmartInsightsPanel from '../components/SmartInsightsPanel';
 
 const Dashboard = () => {
   const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, resumeWorkout, syncStatus, logDailyBio, dailyLogs, getVolumeWarning } = useStore();
@@ -321,6 +322,9 @@ const Dashboard = () => {
               )}
           </div>
       </div>
+
+      {/* P2: Smart Insights Panel - Fatigue, Goals, Streak */}
+      <SmartInsightsPanel />
 
       {/* Phase 3: Periodization Status Widget */}
       {periodizationStatus && (

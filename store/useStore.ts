@@ -75,6 +75,8 @@ interface AppState {
   getLatestMeasurements: () => any | null;
   syncData: () => Promise<void>;
   addBiometricPoint: (point: BiometricPoint) => void;
+  setBodyMetricsGoal: (goal: Partial<import('../types').BodyMetricsGoals>) => void;
+  getWeightGoalProgress: () => { progress: number; current: number; target: number; remaining: number; onTrack: boolean; predictedDate: Date | null } | null;
   
   // Timer Actions
   startRestTimer: (duration?: number) => void;
@@ -850,6 +852,70 @@ export const useStore = create<AppState>()(
               .filter(log => log.measurements && Object.keys(log.measurements).length > 0)
               .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           return logsWithMeasurements.length > 0 ? logsWithMeasurements[0].measurements! : null;
+      },
+
+      setBodyMetricsGoal: (goal) => {
+          set(state => ({
+              settings: {
+                  ...state.settings,
+                  bodyMetricsGoals: {
+                      ...state.settings.bodyMetricsGoals,
+                      ...goal
+                  }
+              }
+          }));
+          get().syncData();
+      },
+
+      getWeightGoalProgress: () => {
+          const { settings, dailyLogs } = get();
+          const goal = settings.bodyMetricsGoals?.targetWeight;
+          if (!goal) return null;
+
+          // Get current weight (most recent entry)
+          const trend = get().getBodyweightTrend(90);
+          if (trend.length === 0) return null;
+
+          const current = trend[trend.length - 1].weight;
+          const target = goal.value;
+          const startWeight = goal.startWeight;
+
+          // Calculate progress
+          const totalChange = Math.abs(target - startWeight);
+          const actualChange = Math.abs(current - startWeight);
+          const progress = totalChange > 0 ? Math.min(100, (actualChange / totalChange) * 100) : 0;
+
+          // Check if moving in right direction
+          const movingRight = goal.direction === 'lose'
+              ? current < startWeight
+              : goal.direction === 'gain'
+                  ? current > startWeight
+                  : Math.abs(current - startWeight) < 2;
+
+          const remaining = goal.direction === 'lose'
+              ? current - target
+              : target - current;
+
+          // Predict completion date based on recent trend
+          let predictedDate: Date | null = null;
+          if (trend.length >= 7 && remaining > 0) {
+              const weekAgo = trend[Math.max(0, trend.length - 7)].weight;
+              const weeklyChange = current - weekAgo;
+              if ((goal.direction === 'lose' && weeklyChange < 0) ||
+                  (goal.direction === 'gain' && weeklyChange > 0)) {
+                  const weeksNeeded = Math.abs(remaining / weeklyChange);
+                  predictedDate = new Date(Date.now() + weeksNeeded * 7 * 24 * 60 * 60 * 1000);
+              }
+          }
+
+          return {
+              progress: Math.round(progress),
+              current,
+              target,
+              remaining: Math.abs(remaining),
+              onTrack: movingRight && progress > 0,
+              predictedDate
+          };
       },
 
       addBiometricPoint: (point) => {
