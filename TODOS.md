@@ -370,11 +370,14 @@ This document outlines all planned features and improvements for IronPath, organ
   - Custom shareable images
 
 ### Advanced Analytics
-- [ ] ⬜ **Detailed insights**
-  - Training volume recommendations
-  - Recovery metrics
-  - Form degradation detection (RPE-based)
-  - Plateau detection
+- [x] ✅ **Detailed insights** (COMPLETE - Dec 7, 2024)
+  - ✅ Training volume recommendations (MEV/MAV/MRV guidance per muscle group)
+  - ✅ Recovery metrics display (recovery score, sleep debt, training stress)
+  - ✅ Form degradation detection (RPE trend analysis across sets)
+  - ✅ Plateau detection (trend analysis, weeks since PR)
+  - ✅ Component: `components/DetailedInsights.tsx`
+  - ✅ Services: `volumeOptimization.ts`, `adaptiveRecovery.ts`, `analytics.ts`
+  - ✅ Integrated into Analytics page
 
 - [ ] ⬜ **Year in review**
   - Annual summary (Spotify Wrapped style)
@@ -554,6 +557,32 @@ This document outlines all planned features and improvements for IronPath, organ
   - Auto-program progression (adjusts weekly based on performance)
   - Learns optimal training frequency per muscle group
   - Personalizes rep ranges based on individual response
+
+#### Future: Advanced ML Pipeline (Phase 2-3) - BACKLOG
+
+> **Note:** Parked for later. Requires 10K+ users and proven product-market fit first.
+> See [`docs/unified-ai-ml-pipeline.md`](docs/unified-ai-ml-pipeline.md) for full design.
+
+##### Phase 2: Enhancement (When: 10K+ users)
+
+- [ ] ⬜ RAG system for form guides (TF-IDF search)
+- [ ] ⬜ Context builder optimization (token compression)
+- [ ] ⬜ Prompt versioning & A/B testing
+- [ ] ⬜ Semantic caching (cosine similarity)
+
+##### Phase 3: Intelligence (When: 50K+ users + 6mo data)
+
+- [ ] ⬜ Collaborative filtering for exercises
+- [ ] ⬜ LightGBM for progression predictions
+- [ ] ⬜ Agent architecture for complex queries
+- [ ] ⬜ Personalization based on feedback loops
+
+##### Prerequisites
+
+- [ ] User base > 10,000 active users
+- [ ] 6+ months of user workout data
+- [ ] User feedback requesting "smarter" suggestions
+- [ ] Revenue to justify ML infrastructure costs
 
 ### What NOT to Build (Anti-Roadmap - Research-Backed)
 ❌ **Real-time AI during workouts** - Adds latency, breaks offline-first, privacy concerns

@@ -9,6 +9,7 @@ import EmptyState from '../components/EmptyState';
 import { ProgressionChart, VolumeChart } from '../components/ProgressionChart';
 import MuscleGroupVolumeChart from '../components/MuscleGroupVolumeChart';
 import VolumeBreakdownTable from '../components/VolumeBreakdownTable';
+import DetailedInsights from '../components/DetailedInsights';
 import {
   getExerciseProgression,
   getVolumeProgression,
@@ -511,6 +512,16 @@ const Analytics = () => {
           <div>
             <VolumeBreakdownTable weeklyData={weeklyVolumeData} />
           </div>
+      </div>
+
+      {/* Detailed Insights Section */}
+      <div className="mb-8 border-t border-[#222] pt-8">
+        <DetailedInsights
+          history={history}
+          dailyLogs={Object.values(dailyLogs)}
+          experienceLevel={settings.experienceLevel || 'intermediate'}
+          selectedExerciseId={selectedExerciseId}
+        />
       </div>
 
       <div className="p-4 bg-[#111] border-l-2 border-primary">

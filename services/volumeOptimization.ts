@@ -271,24 +271,25 @@ function getDefaultVolumeLandmarks(
   experienceLevel: ExperienceLevel
 ): Omit<VolumeLandmarks, 'current' | 'status' | 'confidence'> {
   // Research-based defaults (sets per week)
-  const landmarksByExperience = {
-    beginner: { mv: 4, mev: 8, mav: 16, mrv: 20 },
-    intermediate: { mv: 6, mev: 10, mav: 20, mrv: 25 },
-    advanced: { mv: 8, mev: 12, mav: 24, mrv: 30 }
+  const landmarksByExperience: Record<string, { mv: number; mev: number; mav: number; mrv: number }> = {
+    Beginner: { mv: 4, mev: 8, mav: 16, mrv: 20 },
+    Intermediate: { mv: 6, mev: 10, mav: 20, mrv: 25 },
+    Advanced: { mv: 8, mev: 12, mav: 24, mrv: 30 }
   };
 
   // Adjust for muscle group (some muscles can handle more volume)
-  const muscleMultipliers = {
-    chest: 1.0,
-    back: 1.1,   // Back can handle slightly more
-    legs: 1.0,
-    shoulders: 0.9, // Shoulders need less (smaller muscle, injury risk)
-    arms: 0.8,   // Arms need less direct work
-    core: 1.2    // Core recovers quickly
+  const muscleMultipliers: Record<MuscleGroup, number> = {
+    Chest: 1.0,
+    Back: 1.1,   // Back can handle slightly more
+    Legs: 1.0,
+    Shoulders: 0.9, // Shoulders need less (smaller muscle, injury risk)
+    Arms: 0.8,   // Arms need less direct work
+    Core: 1.2,   // Core recovers quickly
+    Cardio: 0.5  // Cardio doesn't use volume landmarks the same way
   };
 
-  const baseLandmarks = landmarksByExperience[experienceLevel];
-  const multiplier = muscleMultipliers[muscleGroup];
+  const baseLandmarks = landmarksByExperience[experienceLevel] || landmarksByExperience.Intermediate;
+  const multiplier = muscleMultipliers[muscleGroup] ?? 1.0;
 
   return {
     muscleGroup,
