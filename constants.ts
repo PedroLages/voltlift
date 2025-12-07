@@ -1729,6 +1729,52 @@ export const INITIAL_TEMPLATES: WorkoutSession[] = [
           { id: 'n2_acc1', exerciseId: 'e9', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) },
       ]
   },
+  {
+      id: 'nsuns_3',
+      name: 'nSuns: OHP/Incline',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'n3_ohp', exerciseId: 'e16', sets: Array(9).fill({ id: 's', reps: 3, weight: 0, completed: false, type: 'N' }) }, // T1 OHP
+          { id: 'n3_incline', exerciseId: 'e2', sets: Array(8).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // T2 Incline
+          { id: 'n3_acc1', exerciseId: 'e12', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Lateral Raise
+          { id: 'n3_acc2', exerciseId: 'e14', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Tricep Extension
+      ]
+  },
+  {
+      id: 'nsuns_4',
+      name: 'nSuns: Deadlift/Front Squat',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'n4_dl', exerciseId: 'e5', sets: Array(9).fill({ id: 's', reps: 3, weight: 0, completed: false, type: 'N' }) }, // T1 Deadlift
+          { id: 'n4_front', exerciseId: 'e21', sets: Array(8).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // T2 Front Squat
+          { id: 'n4_acc1', exerciseId: 'e11', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Leg Curl
+      ]
+  },
+  {
+      id: 'nsuns_5',
+      name: 'nSuns: Bench/Close Grip',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'n5_bp', exerciseId: 'e1', sets: Array(9).fill({ id: 's', reps: 3, weight: 0, completed: false, type: 'N' }) }, // T1 Bench
+          { id: 'n5_cg', exerciseId: 'e23', sets: Array(8).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // T2 Close Grip
+          { id: 'n5_acc1', exerciseId: 'e7', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Dumbbell Row
+          { id: 'n5_acc2', exerciseId: 'e8', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Bicep Curl
+      ]
+  },
+  {
+      id: 'nsuns_6',
+      name: 'nSuns: Squat/Pause',
+      startTime: 0,
+      status: 'template',
+      logs: [
+          { id: 'n6_sq', exerciseId: 'e4', sets: Array(9).fill({ id: 's', reps: 3, weight: 0, completed: false, type: 'N' }) }, // T1 Squat
+          { id: 'n6_pause', exerciseId: 'e138', sets: Array(8).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // T2 Pause Squat
+          { id: 'n6_acc1', exerciseId: 'e10', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Leg Extension
+      ]
+  },
 
   // --- EVIDENCE-BASED HYPERTROPHY ---
   {
@@ -1921,17 +1967,145 @@ export const INITIAL_PROGRAMS: Program[] = [
     {
         id: 'prog_nsuns',
         name: 'nSuns 5/3/1 (LP)',
-        description: 'High volume power-building program. Famous for rapid bench press gains. Not for the faint of heart.',
+        description: 'High volume power-building program. Famous for rapid bench press gains. Choose 4, 5, or 6 days/week.',
         weeks: 6,
         goal: 'Power-Building',
         splitType: 'Full Body',
         difficulty: 'Intermediate',
-        frequency: 4,
+        frequency: 5,
+        supportedFrequencies: [4, 5, 6],
+        frequencyVariants: {
+            4: {
+                description: 'CAP3 variant - balanced upper/lower with OHP and deadlift focus',
+                sessions: [
+                    // Week 1
+                    { templateId: 'nsuns_1', week: 1, day: 1 },  // Bench/OHP
+                    { templateId: 'nsuns_2', week: 1, day: 2 },  // Squat/Sumo
+                    { templateId: 'nsuns_3', week: 1, day: 4 },  // OHP/Incline
+                    { templateId: 'nsuns_4', week: 1, day: 5 },  // Deadlift/Front Squat
+                    // Week 2
+                    { templateId: 'nsuns_1', week: 2, day: 1 },
+                    { templateId: 'nsuns_2', week: 2, day: 2 },
+                    { templateId: 'nsuns_3', week: 2, day: 4 },
+                    { templateId: 'nsuns_4', week: 2, day: 5 },
+                    // Week 3
+                    { templateId: 'nsuns_1', week: 3, day: 1 },
+                    { templateId: 'nsuns_2', week: 3, day: 2 },
+                    { templateId: 'nsuns_3', week: 3, day: 4 },
+                    { templateId: 'nsuns_4', week: 3, day: 5 },
+                    // Week 4
+                    { templateId: 'nsuns_1', week: 4, day: 1 },
+                    { templateId: 'nsuns_2', week: 4, day: 2 },
+                    { templateId: 'nsuns_3', week: 4, day: 4 },
+                    { templateId: 'nsuns_4', week: 4, day: 5 },
+                    // Week 5
+                    { templateId: 'nsuns_1', week: 5, day: 1 },
+                    { templateId: 'nsuns_2', week: 5, day: 2 },
+                    { templateId: 'nsuns_3', week: 5, day: 4 },
+                    { templateId: 'nsuns_4', week: 5, day: 5 },
+                    // Week 6
+                    { templateId: 'nsuns_1', week: 6, day: 1 },
+                    { templateId: 'nsuns_2', week: 6, day: 2 },
+                    { templateId: 'nsuns_3', week: 6, day: 4 },
+                    { templateId: 'nsuns_4', week: 6, day: 5 },
+                ]
+            },
+            5: {
+                description: 'Classic nSuns - best bench gains, adds extra pressing day',
+                sessions: [
+                    // Week 1
+                    { templateId: 'nsuns_1', week: 1, day: 1 },  // Bench/OHP
+                    { templateId: 'nsuns_2', week: 1, day: 2 },  // Squat/Sumo
+                    { templateId: 'nsuns_3', week: 1, day: 3 },  // OHP/Incline
+                    { templateId: 'nsuns_4', week: 1, day: 4 },  // Deadlift/Front Squat
+                    { templateId: 'nsuns_5', week: 1, day: 5 },  // Bench/Close Grip
+                    // Week 2
+                    { templateId: 'nsuns_1', week: 2, day: 1 },
+                    { templateId: 'nsuns_2', week: 2, day: 2 },
+                    { templateId: 'nsuns_3', week: 2, day: 3 },
+                    { templateId: 'nsuns_4', week: 2, day: 4 },
+                    { templateId: 'nsuns_5', week: 2, day: 5 },
+                    // Week 3
+                    { templateId: 'nsuns_1', week: 3, day: 1 },
+                    { templateId: 'nsuns_2', week: 3, day: 2 },
+                    { templateId: 'nsuns_3', week: 3, day: 3 },
+                    { templateId: 'nsuns_4', week: 3, day: 4 },
+                    { templateId: 'nsuns_5', week: 3, day: 5 },
+                    // Week 4
+                    { templateId: 'nsuns_1', week: 4, day: 1 },
+                    { templateId: 'nsuns_2', week: 4, day: 2 },
+                    { templateId: 'nsuns_3', week: 4, day: 3 },
+                    { templateId: 'nsuns_4', week: 4, day: 4 },
+                    { templateId: 'nsuns_5', week: 4, day: 5 },
+                    // Week 5
+                    { templateId: 'nsuns_1', week: 5, day: 1 },
+                    { templateId: 'nsuns_2', week: 5, day: 2 },
+                    { templateId: 'nsuns_3', week: 5, day: 3 },
+                    { templateId: 'nsuns_4', week: 5, day: 4 },
+                    { templateId: 'nsuns_5', week: 5, day: 5 },
+                    // Week 6
+                    { templateId: 'nsuns_1', week: 6, day: 1 },
+                    { templateId: 'nsuns_2', week: 6, day: 2 },
+                    { templateId: 'nsuns_3', week: 6, day: 3 },
+                    { templateId: 'nsuns_4', week: 6, day: 4 },
+                    { templateId: 'nsuns_5', week: 6, day: 5 },
+                ]
+            },
+            6: {
+                description: 'Squat specialization - maximum volume for leg development',
+                sessions: [
+                    // Week 1
+                    { templateId: 'nsuns_1', week: 1, day: 1 },  // Bench/OHP
+                    { templateId: 'nsuns_2', week: 1, day: 2 },  // Squat/Sumo
+                    { templateId: 'nsuns_3', week: 1, day: 3 },  // OHP/Incline
+                    { templateId: 'nsuns_4', week: 1, day: 4 },  // Deadlift/Front Squat
+                    { templateId: 'nsuns_5', week: 1, day: 5 },  // Bench/Close Grip
+                    { templateId: 'nsuns_6', week: 1, day: 6 },  // Squat/Pause
+                    // Week 2
+                    { templateId: 'nsuns_1', week: 2, day: 1 },
+                    { templateId: 'nsuns_2', week: 2, day: 2 },
+                    { templateId: 'nsuns_3', week: 2, day: 3 },
+                    { templateId: 'nsuns_4', week: 2, day: 4 },
+                    { templateId: 'nsuns_5', week: 2, day: 5 },
+                    { templateId: 'nsuns_6', week: 2, day: 6 },
+                    // Week 3
+                    { templateId: 'nsuns_1', week: 3, day: 1 },
+                    { templateId: 'nsuns_2', week: 3, day: 2 },
+                    { templateId: 'nsuns_3', week: 3, day: 3 },
+                    { templateId: 'nsuns_4', week: 3, day: 4 },
+                    { templateId: 'nsuns_5', week: 3, day: 5 },
+                    { templateId: 'nsuns_6', week: 3, day: 6 },
+                    // Week 4
+                    { templateId: 'nsuns_1', week: 4, day: 1 },
+                    { templateId: 'nsuns_2', week: 4, day: 2 },
+                    { templateId: 'nsuns_3', week: 4, day: 3 },
+                    { templateId: 'nsuns_4', week: 4, day: 4 },
+                    { templateId: 'nsuns_5', week: 4, day: 5 },
+                    { templateId: 'nsuns_6', week: 4, day: 6 },
+                    // Week 5
+                    { templateId: 'nsuns_1', week: 5, day: 1 },
+                    { templateId: 'nsuns_2', week: 5, day: 2 },
+                    { templateId: 'nsuns_3', week: 5, day: 3 },
+                    { templateId: 'nsuns_4', week: 5, day: 4 },
+                    { templateId: 'nsuns_5', week: 5, day: 5 },
+                    { templateId: 'nsuns_6', week: 5, day: 6 },
+                    // Week 6
+                    { templateId: 'nsuns_1', week: 6, day: 1 },
+                    { templateId: 'nsuns_2', week: 6, day: 2 },
+                    { templateId: 'nsuns_3', week: 6, day: 3 },
+                    { templateId: 'nsuns_4', week: 6, day: 4 },
+                    { templateId: 'nsuns_5', week: 6, day: 5 },
+                    { templateId: 'nsuns_6', week: 6, day: 6 },
+                ]
+            }
+        },
         sessions: [
+            // Default 5-day schedule
             { templateId: 'nsuns_1', week: 1, day: 1 },
             { templateId: 'nsuns_2', week: 1, day: 2 },
-            { templateId: 'nsuns_1', week: 1, day: 4 },
-            { templateId: 'nsuns_2', week: 1, day: 5 },
+            { templateId: 'nsuns_3', week: 1, day: 3 },
+            { templateId: 'nsuns_4', week: 1, day: 4 },
+            { templateId: 'nsuns_5', week: 1, day: 5 },
         ]
     },
     {
