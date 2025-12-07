@@ -2246,5 +2246,131 @@ export const INITIAL_PROGRAMS: Program[] = [
             { templateId: 'gn_beg_bench', week: 4, day: 3 },
             { templateId: 'gn_beg_deadlift', week: 4, day: 5 },
         ]
+    },
+    {
+        id: 'prog_531_bbb',
+        name: '5/3/1 Boring But Big',
+        description: 'Jim Wendler\'s most popular 5/3/1 variant. Main work follows 5/3/1 wave loading, followed by 5×10 @ 50-60% for hypertrophy. Best of both worlds: strength + size. 4 days/week.',
+        weeks: 12,
+        goal: 'Power-Building',
+        splitType: 'Upper/Lower',
+        difficulty: 'Intermediate',
+        frequency: 4,
+        sessions: [
+            // Week 1 - 5's Week (65%, 75%, 85%)
+            { templateId: '531_squat_day', week: 1, day: 1 },
+            { templateId: '531_bench_day', week: 1, day: 2 },
+            { templateId: '531_deadlift_day', week: 1, day: 4 },
+            { templateId: '531_press_day', week: 1, day: 5 },
+            // Week 2 - 3's Week (70%, 80%, 90%)
+            { templateId: '531_squat_day', week: 2, day: 1 },
+            { templateId: '531_bench_day', week: 2, day: 2 },
+            { templateId: '531_deadlift_day', week: 2, day: 4 },
+            { templateId: '531_press_day', week: 2, day: 5 },
+            // Week 3 - 5/3/1 Week (75%, 85%, 95%)
+            { templateId: '531_squat_day', week: 3, day: 1 },
+            { templateId: '531_bench_day', week: 3, day: 2 },
+            { templateId: '531_deadlift_day', week: 3, day: 4 },
+            { templateId: '531_press_day', week: 3, day: 5 },
+            // Week 4 - Deload (40%, 50%, 60%)
+            { templateId: '531_squat_day', week: 4, day: 1 },
+            { templateId: '531_bench_day', week: 4, day: 2 },
+            { templateId: '531_deadlift_day', week: 4, day: 4 },
+            { templateId: '531_press_day', week: 4, day: 5 },
+        ]
+    },
+    {
+        id: 'prog_candito_6week',
+        name: 'Candito 6-Week Strength',
+        description: 'Jonnie Candito\'s elite powerlifting peaking program. 6-week block periodization with optional testing week. Perfect for meet prep or breaking plateaus. 4 days/week.',
+        weeks: 7,
+        goal: 'Powerlifting',
+        splitType: 'Upper/Lower',
+        difficulty: 'Advanced',
+        frequency: 4,
+        sessions: [
+            // Week 1 - Muscular Conditioning (High Volume)
+            { templateId: 'candito_lower_control', week: 1, day: 1 },
+            { templateId: 'candito_upper_control', week: 1, day: 2 },
+            { templateId: 'candito_lower_heavy', week: 1, day: 4 },
+            { templateId: 'candito_upper_heavy', week: 1, day: 5 },
+            // Week 2 - Muscular Conditioning (High Volume)
+            { templateId: 'candito_lower_control', week: 2, day: 1 },
+            { templateId: 'candito_upper_control', week: 2, day: 2 },
+            { templateId: 'candito_lower_heavy', week: 2, day: 4 },
+            { templateId: 'candito_upper_heavy', week: 2, day: 5 },
+            // Week 3 - Heavy (Strength Focus)
+            { templateId: 'candito_lower_max', week: 3, day: 1 },
+            { templateId: 'candito_upper_max', week: 3, day: 2 },
+            { templateId: 'candito_lower_explosive', week: 3, day: 4 },
+            { templateId: 'candito_upper_hypertrophy', week: 3, day: 5 },
+            // Week 4 - Heavy (Strength Focus)
+            { templateId: 'candito_lower_max', week: 4, day: 1 },
+            { templateId: 'candito_upper_max', week: 4, day: 2 },
+            { templateId: 'candito_lower_explosive', week: 4, day: 4 },
+            { templateId: 'candito_upper_hypertrophy', week: 4, day: 5 },
+            // Week 5 - Explosive/Strength (Taper)
+            { templateId: 'candito_squat_max', week: 5, day: 1 },
+            { templateId: 'candito_bench_max', week: 5, day: 3 },
+            { templateId: 'candito_deadlift_max', week: 5, day: 5 },
+            // Week 6 - Intensity Peak (Singles)
+            { templateId: 'candito_squat_peak', week: 6, day: 1 },
+            { templateId: 'candito_bench_peak', week: 6, day: 3 },
+            { templateId: 'candito_deadlift_peak', week: 6, day: 5 },
+            // Week 7 - Testing/Meet Week (Optional)
+            { templateId: 'candito_meet_prep', week: 7, day: 1 },
+        ]
+    },
+    {
+        id: 'prog_upper_lower',
+        name: 'Upper/Lower 4-Day',
+        description: 'Classic intermediate split for balanced development. Train upper body and lower body twice per week. Great for strength and size. 4 days/week.',
+        weeks: 8,
+        goal: 'Power-Building',
+        splitType: 'Upper/Lower',
+        difficulty: 'Intermediate',
+        frequency: 4,
+        sessions: [
+            // Week 1
+            { templateId: 'ul_lower_power', week: 1, day: 1 },
+            { templateId: 'ul_upper_power', week: 1, day: 2 },
+            { templateId: 'ul_lower_hypertrophy', week: 1, day: 4 },
+            { templateId: 'ul_upper_hypertrophy', week: 1, day: 5 },
+            // Week 2
+            { templateId: 'ul_lower_power', week: 2, day: 1 },
+            { templateId: 'ul_upper_power', week: 2, day: 2 },
+            { templateId: 'ul_lower_hypertrophy', week: 2, day: 4 },
+            { templateId: 'ul_upper_hypertrophy', week: 2, day: 5 },
+            // Week 3
+            { templateId: 'ul_lower_power', week: 3, day: 1 },
+            { templateId: 'ul_upper_power', week: 3, day: 2 },
+            { templateId: 'ul_lower_hypertrophy', week: 3, day: 4 },
+            { templateId: 'ul_upper_hypertrophy', week: 3, day: 5 },
+            // Week 4
+            { templateId: 'ul_lower_power', week: 4, day: 1 },
+            { templateId: 'ul_upper_power', week: 4, day: 2 },
+            { templateId: 'ul_lower_hypertrophy', week: 4, day: 4 },
+            { templateId: 'ul_upper_hypertrophy', week: 4, day: 5 },
+            // Week 5
+            { templateId: 'ul_lower_power', week: 5, day: 1 },
+            { templateId: 'ul_upper_power', week: 5, day: 2 },
+            { templateId: 'ul_lower_hypertrophy', week: 5, day: 4 },
+            { templateId: 'ul_upper_hypertrophy', week: 5, day: 5 },
+            // Week 6
+            { templateId: 'ul_lower_power', week: 6, day: 1 },
+            { templateId: 'ul_upper_power', week: 6, day: 2 },
+            { templateId: 'ul_lower_hypertrophy', week: 6, day: 4 },
+            { templateId: 'ul_upper_hypertrophy', week: 6, day: 5 },
+            // Week 7
+            { templateId: 'ul_lower_power', week: 7, day: 1 },
+            { templateId: 'ul_upper_power', week: 7, day: 2 },
+            { templateId: 'ul_lower_hypertrophy', week: 7, day: 4 },
+            { templateId: 'ul_upper_hypertrophy', week: 7, day: 5 },
+            // Week 8
+            { templateId: 'ul_lower_power', week: 8, day: 1 },
+            { templateId: 'ul_upper_power', week: 8, day: 2 },
+            { templateId: 'ul_lower_hypertrophy', week: 8, day: 4 },
+            { templateId: 'ul_upper_hypertrophy', week: 8, day: 5 },
+        ]
     }
 ];

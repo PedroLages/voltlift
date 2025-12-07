@@ -120,12 +120,20 @@ export interface Program {
   name: string;
   description: string;
   weeks: number;
-  sessions: ProgramSession[];
+  sessions: ProgramSession[]; // Default frequency sessions
   // Metadata for filtering
   goal: ProgramGoal;
   splitType: ProgramSplitType;
   difficulty: ProgramDifficulty;
-  frequency: number; // Sessions per week
+  frequency: number; // Default/minimum frequency
+  // Support for multiple frequency variants (e.g., GZCLP 3-day vs 4-day, nSuns 4/5/6-day)
+  supportedFrequencies?: number[]; // e.g., [3, 4] for GZCLP, [4, 5, 6] for nSuns
+  frequencyVariants?: {
+    [key: number]: {
+      sessions: ProgramSession[];
+      description?: string; // Optional description for this variant
+    };
+  };
 }
 
 export interface BodyMeasurements {
@@ -183,6 +191,7 @@ export interface UserSettings {
       programId: string;
       currentSessionIndex: number;
       startDate: number;
+      selectedFrequency?: number; // User's chosen training frequency (e.g., 3, 4, 5, 6 days/week)
   };
   ironCloud?: {
       enabled: boolean;

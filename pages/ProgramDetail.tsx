@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { EXERCISE_LIBRARY } from '../constants';
@@ -30,11 +30,25 @@ const ProgramDetail = () => {
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [acknowledged, setAcknowledged] = useState(false);
+  const [selectedFrequency, setSelectedFrequency] = useState<number | null>(null);
 
   // Find the program
   const program = useMemo(() => {
     return programs.find(p => p.id === programId);
   }, [programs, programId]);
+
+  // Initialize selected frequency when program changes
+  useEffect(() => {
+    if (program) {
+      // If program has multiple frequency options, don't auto-select (force user to choose)
+      // If program has only one option or no variants, use the default frequency
+      if (!program.supportedFrequencies || program.supportedFrequencies.length <= 1) {
+        setSelectedFrequency(program.frequency);
+      } else {
+        setSelectedFrequency(null); // Force user to choose
+      }
+    }
+  }, [program]);
 
   // Get template by ID
   const getTemplate = (templateId: string) => {
@@ -103,12 +117,22 @@ const ProgramDetail = () => {
       return;
     }
 
+    // Validate frequency selection for programs with multiple variants
+    if (program?.supportedFrequencies && program.supportedFrequencies.length > 1 && !selectedFrequency) {
+      alert('Please select your preferred training frequency');
+      return;
+    }
+
     if (program) {
-      // Activate the program
-      activateProgram(program.id);
+      // Determine which sessions to use
+      const chosenFrequency = selectedFrequency || program.frequency;
+      const sessions = (program.frequencyVariants?.[chosenFrequency]?.sessions) || program.sessions;
+
+      // Activate the program with selected frequency
+      activateProgram(program.id, chosenFrequency);
 
       // Auto-start the first session
-      const firstSession = program.sessions.find(s => s.week === 1 && s.day === 1);
+      const firstSession = sessions.find(s => s.week === 1 && s.day === 1);
       if (firstSession) {
         startWorkout(firstSession.templateId);
         navigate('/workout');
@@ -383,13 +407,61 @@ const ProgramDetail = () => {
                 </div>
 
                 {/* Important Notes */}
+                {/* Frequency Selection (if program supports multiple options) */}
+                {program.supportedFrequencies && program.supportedFrequencies.length > 1 && (
+                  <div className="bg-black border-l-4 border-primary p-4">
+                    <div className="mb-4">
+                      <h3 className="text-sm font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <Zap size={16} />
+                        Choose Your Training Frequency
+                      </h3>
+                      <p className="text-xs text-[#888] font-mono">
+                        This program can be adapted to different training schedules. Select how many days per week you can commit to training.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {program.supportedFrequencies.sort((a, b) => a - b).map((freq) => {
+                        const variant = program.frequencyVariants?.[freq];
+                        const isSelected = selectedFrequency === freq;
+
+                        return (
+                          <button
+                            key={freq}
+                            onClick={() => setSelectedFrequency(freq)}
+                            className={`p-4 border-2 transition-all ${
+                              isSelected
+                                ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(204,255,0,0.2)]'
+                                : 'border-[#333] hover:border-[#555] bg-[#0a0a0a]'
+                            }`}
+                          >
+                            <div className="text-center">
+                              <div className={`text-3xl font-black italic mb-1 ${isSelected ? 'text-primary' : 'text-white'}`}>
+                                {freq}x
+                              </div>
+                              <div className={`text-xs uppercase tracking-widest font-bold ${isSelected ? 'text-primary' : 'text-[#666]'}`}>
+                                Per Week
+                              </div>
+                              {variant?.description && (
+                                <div className="text-[10px] text-[#888] mt-2 font-mono leading-relaxed">
+                                  {variant.description}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-[#111] border-l-4 border-yellow-500 p-4">
                   <div className="flex items-start gap-3">
                     <AlertCircle size={20} className="text-yellow-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <h3 className="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-2">Important Commitment</h3>
                       <ul className="text-sm text-[#aaa] space-y-2 font-mono leading-relaxed">
-                        <li>• This program requires {program.frequency} sessions per week for {program.weeks} weeks</li>
+                        <li>• This program requires {selectedFrequency || program.frequency} sessions per week for {program.weeks} weeks</li>
                         <li>• Consistency is critical - follow the prescribed order and rest days</li>
                         <li>• Your first workout begins immediately after clicking "Start Program"</li>
                         <li>• You can pause or deactivate the program anytime from your profile</li>
@@ -408,7 +480,7 @@ const ProgramDetail = () => {
                       className="w-5 h-5 mt-0.5 accent-primary cursor-pointer"
                     />
                     <span className="text-sm text-[#aaa] font-mono leading-relaxed group-hover:text-white transition-colors">
-                      I understand this program requires {program.frequency} training sessions per week for {program.weeks} weeks. I commit to following the program as designed and tracking my progress accurately. I understand my first workout will start immediately upon enrollment.
+                      I understand this program requires {selectedFrequency || program.frequency} training sessions per week for {program.weeks} weeks. I commit to following the program as designed and tracking my progress accurately. I understand my first workout will start immediately upon enrollment.
                     </span>
                   </label>
                 </div>

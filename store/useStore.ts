@@ -65,7 +65,7 @@ interface AppState {
   removeExerciseLog: (logId: string) => void;
   toggleSuperset: (logId: string) => void;
   updateActiveWorkout: (updates: Partial<WorkoutSession>) => void;
-  activateProgram: (programId: string) => void;
+  activateProgram: (programId: string, selectedFrequency?: number) => void;
   
   // Phase 4 Actions
   logDailyBio: (date: string, data: Partial<DailyLog>) => void;
@@ -755,14 +755,15 @@ export const useStore = create<AppState>()(
           set({ activeWorkout: { ...activeWorkout, ...updates } });
       },
 
-      activateProgram: (programId) => {
+      activateProgram: (programId, selectedFrequency) => {
           set(state => ({
               settings: {
                   ...state.settings,
                   activeProgram: {
                       programId,
                       currentSessionIndex: 0,
-                      startDate: Date.now()
+                      startDate: Date.now(),
+                      selectedFrequency
                   }
               }
           }));
@@ -1000,7 +1001,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'voltlift-storage',
-      version: 2, // Increment when schema changes
+      version: 3, // Increment when schema changes
       partialize: (state) => {
           const { customExerciseVisuals, restTimerStart, activeBiometrics, ...rest } = state;
           return rest;
@@ -1021,6 +1022,16 @@ export const useStore = create<AppState>()(
             };
           }
         }
+
+        // Version 3: Programs now support frequency variants (supportedFrequencies, frequencyVariants)
+        if (version < 3) {
+          console.log('[Migration v3] Updating programs with frequency variant support');
+          return {
+            ...persistedState,
+            programs: INITIAL_PROGRAMS, // Reset to get new program structure with frequency variants
+          };
+        }
+
         return persistedState;
       }
     }
