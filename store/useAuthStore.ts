@@ -139,6 +139,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user,
       isAuthLoading: false, // Important: Mark auth initialization as complete
     });
+
+    // Set up listeners for Google Sign-In redirect completion (iOS)
+    window.addEventListener('google-auth-success', async (event: any) => {
+      console.log('✅ Google auth redirect completed successfully');
+      const user = event.detail?.user;
+      if (user) {
+        set({
+          isAuthenticated: true,
+          user,
+          isLoading: false,
+          error: null,
+        });
+        // Sync data after successful auth
+        await get().syncFromCloud();
+      }
+    });
+
+    window.addEventListener('google-auth-error', (event: any) => {
+      console.error('❌ Google auth redirect failed:', event.detail?.error);
+      set({
+        isLoading: false,
+        error: event.detail?.error?.message || 'Google Sign-In failed',
+      });
+    });
   },
 
   syncFromCloud: async () => {

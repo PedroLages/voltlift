@@ -8,6 +8,8 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithCredential,
   setPersistence,
   browserLocalPersistence,
@@ -69,8 +71,50 @@ export class FirebaseBackend implements BackendService {
       this.currentUser = user ? this.mapFirebaseUser(user) : null;
     });
 
+    // Check for redirect result (Google Sign-In)
+    this.checkRedirectResult();
+
     // Set up deep link handler for OAuth callback (Capacitor)
     this.setupDeepLinkHandler();
+  }
+
+  /**
+   * Check for redirect result after Google Sign-In
+   */
+  private async checkRedirectResult() {
+    try {
+      const result = await getRedirectResult(this.authInstance);
+
+      if (result) {
+        console.log('✅ Google Sign-In redirect successful');
+        const user = this.mapFirebaseUser(result.user);
+        this.currentUser = user;
+
+        // Create/update user document
+        await setDoc(doc(this.db, 'users', result.user.uid), {
+          email: user.email,
+          name: user.name,
+          photoURL: user.photoURL,
+          lastLogin: Date.now(),
+        }, { merge: true });
+
+        // Clean up pending auth flag
+        localStorage.removeItem('pendingAuthRememberMe');
+
+        // Dispatch success event
+        window.dispatchEvent(new CustomEvent('google-auth-success', {
+          detail: { user }
+        }));
+      }
+    } catch (error: any) {
+      console.error('❌ Google Sign-In redirect failed:', error);
+      localStorage.removeItem('pendingAuthRememberMe');
+
+      // Dispatch error event
+      window.dispatchEvent(new CustomEvent('google-auth-error', {
+        detail: { error }
+      }));
+    }
   }
 
   /**
@@ -203,38 +247,18 @@ export class FirebaseBackend implements BackendService {
       const isNative = !!(window as any).Capacitor;
 
       if (isNative) {
-        // For native apps, try popup first (works in newer Capacitor/WebKit)
-        // If it fails, guide user to use email login
-        console.log('📱 Attempting Google Sign-In in native app');
+        // For iOS/native apps, use redirect flow (popups don't work in WKWebView)
+        console.log('📱 Using Google Sign-In redirect for native app');
 
-        try {
-          // Try signInWithPopup - works in some Capacitor configurations
-          const credential = await signInWithPopup(this.authInstance, provider);
-          const user = this.mapFirebaseUser(credential.user);
-          this.currentUser = user;
+        // Store rememberMe preference for after redirect
+        localStorage.setItem('pendingAuthRememberMe', rememberMe.toString());
 
-          // Create/update user document
-          await setDoc(doc(this.db, 'users', credential.user.uid), {
-            email: user.email,
-            name: user.name,
-            photoURL: user.photoURL,
-            lastLogin: Date.now(),
-          }, { merge: true });
+        // Trigger redirect to Google Sign-In
+        await signInWithRedirect(this.authInstance, provider);
 
-          return { user, token: await credential.user.getIdToken() };
-        } catch (popupError: any) {
-          console.error('❌ Popup auth failed in native:', popupError);
-
-          // If popup blocked or failed, throw a user-friendly error
-          if (popupError.code === 'auth/popup-blocked' ||
-              popupError.code === 'auth/popup-closed-by-user' ||
-              popupError.code === 'auth/cancelled-popup-request' ||
-              popupError.message?.includes('popup')) {
-            throw new Error('Google Sign-In is not available in the app. Please use email login or try from a web browser.');
-          }
-
-          throw popupError;
-        }
+        // This function won't return - the app will redirect to Google
+        // The result will be handled by checkRedirectResult() when app resumes
+        throw new Error('REDIRECT_PENDING');
       } else {
         // Use popup for web
         console.log('🪟 Using signInWithPopup for web');
