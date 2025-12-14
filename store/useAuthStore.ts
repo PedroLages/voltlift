@@ -130,15 +130,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   checkAuth: () => {
-    console.log('🔍 Checking auth status...');
-    const isValid = backend.auth.isLoggedIn;
-    const user = backend.auth.user;
-    console.log('✅ Auth check complete:', { isValid, user: user?.email });
-    set({
-      isAuthenticated: isValid,
-      user,
-      isAuthLoading: false, // Important: Mark auth initialization as complete
-    });
+    console.log('🔍 Initializing auth listeners...');
+
+    // Note: Auth state is handled by the global onAuthChange listener below.
+    // This function just sets up additional event listeners for OAuth redirects.
 
     // Set up listeners for Google Sign-In redirect completion (iOS)
     window.addEventListener('google-auth-success', async (event: any) => {
@@ -260,11 +255,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 }));
 
-// Listen for auth changes
-backend.auth.onAuthChange((user) => {
+// Listen for auth changes (including persistence restoration on app startup)
+backend.auth.onAuthChange(async (user) => {
+  console.log('🔄 Auth state changed:', { email: user?.email, loggedIn: !!user });
+
   useAuthStore.setState({
     isAuthenticated: !!user,
     isAuthLoading: false, // Auth state has been determined
     user,
   });
+
+  // Sync data from cloud when user session is restored
+  if (user) {
+    console.log('✅ User session restored, syncing data from cloud...');
+    await useAuthStore.getState().syncFromCloud();
+  }
 });

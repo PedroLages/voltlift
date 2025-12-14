@@ -206,7 +206,7 @@ export function getSuggestion(
   currentSessionStart: number,
   experienceLevel: 'Beginner' | 'Intermediate' | 'Advanced' = 'Intermediate',
   suggestionHistory?: SuggestionFeedback[]
-): ProgressiveSuggestion {
+): ProgressiveSuggestion | null {
   const exercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
 
   // Find days since last workout of this exercise
@@ -220,27 +220,9 @@ export function getSuggestion(
 
   const recoveryScore = calculateRecoveryScore(dailyLog, daysSinceLastWorkout);
 
-  // No previous workout data → Conservative starting point
+  // No previous workout data → No suggestion (user should choose their own starting weight)
   if (!lastWorkout || lastWorkout.sets.length === 0) {
-    // ALWAYS start conservative for new exercises, regardless of difficulty
-    // Users should learn form first, then add weight
-    let startingWeight = 20; // Default: Empty bar or light dumbbells
-
-    if (exercise?.difficulty === 'Beginner') {
-      startingWeight = 20; // Empty bar (20kg/45lbs)
-    } else if (exercise?.difficulty === 'Intermediate') {
-      startingWeight = 30; // Bar + small plates
-    } else {
-      startingWeight = 40; // Still conservative for advanced movements
-    }
-
-    return {
-      weight: startingWeight,
-      reps: [8, 12],
-      reasoning: `First time logging this exercise. Start light (${startingWeight}kg) to master form before adding weight.`,
-      confidence: 'low',
-      recoveryScore
-    };
+    return null;
   }
 
   const completedSets = lastWorkout.sets.filter(s => s.completed && s.type !== 'W');

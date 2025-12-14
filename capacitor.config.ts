@@ -9,8 +9,8 @@ const config: CapacitorConfig = {
     url: 'https://voltlift-app.web.app',
     cleartext: false,
 
-    // DEVELOPMENT: Uncomment for local development
-    // url: 'http://192.168.2.233:3002',
+    // DEVELOPMENT: Use Mac's local IP so iPhone can connect
+    // url: 'http://192.168.2.233:3000',
     // cleartext: true
   },
   ios: {

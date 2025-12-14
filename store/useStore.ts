@@ -1041,7 +1041,7 @@ export const useStore = create<AppState>()(
 
       // AI Coach Helpers Implementation
       getProgressiveSuggestion: (exerciseId) => {
-          const { history, dailyLogs, activeWorkout } = get();
+          const { history, dailyLogs, activeWorkout, settings } = get();
 
           // Get previous workout for this exercise
           const previousLog = get().getExerciseHistory(exerciseId);
@@ -1052,7 +1052,7 @@ export const useStore = create<AppState>()(
 
           const currentTime = activeWorkout?.startTime || Date.now();
 
-          return getSuggestion(exerciseId, previousLog, todayLog, history, currentTime);
+          return getSuggestion(exerciseId, previousLog, todayLog, history, currentTime, settings.experienceLevel);
       },
 
       getEstimated1RM: (exerciseId) => {

@@ -54,7 +54,9 @@ export const NotificationSettings: React.FC = () => {
 
   const requestPermission = async () => {
     if (!('Notification' in window)) {
-      alert('This browser does not support notifications');
+      // On iOS/Capacitor, web notifications aren't supported
+      // Set permission status to 'denied' to show proper message
+      setPermissionStatus('denied');
       return;
     }
 
@@ -168,7 +170,10 @@ export const NotificationSettings: React.FC = () => {
       {permissionStatus === 'denied' && (
         <div className="bg-red-900/20 border border-red-900 p-3 mb-4">
           <p className="text-[11px] text-red-400 font-mono">
-            Notifications are blocked. Please enable them in your browser settings to receive workout reminders.
+            {!('Notification' in window)
+              ? 'Web notifications are not supported on iOS native apps. In-app alerts like rest timers and PR celebrations will still work!'
+              : 'Notifications are blocked. Please enable them in your browser settings to receive workout reminders.'
+            }
           </p>
         </div>
       )}

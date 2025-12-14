@@ -818,12 +818,6 @@ const WorkoutLogger = () => {
                     {/* Weight Input */}
                     <div className="col-span-3 relative">
                       <input
-                        ref={(el) => {
-                          // Auto-focus first uncompleted set's weight input
-                          if (el && !set.completed && !set.weight && setIndex === log.sets.findIndex(s => !s.completed)) {
-                            setTimeout(() => el.focus(), 100);
-                          }
-                        }}
                         type="number"
                         value={set.weight || ''}
                         onChange={(e) => {
