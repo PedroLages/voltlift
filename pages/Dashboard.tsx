@@ -14,6 +14,7 @@ import { getPeriodizationStatus } from '../services/periodization';
 import { getQuickRecoveryStatus } from '../services/adaptiveRecovery';
 import { getTopWeakPoint } from '../services/workoutIntelligence';
 import SmartInsightsPanel from '../components/SmartInsightsPanel';
+import DeloadAlert from '../components/DeloadAlert';
 
 const Dashboard = () => {
   const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, resumeWorkout, syncStatus, logDailyBio, dailyLogs, getVolumeWarning } = useStore();
@@ -325,6 +326,11 @@ const Dashboard = () => {
 
       {/* P2: Smart Insights Panel - Fatigue, Goals, Streak */}
       <SmartInsightsPanel />
+
+      {/* P3: Auto-Deload Detection Alert */}
+      {history.length >= 4 && (
+        <DeloadAlert compact />
+      )}
 
       {/* Phase 3: Periodization Status Widget */}
       {periodizationStatus && (

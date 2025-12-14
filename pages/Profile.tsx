@@ -3,11 +3,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut, Trash2, AlertTriangle, Target, Calendar, Activity, Repeat, Camera } from 'lucide-react';
+import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut, Trash2, AlertTriangle, AlertCircle, Target, Calendar, Activity, Repeat, Camera } from 'lucide-react';
 import { saveImageToDB, getImageFromDB } from '../utils/db';
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
 import NotificationSettings from '../components/NotificationSettings';
+import DataExport from '../components/DataExport';
 import BodyMetricsLogger from '../components/BodyMetricsLogger';
 import BodyweightChart from '../components/BodyweightChart';
 import ProgressPhotos from '../components/ProgressPhotos';
@@ -18,6 +19,7 @@ import { getRecoveryAssessment } from '../services/adaptiveRecovery';
 import { analyzeWeakPoints, suggestExerciseVariations } from '../services/workoutIntelligence';
 import { calculateVolumeLandmarks, getVolumeRecommendation } from '../services/volumeOptimization';
 import PerformanceInsights from '../components/PerformanceInsights';
+import YearInReview from '../components/YearInReview';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -32,6 +34,7 @@ const Profile = () => {
   const [intelligenceTab, setIntelligenceTab] = useState<'periodization' | 'recovery' | 'weak-points' | 'variations'>('periodization');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
+  const [showYearInReview, setShowYearInReview] = useState(false);
 
   // Load profile picture on mount
   useEffect(() => {
@@ -274,7 +277,23 @@ const Profile = () => {
             <div className="text-[10px] text-[#666] uppercase tracking-widest mt-1">Total Volume</div>
           </div>
         </div>
+        {/* Year in Review Button */}
+        {totalWorkouts >= 10 && (
+          <button
+            onClick={() => setShowYearInReview(true)}
+            className="w-full mt-4 py-4 bg-gradient-to-r from-primary/20 to-purple-900/30 border border-primary/30 hover:border-primary text-white font-bold uppercase text-xs tracking-widest flex items-center justify-center gap-3 transition-all group"
+          >
+            <Calendar size={18} className="text-primary group-hover:animate-bounce" />
+            <span>View Your {new Date().getFullYear()} Wrapped</span>
+            <Zap size={14} className="text-primary" />
+          </button>
+        )}
       </section>
+
+      {/* Year in Review Modal */}
+      {showYearInReview && (
+        <YearInReview year={new Date().getFullYear()} onClose={() => setShowYearInReview(false)} />
+      )}
 
       {/* Body Metrics Section */}
       <section className="mb-10">
@@ -985,6 +1004,11 @@ const Profile = () => {
       {/* Notification Settings Section */}
       <section className="mt-10">
           <NotificationSettings />
+      </section>
+
+      {/* Data Export Section */}
+      <section className="mt-10">
+          <DataExport />
       </section>
 
       {/* Danger Zone */}

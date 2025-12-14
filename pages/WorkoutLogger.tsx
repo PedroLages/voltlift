@@ -26,6 +26,7 @@ const WorkoutLogger = () => {
   const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning, undoStack, restoreLastDeleted, clearUndoStack, toggleFavoriteExercise } = useStore();
   const navigate = useNavigate();
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
+  const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
   const [swapTargetLogId, setSwapTargetLogId] = useState<string | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
@@ -1023,14 +1024,56 @@ const WorkoutLogger = () => {
       {showExerciseSelector && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-end sm:items-center justify-center animate-fade-in backdrop-blur-sm">
           <div className="bg-[#111] w-full max-w-md h-[80vh] border-t border-[#333] flex flex-col">
+            {/* Header */}
             <div className="p-4 border-b border-[#333] flex justify-between items-center">
               <h2 className="volt-header text-xl text-white">
                   {swapTargetLogId ? 'SWAP MOVEMENT' : 'SELECT MOVEMENT'}
               </h2>
-              <button onClick={() => setShowExerciseSelector(false)} className="text-white"><X size={24} /></button>
+              <button
+                onClick={() => {
+                  setShowExerciseSelector(false);
+                  setExerciseSearchQuery('');
+                }}
+                className="text-white"
+              >
+                <X size={24} />
+              </button>
             </div>
+
+            {/* Search Input */}
+            <div className="p-4 border-b border-[#333]">
+              <input
+                type="text"
+                placeholder="Search exercises..."
+                value={exerciseSearchQuery}
+                onChange={(e) => setExerciseSearchQuery(e.target.value)}
+                className="w-full bg-[#0a0a0a] border border-[#333] text-white px-4 py-3 font-mono text-sm focus:border-primary focus:outline-none placeholder-[#666]"
+                autoFocus
+              />
+              {exerciseSearchQuery && (
+                <div className="text-[10px] text-[#666] mt-2 font-mono">
+                  {[...EXERCISE_LIBRARY].filter(ex =>
+                    ex.name.toLowerCase().includes(exerciseSearchQuery.toLowerCase()) ||
+                    ex.muscleGroup.toLowerCase().includes(exerciseSearchQuery.toLowerCase()) ||
+                    ex.equipment.toLowerCase().includes(exerciseSearchQuery.toLowerCase())
+                  ).length} results
+                </div>
+              )}
+            </div>
+
+            {/* Exercise List */}
             <div className="flex-1 overflow-y-auto p-2">
               {[...EXERCISE_LIBRARY]
+                .filter(ex => {
+                  // Filter by search query
+                  if (!exerciseSearchQuery) return true;
+                  const query = exerciseSearchQuery.toLowerCase();
+                  return (
+                    ex.name.toLowerCase().includes(query) ||
+                    ex.muscleGroup.toLowerCase().includes(query) ||
+                    ex.equipment.toLowerCase().includes(query)
+                  );
+                })
                 .sort((a, b) => {
                   const aFav = settings.favoriteExercises?.includes(a.id) ?? false;
                   const bFav = settings.favoriteExercises?.includes(b.id) ?? false;
@@ -1070,6 +1113,7 @@ const WorkoutLogger = () => {
                           }
                           setShowExerciseSelector(false);
                           setSwapTargetLogId(null);
+                          setExerciseSearchQuery('');
                         }}
                         className="flex-1 text-left py-4 pr-4 flex justify-between items-center"
                       >

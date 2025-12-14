@@ -62,6 +62,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await get().syncFromCloud();
       return true;
     } catch (err: any) {
+      // Handle redirect - this is not an error, just a pending redirect
+      if (err.message === 'REDIRECT_PENDING') {
+        console.log('🔄 Redirecting to Google Sign-In...');
+        // Keep loading state, don't show error
+        set({ isLoading: true, error: null });
+        return false;
+      }
+
       set({
         error: err.message || 'Google Sign-In failed',
         isLoading: false,
@@ -122,11 +130,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   checkAuth: () => {
+    console.log('🔍 Checking auth status...');
     const isValid = backend.auth.isLoggedIn;
     const user = backend.auth.user;
+    console.log('✅ Auth check complete:', { isValid, user: user?.email });
     set({
       isAuthenticated: isValid,
       user,
+      isAuthLoading: false, // Important: Mark auth initialization as complete
     });
   },
 

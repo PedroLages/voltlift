@@ -2,16 +2,19 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { ArrowLeft, Calendar, Clock, Box, Dumbbell, Share2, X, Activity } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Box, Dumbbell, Share2, X, Activity, StickyNote, Copy, Check } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
 import { SetTypeBadge } from '../components/SetTypeBadge';
 
 const HistoryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { history, settings } = useStore();
+  const { history, settings, saveWorkoutAsTemplate } = useStore();
   const [showReceipt, setShowReceipt] = useState(false);
-  
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
   const session = history.find(h => h.id === id);
 
   if (!session) {
@@ -126,6 +129,71 @@ const HistoryDetail = () => {
            </div>
        )}
 
+       {/* Save as Template Modal */}
+       {showSaveModal && (
+         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-6">
+           <div className="bg-[#111] border-2 border-primary max-w-sm w-full">
+             <div className="flex items-center justify-between p-4 border-b border-[#222]">
+               <h3 className="text-lg font-black uppercase text-white flex items-center gap-2">
+                 <Copy size={18} className="text-primary" />
+                 Save as Template
+               </h3>
+               <button
+                 onClick={() => {
+                   setShowSaveModal(false);
+                   setTemplateName('');
+                 }}
+                 className="text-[#666] hover:text-white transition-colors"
+               >
+                 <X size={24} />
+               </button>
+             </div>
+             <div className="p-4 space-y-4">
+               <div>
+                 <label className="text-[10px] text-[#666] uppercase font-bold tracking-widest block mb-2">
+                   Template Name
+                 </label>
+                 <input
+                   type="text"
+                   value={templateName}
+                   onChange={(e) => setTemplateName(e.target.value)}
+                   placeholder={session.name}
+                   className="w-full bg-black border border-[#333] px-3 py-2 text-white font-mono focus:border-primary outline-none"
+                 />
+               </div>
+               <p className="text-[10px] text-[#666] font-mono">
+                 This will save your workout structure with {session.logs.length} exercise(s) and their set/rep/weight schemes.
+               </p>
+               <div className="flex gap-2">
+                 <button
+                   onClick={() => {
+                     setShowSaveModal(false);
+                     setTemplateName('');
+                   }}
+                   className="flex-1 py-3 bg-[#222] text-white font-bold uppercase text-xs border border-[#333] hover:bg-[#333] transition-colors"
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   onClick={() => {
+                     if (id) {
+                       saveWorkoutAsTemplate(id, templateName || undefined);
+                       setShowSaveModal(false);
+                       setTemplateName('');
+                       setSavedSuccess(true);
+                       setTimeout(() => setSavedSuccess(false), 3000);
+                     }
+                   }}
+                   className="flex-1 py-3 bg-primary text-black font-bold uppercase text-xs hover:bg-white transition-colors"
+                 >
+                   Save Template
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
        {/* Nav */}
        <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
@@ -137,9 +205,18 @@ const HistoryDetail = () => {
                     <span className="text-xs font-bold uppercase tracking-widest text-primary">{id?.slice(0, 8)}</span>
                 </div>
             </div>
-            <button onClick={() => setShowReceipt(true)} className="flex items-center gap-2 text-primary hover:text-white transition-colors">
-                <Share2 size={20} /> <span className="text-xs font-bold uppercase">Share</span>
-            </button>
+            <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowSaveModal(true)}
+                  className={`flex items-center gap-2 transition-colors ${savedSuccess ? 'text-green-500' : 'text-[#666] hover:text-primary'}`}
+                >
+                    {savedSuccess ? <Check size={18} /> : <Copy size={18} />}
+                    <span className="text-xs font-bold uppercase">{savedSuccess ? 'Saved!' : 'Save'}</span>
+                </button>
+                <button onClick={() => setShowReceipt(true)} className="flex items-center gap-2 text-primary hover:text-white transition-colors">
+                    <Share2 size={20} /> <span className="text-xs font-bold uppercase">Share</span>
+                </button>
+            </div>
        </div>
 
        {/* Header */}

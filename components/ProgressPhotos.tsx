@@ -1,18 +1,51 @@
-import React, { useState, useRef } from 'react';
-import { Camera, Image as ImageIcon, X, Calendar, TrendingUp } from 'lucide-react';
+import React, { useState, useRef, useMemo } from 'react';
+import { Camera, Image as ImageIcon, X, Calendar, TrendingUp, GitCompare, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export const ProgressPhotos: React.FC = () => {
-  const { dailyLogs, logDailyBio } = useStore();
+  const { dailyLogs, logDailyBio, settings } = useStore();
   const [showUpload, setShowUpload] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get all photos sorted by date
+  // Comparison Mode State
+  const [showComparison, setShowComparison] = useState(false);
+  const [beforeIndex, setBeforeIndex] = useState(0);
+  const [afterIndex, setAfterIndex] = useState(0);
+
+  // Get all photos sorted by date (oldest first for comparison indexes)
   const photos = Object.values(dailyLogs)
     .filter(log => log.progressPhoto)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Memoize comparison photos
+  const beforePhoto = photos[beforeIndex];
+  const afterPhoto = photos[afterIndex];
+
+  // Initialize comparison indexes when entering comparison mode
+  const initCompare = () => {
+    if (photos.length >= 2) {
+      setBeforeIndex(0); // First/oldest photo
+      setAfterIndex(photos.length - 1); // Latest photo
+      setShowComparison(true);
+    }
+  };
+
+  // Calculate weight change between comparison photos
+  const weightChange = useMemo(() => {
+    if (!beforePhoto?.bodyweight || !afterPhoto?.bodyweight) return null;
+    return afterPhoto.bodyweight - beforePhoto.bodyweight;
+  }, [beforePhoto, afterPhoto]);
+
+  // Calculate days between photos
+  const daysBetween = useMemo(() => {
+    if (!beforePhoto || !afterPhoto) return 0;
+    return Math.round(
+      (new Date(afterPhoto.date).getTime() - new Date(beforePhoto.date).getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
+  }, [beforePhoto, afterPhoto]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,12 +92,23 @@ export const ProgressPhotos: React.FC = () => {
             <Camera size={18} className="text-primary" />
             <h3 className="text-sm font-bold uppercase text-white">Progress Photos</h3>
           </div>
-          <button
-            onClick={() => setShowUpload(true)}
-            className="px-4 py-2 bg-primary text-black font-bold uppercase text-xs hover:bg-white transition-colors"
-          >
-            Add Photo
-          </button>
+          <div className="flex gap-2">
+            {photos.length >= 2 && (
+              <button
+                onClick={initCompare}
+                className="px-4 py-2 bg-[#222] text-white font-bold uppercase text-xs border border-[#333] hover:border-primary hover:text-primary transition-colors flex items-center gap-2"
+              >
+                <GitCompare size={14} />
+                Compare
+              </button>
+            )}
+            <button
+              onClick={() => setShowUpload(true)}
+              className="px-4 py-2 bg-primary text-black font-bold uppercase text-xs hover:bg-white transition-colors"
+            >
+              Add Photo
+            </button>
+          </div>
         </div>
 
         {photos.length === 0 && !showUpload && (
@@ -75,6 +119,131 @@ export const ProgressPhotos: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Comparison Modal */}
+      {showComparison && beforePhoto && afterPhoto && (
+        <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-[#222]">
+            <h3 className="text-lg font-black uppercase text-white flex items-center gap-2">
+              <GitCompare size={20} className="text-primary" />
+              Before & After
+            </h3>
+            <button
+              onClick={() => setShowComparison(false)}
+              className="text-[#666] hover:text-white transition-colors p-2"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Stats Bar */}
+          <div className="flex items-center justify-center gap-6 py-3 bg-[#111] border-b border-[#222]">
+            <div className="text-center">
+              <div className="text-xl font-black text-primary">{daysBetween}</div>
+              <div className="text-[10px] text-[#666] uppercase font-bold">Days</div>
+            </div>
+            {weightChange !== null && (
+              <div className="text-center">
+                <div className={`text-xl font-black ${weightChange < 0 ? 'text-blue-400' : weightChange > 0 ? 'text-orange-400' : 'text-white'}`}>
+                  {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)}
+                </div>
+                <div className="text-[10px] text-[#666] uppercase font-bold">{settings.units}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Side by Side Photos */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Before Photo */}
+            <div className="flex-1 flex flex-col border-r border-[#333]">
+              <div className="flex-1 relative overflow-hidden">
+                <img
+                  src={beforePhoto.progressPhoto}
+                  alt="Before"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute top-3 left-3 px-3 py-1 bg-black/80 backdrop-blur-sm">
+                  <span className="text-xs font-black uppercase text-white">Before</span>
+                </div>
+              </div>
+              <div className="p-3 bg-[#111]">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setBeforeIndex(Math.max(0, beforeIndex - 1))}
+                    disabled={beforeIndex === 0}
+                    className="p-2 text-[#666] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-white">
+                      {new Date(beforePhoto.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    {beforePhoto.bodyweight && (
+                      <div className="text-[10px] text-[#666] font-mono">{beforePhoto.bodyweight.toFixed(1)} {settings.units}</div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setBeforeIndex(Math.min(afterIndex - 1, beforeIndex + 1))}
+                    disabled={beforeIndex >= afterIndex - 1}
+                    className="p-2 text-[#666] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* After Photo */}
+            <div className="flex-1 flex flex-col">
+              <div className="flex-1 relative overflow-hidden">
+                <img
+                  src={afterPhoto.progressPhoto}
+                  alt="After"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute top-3 right-3 px-3 py-1 bg-primary">
+                  <span className="text-xs font-black uppercase text-black">After</span>
+                </div>
+              </div>
+              <div className="p-3 bg-[#111]">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setAfterIndex(Math.max(beforeIndex + 1, afterIndex - 1))}
+                    disabled={afterIndex <= beforeIndex + 1}
+                    className="p-2 text-[#666] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-white">
+                      {new Date(afterPhoto.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    {afterPhoto.bodyweight && (
+                      <div className="text-[10px] text-primary font-mono">{afterPhoto.bodyweight.toFixed(1)} {settings.units}</div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setAfterIndex(Math.min(photos.length - 1, afterIndex + 1))}
+                    disabled={afterIndex >= photos.length - 1}
+                    className="p-2 text-[#666] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 bg-[#111] border-t border-[#222] text-center">
+            <p className="text-[10px] text-[#666] uppercase font-bold tracking-widest">
+              Use arrows to select different photos
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Upload Modal */}
       {showUpload && (
@@ -179,7 +348,7 @@ export const ProgressPhotos: React.FC = () => {
       {/* Photo Gallery */}
       {photos.length > 0 && (
         <div className="grid grid-cols-2 gap-4">
-          {photos.map((log) => (
+          {[...photos].reverse().map((log) => (
             <div
               key={log.date}
               className="relative bg-[#111] border border-[#222] overflow-hidden group"

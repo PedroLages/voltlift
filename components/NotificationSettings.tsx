@@ -1,277 +1,354 @@
-import { Bell, BellOff, Clock, Award, BarChart3 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import {
-  requestNotificationPermission,
-  areNotificationsEnabled,
-  getPermissionStatusText,
-} from '../services/notificationService';
-import { useStore } from '../store/useStore';
-import type { NotificationSettings as NotificationSettingsType } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Bell, BellOff, Clock, Trophy, Flame, Calendar, Timer, Check, AlertCircle, X } from 'lucide-react';
+import { haptic } from '../services/haptics';
 
-const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettingsType = {
+interface NotificationPreferences {
+  enabled: boolean;
+  dailyReminder: boolean;
+  reminderTime: string;
+  streakAlerts: boolean;
+  prCelebrations: boolean;
+  weeklySummary: boolean;
+  restTimerAlerts: boolean;
+}
+
+const DEFAULT_PREFERENCES: NotificationPreferences = {
   enabled: false,
-  workoutReminders: true,
-  restTimerAlerts: true,
+  dailyReminder: true,
+  reminderTime: '18:00',
+  streakAlerts: true,
   prCelebrations: true,
   weeklySummary: true,
-  reminderTime: '09:00',
-  reminderDays: [1, 3, 5], // Monday, Wednesday, Friday
+  restTimerAlerts: true,
 };
 
-export default function NotificationSettings() {
-  const { settings, updateSettings } = useStore();
-  const [permissionStatus, setPermissionStatus] = useState<string>(getPermissionStatusText());
+const STORAGE_KEY = 'voltlift-notification-preferences';
 
-  const notificationSettings = settings.notifications || DEFAULT_NOTIFICATION_SETTINGS;
+export const NotificationSettings: React.FC = () => {
+  const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
+  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default');
+  const [showTimeModal, setShowTimeModal] = useState(false);
+  const [testSent, setTestSent] = useState(false);
 
+  // Load preferences from localStorage
   useEffect(() => {
-    // Update permission status
-    const interval = setInterval(() => {
-      setPermissionStatus(getPermissionStatusText());
-    }, 1000);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        setPreferences(JSON.parse(saved));
+      } catch {
+        // Invalid JSON, use defaults
+      }
+    }
 
-    return () => clearInterval(interval);
+    // Check current permission status
+    if ('Notification' in window) {
+      setPermissionStatus(Notification.permission);
+    }
   }, []);
 
-  const handleEnableNotifications = async () => {
-    const permission = await requestNotificationPermission();
+  // Save preferences when they change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+  }, [preferences]);
+
+  const requestPermission = async () => {
+    if (!('Notification' in window)) {
+      alert('This browser does not support notifications');
+      return;
+    }
+
+    haptic('medium');
+    const permission = await Notification.requestPermission();
+    setPermissionStatus(permission);
 
     if (permission === 'granted') {
-      updateSettings({
-        notifications: {
-          ...notificationSettings,
-          enabled: true,
-        },
+      setPreferences(prev => ({ ...prev, enabled: true }));
+      haptic('success');
+
+      // Show test notification
+      new Notification('VOLTLIFT ACTIVATED', {
+        body: 'Notifications are now enabled. Time to crush it!',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
       });
-      setPermissionStatus(getPermissionStatusText());
-    } else {
-      alert(
-        'Notifications permission denied. Please enable notifications in your browser settings.'
-      );
     }
   };
 
-  const handleDisableNotifications = () => {
-    updateSettings({
-      notifications: {
-        ...notificationSettings,
-        enabled: false,
-      },
-    });
-  };
+  const togglePreference = (key: keyof NotificationPreferences) => {
+    if (key === 'enabled' && !preferences.enabled && permissionStatus !== 'granted') {
+      requestPermission();
+      return;
+    }
 
-  const toggleNotificationType = (type: keyof NotificationSettingsType) => {
-    updateSettings({
-      notifications: {
-        ...notificationSettings,
-        [type]: !notificationSettings[type],
-      },
-    });
+    haptic('selection');
+    setPreferences(prev => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   };
 
   const updateReminderTime = (time: string) => {
-    updateSettings({
-      notifications: {
-        ...notificationSettings,
-        reminderTime: time,
-      },
-    });
+    haptic('selection');
+    setPreferences(prev => ({ ...prev, reminderTime: time }));
+    setShowTimeModal(false);
   };
 
-  const toggleReminderDay = (day: number) => {
-    const currentDays = notificationSettings.reminderDays || [];
-    const newDays = currentDays.includes(day)
-      ? currentDays.filter((d) => d !== day)
-      : [...currentDays, day].sort();
+  const sendTestNotification = () => {
+    if (permissionStatus !== 'granted') return;
 
-    updateSettings({
-      notifications: {
-        ...notificationSettings,
-        reminderDays: newDays,
-      },
+    haptic('medium');
+    new Notification('TEST NOTIFICATION', {
+      body: 'Your notifications are working! Get ready to lift.',
+      icon: '/icon-192.png',
     });
+
+    setTestSent(true);
+    setTimeout(() => setTestSent(false), 3000);
   };
 
-  const isNotificationEnabled = areNotificationsEnabled() && notificationSettings.enabled;
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const h = parseInt(hours);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${minutes} ${ampm}`;
+  };
 
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const ToggleSwitch = ({
+    enabled,
+    onToggle,
+    disabled = false
+  }: {
+    enabled: boolean;
+    onToggle: () => void;
+    disabled?: boolean;
+  }) => (
+    <button
+      onClick={onToggle}
+      disabled={disabled}
+      className={`relative w-12 h-6 rounded-full transition-colors ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+      } ${enabled ? 'bg-primary' : 'bg-[#333]'}`}
+    >
+      <span
+        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+          enabled ? 'translate-x-6' : 'translate-x-0'
+        }`}
+      />
+    </button>
+  );
 
   return (
-    <div className="space-y-4">
+    <div className="bg-[#111] border border-[#222] p-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="volt-header text-lg text-white">NOTIFICATIONS</h3>
-        <span className="text-xs text-muted font-mono">{permissionStatus}</span>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Bell size={18} className="text-primary" />
+          <h3 className="text-sm font-bold uppercase text-white">Notifications</h3>
+        </div>
+        {permissionStatus === 'denied' && (
+          <span className="text-[10px] text-red-500 font-bold uppercase flex items-center gap-1">
+            <AlertCircle size={12} /> Blocked
+          </span>
+        )}
       </div>
 
-      {/* Master Toggle */}
-      <div className="bg-[#111] border border-[#333] p-4 rounded">
-        <div className="flex items-center justify-between">
+      {/* Permission Request */}
+      {permissionStatus !== 'granted' && permissionStatus !== 'denied' && (
+        <button
+          onClick={requestPermission}
+          className="w-full py-3 bg-primary text-black font-bold uppercase text-xs mb-4 flex items-center justify-center gap-2 hover:bg-white transition-colors"
+        >
+          <Bell size={16} />
+          Enable Notifications
+        </button>
+      )}
+
+      {permissionStatus === 'denied' && (
+        <div className="bg-red-900/20 border border-red-900 p-3 mb-4">
+          <p className="text-[11px] text-red-400 font-mono">
+            Notifications are blocked. Please enable them in your browser settings to receive workout reminders.
+          </p>
+        </div>
+      )}
+
+      {/* Notification Options */}
+      <div className="space-y-3">
+        {/* Master Toggle */}
+        <div className="flex items-center justify-between py-2 border-b border-[#222]">
           <div className="flex items-center gap-3">
-            {isNotificationEnabled ? (
-              <Bell className="text-primary" size={20} />
+            {preferences.enabled ? (
+              <Bell size={16} className="text-primary" />
             ) : (
-              <BellOff className="text-muted" size={20} />
+              <BellOff size={16} className="text-[#666]" />
             )}
             <div>
-              <h4 className="font-bold text-white">Push Notifications</h4>
-              <p className="text-xs text-muted">
-                {isNotificationEnabled ? 'Enabled' : 'Disabled'}
-              </p>
+              <p className="text-sm font-bold text-white">All Notifications</p>
+              <p className="text-[10px] text-[#666]">Master toggle for all alerts</p>
             </div>
           </div>
-          <button
-            onClick={isNotificationEnabled ? handleDisableNotifications : handleEnableNotifications}
-            className={`px-4 py-2 rounded font-bold text-sm transition-colors ${
-              isNotificationEnabled
-                ? 'bg-primary text-black hover:bg-primary/80'
-                : 'bg-[#222] text-white hover:bg-[#333]'
-            }`}
-          >
-            {isNotificationEnabled ? 'DISABLE' : 'ENABLE'}
-          </button>
+          <ToggleSwitch
+            enabled={preferences.enabled}
+            onToggle={() => togglePreference('enabled')}
+            disabled={permissionStatus === 'denied'}
+          />
+        </div>
+
+        {/* Daily Reminder */}
+        <div className={`flex items-center justify-between py-2 ${!preferences.enabled ? 'opacity-50' : ''}`}>
+          <div className="flex items-center gap-3">
+            <Clock size={16} className="text-[#666]" />
+            <div>
+              <p className="text-sm font-bold text-white">Daily Reminder</p>
+              <button
+                onClick={() => preferences.enabled && setShowTimeModal(true)}
+                className="text-[10px] text-primary hover:underline"
+                disabled={!preferences.enabled}
+              >
+                {formatTime(preferences.reminderTime)}
+              </button>
+            </div>
+          </div>
+          <ToggleSwitch
+            enabled={preferences.dailyReminder}
+            onToggle={() => togglePreference('dailyReminder')}
+            disabled={!preferences.enabled}
+          />
+        </div>
+
+        {/* Streak Alerts */}
+        <div className={`flex items-center justify-between py-2 ${!preferences.enabled ? 'opacity-50' : ''}`}>
+          <div className="flex items-center gap-3">
+            <Flame size={16} className="text-[#666]" />
+            <div>
+              <p className="text-sm font-bold text-white">Streak Alerts</p>
+              <p className="text-[10px] text-[#666]">Don't break your streak!</p>
+            </div>
+          </div>
+          <ToggleSwitch
+            enabled={preferences.streakAlerts}
+            onToggle={() => togglePreference('streakAlerts')}
+            disabled={!preferences.enabled}
+          />
+        </div>
+
+        {/* PR Celebrations */}
+        <div className={`flex items-center justify-between py-2 ${!preferences.enabled ? 'opacity-50' : ''}`}>
+          <div className="flex items-center gap-3">
+            <Trophy size={16} className="text-[#666]" />
+            <div>
+              <p className="text-sm font-bold text-white">PR Celebrations</p>
+              <p className="text-[10px] text-[#666]">Get notified of new records</p>
+            </div>
+          </div>
+          <ToggleSwitch
+            enabled={preferences.prCelebrations}
+            onToggle={() => togglePreference('prCelebrations')}
+            disabled={!preferences.enabled}
+          />
+        </div>
+
+        {/* Weekly Summary */}
+        <div className={`flex items-center justify-between py-2 ${!preferences.enabled ? 'opacity-50' : ''}`}>
+          <div className="flex items-center gap-3">
+            <Calendar size={16} className="text-[#666]" />
+            <div>
+              <p className="text-sm font-bold text-white">Weekly Summary</p>
+              <p className="text-[10px] text-[#666]">Sunday recap of your week</p>
+            </div>
+          </div>
+          <ToggleSwitch
+            enabled={preferences.weeklySummary}
+            onToggle={() => togglePreference('weeklySummary')}
+            disabled={!preferences.enabled}
+          />
+        </div>
+
+        {/* Rest Timer Alerts */}
+        <div className={`flex items-center justify-between py-2 ${!preferences.enabled ? 'opacity-50' : ''}`}>
+          <div className="flex items-center gap-3">
+            <Timer size={16} className="text-[#666]" />
+            <div>
+              <p className="text-sm font-bold text-white">Rest Timer Alerts</p>
+              <p className="text-[10px] text-[#666]">Sound when rest is over</p>
+            </div>
+          </div>
+          <ToggleSwitch
+            enabled={preferences.restTimerAlerts}
+            onToggle={() => togglePreference('restTimerAlerts')}
+            disabled={!preferences.enabled}
+          />
         </div>
       </div>
 
-      {/* Notification Types */}
-      {isNotificationEnabled && (
-        <div className="space-y-2">
-          {/* Workout Reminders */}
-          <div className="bg-[#111] border border-[#333] p-4 rounded">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <Clock className="text-primary" size={18} />
-                <div>
-                  <h4 className="font-bold text-white text-sm">Workout Reminders</h4>
-                  <p className="text-xs text-muted">Get reminded on your workout days</p>
-                </div>
-              </div>
-              <button
-                onClick={() => toggleNotificationType('workoutReminders')}
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  notificationSettings.workoutReminders ? 'bg-primary' : 'bg-[#333]'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-black rounded-full transition-transform ${
-                    notificationSettings.workoutReminders ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
+      {/* Test Notification Button */}
+      {permissionStatus === 'granted' && preferences.enabled && (
+        <button
+          onClick={sendTestNotification}
+          className={`w-full mt-4 py-2 text-xs font-bold uppercase border transition-colors flex items-center justify-center gap-2 ${
+            testSent
+              ? 'border-green-500 text-green-500 bg-green-500/10'
+              : 'border-[#333] text-[#666] hover:text-white hover:border-[#444]'
+          }`}
+        >
+          {testSent ? (
+            <>
+              <Check size={14} />
+              Notification Sent!
+            </>
+          ) : (
+            <>
+              <Bell size={14} />
+              Send Test Notification
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Time Picker Modal */}
+      {showTimeModal && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-6">
+          <div className="bg-[#111] border-2 border-primary max-w-xs w-full">
+            <div className="flex items-center justify-between p-4 border-b border-[#222]">
+              <h3 className="text-sm font-bold uppercase text-white">Set Reminder Time</h3>
+              <button onClick={() => setShowTimeModal(false)} className="text-[#666] hover:text-white">
+                <X size={20} />
               </button>
             </div>
-
-            {notificationSettings.workoutReminders && (
-              <>
-                {/* Reminder Time */}
-                <div className="mb-3">
-                  <label className="text-xs text-muted font-mono mb-1 block">REMINDER TIME</label>
-                  <input
-                    type="time"
-                    value={notificationSettings.reminderTime || '09:00'}
-                    onChange={(e) => updateReminderTime(e.target.value)}
-                    className="bg-[#000] border border-[#444] text-white px-3 py-2 rounded w-full font-mono"
-                  />
-                </div>
-
-                {/* Reminder Days */}
-                <div>
-                  <label className="text-xs text-muted font-mono mb-2 block">REMINDER DAYS</label>
-                  <div className="flex gap-2">
-                    {dayNames.map((day, index) => (
-                      <button
-                        key={index}
-                        onClick={() => toggleReminderDay(index)}
-                        className={`flex-1 py-2 rounded font-bold text-xs transition-colors ${
-                          (notificationSettings.reminderDays || []).includes(index)
-                            ? 'bg-primary text-black'
-                            : 'bg-[#222] text-muted hover:bg-[#333]'
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Rest Timer Alerts */}
-          <div className="bg-[#111] border border-[#333] p-4 rounded">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock className="text-primary" size={18} />
-                <div>
-                  <h4 className="font-bold text-white text-sm">Rest Timer Alerts</h4>
-                  <p className="text-xs text-muted">Alert when rest period completes</p>
-                </div>
+            <div className="p-4">
+              <div className="grid grid-cols-4 gap-2">
+                {['06:00', '08:00', '12:00', '17:00', '18:00', '19:00', '20:00', '21:00'].map(time => (
+                  <button
+                    key={time}
+                    onClick={() => updateReminderTime(time)}
+                    className={`py-3 text-xs font-bold uppercase border transition-colors ${
+                      preferences.reminderTime === time
+                        ? 'bg-primary text-black border-primary'
+                        : 'bg-black text-white border-[#333] hover:border-[#444]'
+                    }`}
+                  >
+                    {formatTime(time)}
+                  </button>
+                ))}
               </div>
-              <button
-                onClick={() => toggleNotificationType('restTimerAlerts')}
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  notificationSettings.restTimerAlerts ? 'bg-primary' : 'bg-[#333]'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-black rounded-full transition-transform ${
-                    notificationSettings.restTimerAlerts ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+              <div className="mt-4">
+                <label className="text-[10px] text-[#666] uppercase font-bold block mb-2">
+                  Custom Time
+                </label>
+                <input
+                  type="time"
+                  value={preferences.reminderTime}
+                  onChange={(e) => updateReminderTime(e.target.value)}
+                  className="w-full bg-black border border-[#333] px-3 py-2 text-white font-mono focus:border-primary outline-none"
                 />
-              </button>
-            </div>
-          </div>
-
-          {/* PR Celebrations */}
-          <div className="bg-[#111] border border-[#333] p-4 rounded">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Award className="text-primary" size={18} />
-                <div>
-                  <h4 className="font-bold text-white text-sm">PR Celebrations</h4>
-                  <p className="text-xs text-muted">Notify when you hit a personal record</p>
-                </div>
               </div>
-              <button
-                onClick={() => toggleNotificationType('prCelebrations')}
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  notificationSettings.prCelebrations ? 'bg-primary' : 'bg-[#333]'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-black rounded-full transition-transform ${
-                    notificationSettings.prCelebrations ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Weekly Summary */}
-          <div className="bg-[#111] border border-[#333] p-4 rounded">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <BarChart3 className="text-primary" size={18} />
-                <div>
-                  <h4 className="font-bold text-white text-sm">Weekly Summary</h4>
-                  <p className="text-xs text-muted">Sunday recap of your week</p>
-                </div>
-              </div>
-              <button
-                onClick={() => toggleNotificationType('weeklySummary')}
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  notificationSettings.weeklySummary ? 'bg-primary' : 'bg-[#333]'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-black rounded-full transition-transform ${
-                    notificationSettings.weeklySummary ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+};
+
+export default NotificationSettings;

@@ -8,6 +8,7 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithCredential,
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
@@ -67,6 +68,58 @@ export class FirebaseBackend implements BackendService {
     onAuthStateChanged(this.authInstance, (user) => {
       this.currentUser = user ? this.mapFirebaseUser(user) : null;
     });
+
+    // Set up deep link handler for OAuth callback (Capacitor)
+    this.setupDeepLinkHandler();
+  }
+
+  /**
+   * Set up deep link handler for OAuth callback in Capacitor
+   */
+  private async setupDeepLinkHandler() {
+    try {
+      const { App } = await import('@capacitor/app');
+
+      App.addListener('appUrlOpen', async (event) => {
+        console.log('🔗 Deep link received:', event.url);
+
+        // Check if this is a Google OAuth callback
+        if (event.url.includes('google') || event.url.includes('oauth')) {
+          // Extract the token from the URL if present
+          const url = new URL(event.url);
+          const idToken = url.searchParams.get('id_token') || url.hash.match(/id_token=([^&]+)/)?.[1];
+          const accessToken = url.searchParams.get('access_token') || url.hash.match(/access_token=([^&]+)/)?.[1];
+
+          if (idToken || accessToken) {
+            try {
+              const credential = GoogleAuthProvider.credential(idToken, accessToken);
+              const result = await signInWithCredential(this.authInstance, credential);
+              console.log('✅ Google Sign-In via deep link successful');
+
+              const user = this.mapFirebaseUser(result.user);
+              this.currentUser = user;
+
+              // Create/update user document
+              await setDoc(doc(this.db, 'users', result.user.uid), {
+                email: user.email,
+                name: user.name,
+                photoURL: user.photoURL,
+                lastLogin: Date.now(),
+              }, { merge: true });
+
+              // Dispatch event to notify the app
+              window.dispatchEvent(new CustomEvent('google-auth-success', { detail: { user } }));
+            } catch (error) {
+              console.error('❌ Failed to sign in with credential:', error);
+              window.dispatchEvent(new CustomEvent('google-auth-error', { detail: { error } }));
+            }
+          }
+        }
+      });
+    } catch (e) {
+      // Not in Capacitor environment
+      console.log('Deep link handler not available (web environment)');
+    }
   }
 
   /**
@@ -145,19 +198,60 @@ export class FirebaseBackend implements BackendService {
       await setPersistence(this.authInstance, persistence);
 
       const provider = new GoogleAuthProvider();
-      const credential = await signInWithPopup(this.authInstance, provider);
-      const user = this.mapFirebaseUser(credential.user);
-      this.currentUser = user;
 
-      // Create/update user document
-      await setDoc(doc(this.db, 'users', credential.user.uid), {
-        email: user.email,
-        name: user.name,
-        photoURL: user.photoURL,
-        lastLogin: Date.now(),
-      }, { merge: true });
+      // Detect if running in Capacitor (native app)
+      const isNative = !!(window as any).Capacitor;
 
-      return { user, token: await credential.user.getIdToken() };
+      if (isNative) {
+        // For native apps, try popup first (works in newer Capacitor/WebKit)
+        // If it fails, guide user to use email login
+        console.log('📱 Attempting Google Sign-In in native app');
+
+        try {
+          // Try signInWithPopup - works in some Capacitor configurations
+          const credential = await signInWithPopup(this.authInstance, provider);
+          const user = this.mapFirebaseUser(credential.user);
+          this.currentUser = user;
+
+          // Create/update user document
+          await setDoc(doc(this.db, 'users', credential.user.uid), {
+            email: user.email,
+            name: user.name,
+            photoURL: user.photoURL,
+            lastLogin: Date.now(),
+          }, { merge: true });
+
+          return { user, token: await credential.user.getIdToken() };
+        } catch (popupError: any) {
+          console.error('❌ Popup auth failed in native:', popupError);
+
+          // If popup blocked or failed, throw a user-friendly error
+          if (popupError.code === 'auth/popup-blocked' ||
+              popupError.code === 'auth/popup-closed-by-user' ||
+              popupError.code === 'auth/cancelled-popup-request' ||
+              popupError.message?.includes('popup')) {
+            throw new Error('Google Sign-In is not available in the app. Please use email login or try from a web browser.');
+          }
+
+          throw popupError;
+        }
+      } else {
+        // Use popup for web
+        console.log('🪟 Using signInWithPopup for web');
+        const credential = await signInWithPopup(this.authInstance, provider);
+        const user = this.mapFirebaseUser(credential.user);
+        this.currentUser = user;
+
+        // Create/update user document
+        await setDoc(doc(this.db, 'users', credential.user.uid), {
+          email: user.email,
+          name: user.name,
+          photoURL: user.photoURL,
+          lastLogin: Date.now(),
+        }, { merge: true });
+
+        return { user, token: await credential.user.getIdToken() };
+      }
     },
 
     loginWithApple: async (rememberMe: boolean = true): Promise<AuthResult> => {

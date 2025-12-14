@@ -60,13 +60,16 @@ interface AppState {
   updateTemplate: (id: string, name: string, exerciseIds: string[]) => void;
   duplicateTemplate: (id: string) => void;
   deleteTemplate: (id: string) => void;
+  saveWorkoutAsTemplate: (workoutId: string, templateName?: string) => string | null;
   suggestNextSet: (exerciseIndex: number, setIndex: number) => void; 
   updateExerciseLog: (logId: string, updates: Partial<ExerciseLog>) => void;
   removeExerciseLog: (logId: string) => void;
   toggleSuperset: (logId: string) => void;
   updateActiveWorkout: (updates: Partial<WorkoutSession>) => void;
   activateProgram: (programId: string, selectedFrequency?: number) => void;
-  
+  saveProgram: (program: Omit<Program, 'id'>) => string;
+  deleteProgram: (programId: string) => void;
+
   // Phase 4 Actions
   logDailyBio: (date: string, data: Partial<DailyLog>) => void;
   updateBodyweight: (date: string, weight: number) => void;
@@ -675,6 +678,34 @@ export const useStore = create<AppState>()(
         set(state => ({ templates: state.templates.filter(t => t.id !== id) }));
       },
 
+      saveWorkoutAsTemplate: (workoutId, templateName) => {
+        const workout = get().history.find(w => w.id === workoutId);
+        if (!workout) return null;
+
+        const newTemplateId = uuidv4();
+        const newTemplate: WorkoutSession = {
+          id: newTemplateId,
+          name: templateName || `${workout.name} (Saved)`,
+          startTime: 0,
+          status: 'template',
+          logs: workout.logs.map(log => ({
+            ...log,
+            id: uuidv4(),
+            // Preserve supersetId for circuit/superset groupings
+            supersetId: log.supersetId,
+            sets: log.sets.map(set => ({
+              ...set,
+              id: uuidv4(),
+              completed: false,
+              // Preserve weights and reps from the workout
+            }))
+          }))
+        };
+
+        set(state => ({ templates: [...state.templates, newTemplate] }));
+        return newTemplateId;
+      },
+
       updateExerciseLog: (logId, updates) => {
           const { activeWorkout } = get();
           if (!activeWorkout) return;
@@ -768,6 +799,28 @@ export const useStore = create<AppState>()(
                       selectedFrequency
                   }
               }
+          }));
+      },
+
+      saveProgram: (program) => {
+          const newId = uuidv4();
+          const newProgram: Program = {
+              ...program,
+              id: newId
+          };
+          set(state => ({
+              programs: [...state.programs, newProgram]
+          }));
+          return newId;
+      },
+
+      deleteProgram: (programId) => {
+          set(state => ({
+              programs: state.programs.filter(p => p.id !== programId),
+              // Also clear activeProgram if deleting the active one
+              settings: state.settings.activeProgram?.programId === programId
+                  ? { ...state.settings, activeProgram: undefined }
+                  : state.settings
           }));
       },
 

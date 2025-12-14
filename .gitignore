@@ -35,3 +35,10 @@ ui-debug.log
 
 # Temp files
 *.tmp
+
+# Capacitor/iOS
+ios/App/App.xcodeproj/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+*.png
+!public/**/*.png

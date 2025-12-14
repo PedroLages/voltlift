@@ -10,6 +10,7 @@ import { ProgressionChart, VolumeChart } from '../components/ProgressionChart';
 import MuscleGroupVolumeChart from '../components/MuscleGroupVolumeChart';
 import VolumeBreakdownTable from '../components/VolumeBreakdownTable';
 import DetailedInsights from '../components/DetailedInsights';
+import RPETrendsChart from '../components/RPETrendsChart';
 import {
   getExerciseProgression,
   getVolumeProgression,
@@ -229,9 +230,13 @@ const Analytics = () => {
           <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4 flex items-center gap-2">
               <Activity size={14} /> Recovery Status (Last 7 Days)
           </h3>
-          <div className="grid grid-cols-2 gap-4 items-center">
+
+          {/* Mobile: Stack vertically, Desktop: Side by side */}
+          <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
               <BodyHeatmap intensity={muscleIntensity} />
-              <div className="space-y-4">
+
+              {/* Stats cards - horizontal on mobile, vertical on desktop */}
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-1 lg:space-y-0">
                    <div className="bg-[#111] p-3 border-l-2 border-primary">
                        <h4 className="text-white font-bold uppercase text-xs italic">High Volume</h4>
                        <p className="text-[10px] text-[#666] mt-1 font-mono">
@@ -512,6 +517,11 @@ const Analytics = () => {
           <div>
             <VolumeBreakdownTable weeklyData={weeklyVolumeData} />
           </div>
+      </div>
+
+      {/* RPE Trends Section */}
+      <div className="mb-8 border-t border-[#222] pt-8">
+        <RPETrendsChart />
       </div>
 
       {/* Detailed Insights Section */}

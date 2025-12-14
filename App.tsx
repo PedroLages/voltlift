@@ -7,6 +7,7 @@ import { useAuthStore } from './store/useAuthStore';
 import NotificationScheduler from './components/NotificationScheduler';
 import OfflineIndicator from './components/OfflineIndicator';
 import ScrollToTop from './components/ScrollToTop';
+import WorkoutRecoveryPrompt from './components/WorkoutRecoveryPrompt';
 import { initializeNotificationListeners } from './services/notificationService';
 import DesktopLayout from './components/desktop/DesktopLayout';
 
@@ -165,7 +166,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!isAuthenticated) {
     // Save current path to localStorage so we can return here after login
     localStorage.setItem('returnUrl', location.pathname);
-    return <Navigate to="/welcome" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // Second check: Must complete onboarding
@@ -188,6 +189,9 @@ const AppContent = () => {
 
         {/* Background notification scheduler */}
         <NotificationScheduler />
+
+        {/* Workout recovery prompt for interrupted sessions */}
+        <WorkoutRecoveryPrompt />
 
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -227,6 +231,18 @@ const App = () => {
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
+    // Hide Capacitor splash screen
+    const hideSplash = async () => {
+      try {
+        const { SplashScreen } = await import('@capacitor/splash-screen');
+        await SplashScreen.hide();
+      } catch (e) {
+        // Not running in Capacitor, ignore
+        console.log('Not running in Capacitor environment');
+      }
+    };
+    hideSplash();
+
     // Check auth status on startup
     checkAuth();
     // Hydrate heavy assets from IndexedDB on startup
@@ -235,8 +251,8 @@ const App = () => {
     // Initialize notification listeners
     initializeNotificationListeners();
 
-    // Register service worker for PWA
-    if ('serviceWorker' in navigator) {
+    // Register service worker for PWA (only in web, not native)
+    if ('serviceWorker' in navigator && !window.matchMedia('(display-mode: standalone)').matches) {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
           console.log('Service Worker registered:', registration.scope);
