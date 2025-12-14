@@ -183,26 +183,28 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Social Auth Buttons */}
-        <div className="space-y-3">
-          <button
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            className="w-full bg-[#111] border border-[#333] text-white py-4 rounded-lg flex items-center justify-center gap-3 hover:bg-[#1a1a1a] transition-colors disabled:opacity-50"
-          >
-            <GoogleIcon />
-            <span className="font-semibold">Continue with Google</span>
-          </button>
+        {/* Social Auth Buttons - Only show on web, not on iOS */}
+        {!(window as any).Capacitor && (
+          <div className="space-y-3">
+            <button
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full bg-[#111] border border-[#333] text-white py-4 rounded-lg flex items-center justify-center gap-3 hover:bg-[#1a1a1a] transition-colors disabled:opacity-50"
+            >
+              <GoogleIcon />
+              <span className="font-semibold">Continue with Google</span>
+            </button>
 
-          <button
-            onClick={handleAppleLogin}
-            disabled={isLoading}
-            className="w-full bg-white text-black py-4 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors disabled:opacity-50"
-          >
-            <AppleIcon />
-            <span className="font-semibold">Continue with Apple</span>
-          </button>
-        </div>
+            <button
+              onClick={handleAppleLogin}
+              disabled={isLoading}
+              className="w-full bg-white text-black py-4 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors disabled:opacity-50"
+            >
+              <AppleIcon />
+              <span className="font-semibold">Continue with Apple</span>
+            </button>
+          </div>
+        )}
 
         <div className="mt-8 text-center">
           <button

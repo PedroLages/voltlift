@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, BellOff, Clock, Trophy, Flame, Calendar, Timer, Check, AlertCircle, X } from 'lucide-react';
 import { haptic } from '../services/haptics';
-
-interface NotificationPreferences {
-  enabled: boolean;
-  dailyReminder: boolean;
-  reminderTime: string;
-  streakAlerts: boolean;
-  prCelebrations: boolean;
-  weeklySummary: boolean;
-  restTimerAlerts: boolean;
-}
+import { localNotifications, NotificationPreferences } from '../services/localNotifications';
 
 const DEFAULT_PREFERENCES: NotificationPreferences = {
   enabled: false,
@@ -26,42 +17,59 @@ const STORAGE_KEY = 'voltlift-notification-preferences';
 
 export const NotificationSettings: React.FC = () => {
   const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
-  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default');
+  const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [testSent, setTestSent] = useState(false);
+  const [isSupported, setIsSupported] = useState(true);
 
-  // Load preferences from localStorage
+  // Load preferences from localStorage and check permission
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setPreferences(JSON.parse(saved));
-      } catch {
-        // Invalid JSON, use defaults
-      }
-    }
+    const init = async () => {
+      // Check if notifications are supported
+      const supported = localNotifications.isSupported();
+      setIsSupported(supported);
 
-    // Check current permission status
-    if ('Notification' in window) {
-      setPermissionStatus(Notification.permission);
-    }
+      // Load saved preferences
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const loadedPrefs = JSON.parse(saved);
+          setPreferences(loadedPrefs);
+        } catch {
+          // Invalid JSON, use defaults
+        }
+      }
+
+      // Check current permission status
+      if (supported) {
+        const status = await localNotifications.checkPermission();
+        setPermissionStatus(status);
+      } else {
+        setPermissionStatus('denied');
+      }
+    };
+
+    init();
   }, []);
 
-  // Save preferences when they change
+  // Save preferences and apply notification schedules when they change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-  }, [preferences]);
+
+    // Apply preferences (schedule/cancel notifications)
+    if (permissionStatus === 'granted') {
+      localNotifications.applyPreferences(preferences);
+    }
+  }, [preferences, permissionStatus]);
 
   const requestPermission = async () => {
-    if (!('Notification' in window)) {
-      // On iOS/Capacitor, web notifications aren't supported
-      // Set permission status to 'denied' to show proper message
+    if (!isSupported) {
       setPermissionStatus('denied');
       return;
     }
 
     haptic('medium');
-    const permission = await Notification.requestPermission();
+    const permission = await localNotifications.requestPermission();
     setPermissionStatus(permission);
 
     if (permission === 'granted') {
@@ -69,25 +77,22 @@ export const NotificationSettings: React.FC = () => {
       haptic('success');
 
       // Show test notification
-      new Notification('VOLTLIFT ACTIVATED', {
-        body: 'Notifications are now enabled. Time to crush it!',
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-      });
+      await localNotifications.sendTestNotification();
     }
   };
 
-  const togglePreference = (key: keyof NotificationPreferences) => {
+  const togglePreference = async (key: keyof NotificationPreferences) => {
     if (key === 'enabled' && !preferences.enabled && permissionStatus !== 'granted') {
-      requestPermission();
+      await requestPermission();
       return;
     }
 
     haptic('selection');
-    setPreferences(prev => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    const newPrefs = {
+      ...preferences,
+      [key]: !preferences[key],
+    };
+    setPreferences(newPrefs);
   };
 
   const updateReminderTime = (time: string) => {
@@ -96,14 +101,11 @@ export const NotificationSettings: React.FC = () => {
     setShowTimeModal(false);
   };
 
-  const sendTestNotification = () => {
+  const sendTestNotification = async () => {
     if (permissionStatus !== 'granted') return;
 
     haptic('medium');
-    new Notification('TEST NOTIFICATION', {
-      body: 'Your notifications are working! Get ready to lift.',
-      icon: '/icon-192.png',
-    });
+    await localNotifications.sendTestNotification();
 
     setTestSent(true);
     setTimeout(() => setTestSent(false), 3000);
@@ -170,9 +172,9 @@ export const NotificationSettings: React.FC = () => {
       {permissionStatus === 'denied' && (
         <div className="bg-red-900/20 border border-red-900 p-3 mb-4">
           <p className="text-[11px] text-red-400 font-mono">
-            {!('Notification' in window)
-              ? 'Web notifications are not supported on iOS native apps. In-app alerts like rest timers and PR celebrations will still work!'
-              : 'Notifications are blocked. Please enable them in your browser settings to receive workout reminders.'
+            {!isSupported
+              ? 'Notifications are only available on iOS/Android native apps. Running in browser mode - upgrade to the app for full notification support!'
+              : 'Notifications are blocked. Please enable them in iPhone Settings → IronPath → Notifications.'
             }
           </p>
         </div>

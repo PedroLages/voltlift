@@ -1,6 +1,7 @@
 /**
  * Notification Service
- * Handles all push notifications for VoltLift using Web Notifications API
+ * Handles all push notifications for IronPath/VoltLift
+ * Uses Capacitor Local Notifications for iOS/Android native support
  *
  * Features:
  * - Permission management
@@ -9,6 +10,8 @@
  * - PR celebrations
  * - Weekly summaries
  */
+
+import { localNotifications } from './localNotifications';
 
 export type NotificationType =
   | 'workout-reminder'
@@ -36,66 +39,27 @@ export interface NotificationConfig {
  * Request notification permission from the user
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  if (!('Notification' in window)) {
-    console.warn('This browser does not support notifications');
-    return 'denied';
-  }
-
-  if (Notification.permission === 'granted') {
-    return 'granted';
-  }
-
-  if (Notification.permission === 'denied') {
-    return 'denied';
-  }
-
-  try {
-    const permission = await Notification.requestPermission();
-    return permission;
-  } catch (error) {
-    console.error('Error requesting notification permission:', error);
-    return 'denied';
-  }
+  const permission = await localNotifications.requestPermission();
+  // Convert 'prompt' to 'default' for NotificationPermission compatibility
+  return permission === 'prompt' ? 'default' : permission;
 }
 
 /**
  * Check if notifications are supported and enabled
  */
-export function areNotificationsEnabled(): boolean {
-  return 'Notification' in window && Notification.permission === 'granted';
+export async function areNotificationsEnabled(): Promise<boolean> {
+  if (!localNotifications.isSupported()) return false;
+  const permission = await localNotifications.checkPermission();
+  return permission === 'granted';
 }
 
 /**
- * Send a notification immediately
+ * Send a notification immediately (legacy Web API wrapper - not used)
+ * Kept for backward compatibility but logs warning
  */
-export function sendNotification(config: NotificationConfig): Notification | null {
-  if (!areNotificationsEnabled()) {
-    console.warn('Notifications are not enabled');
-    return null;
-  }
-
-  try {
-    const notification = new Notification(config.title, {
-      body: config.body,
-      icon: config.icon || '/icon-192.png',
-      badge: config.badge || '/icon-72.png',
-      tag: config.tag,
-      requireInteraction: config.requireInteraction,
-      silent: config.silent,
-      vibrate: config.vibrate,
-      data: config.data,
-    });
-
-    // Auto-close after 5 seconds (unless requireInteraction is true)
-    if (!config.requireInteraction) {
-      setTimeout(() => notification.close(), 5000);
-    }
-
-    return notification;
-  } catch (error) {
-    console.error('Error sending notification:', error);
-    return null;
-  }
+export function sendNotification(config: NotificationConfig): null {
+  console.warn('sendNotification (Web API) is deprecated. Use Capacitor Local Notifications instead.');
+  return null;
 }
 
 /**
@@ -153,33 +117,16 @@ export function sendWorkoutReminder(workoutName: string, scheduledTime: string):
 /**
  * Rest Timer Complete Notification
  */
-export function sendRestTimerAlert(nextExercise?: string): Notification | null {
-  const body = nextExercise
-    ? `Rest complete. Next: ${nextExercise}`
-    : 'Rest period complete. Time for your next set!';
-
-  return sendNotification({
-    title: '⏱️ REST COMPLETE',
-    body,
-    tag: 'rest-timer',
-    requireInteraction: false,
-    vibrate: [100, 50, 100, 50, 100],
-    data: { type: 'rest-timer', nextExercise },
-  });
+export async function sendRestTimerAlert(nextExercise?: string): Promise<void> {
+  await localNotifications.sendRestTimerAlert();
 }
 
 /**
  * PR Celebration Notification
  */
-export function sendPRCelebration(prType: string, exercise: string, achievement: string): Notification | null {
-  return sendNotification({
-    title: `🏆 NEW ${prType.toUpperCase()} PR!`,
-    body: `${exercise}: ${achievement}. You're getting stronger!`,
-    tag: 'pr-celebration',
-    requireInteraction: true, // Keep it open until user clicks
-    vibrate: [300, 100, 300, 100, 300],
-    data: { type: 'pr-celebration', prType, exercise, achievement },
-  });
+export async function sendPRCelebration(prType: string, exercise: string, achievement: string): Promise<void> {
+  const message = `${exercise}: ${achievement}. You're getting stronger!`;
+  await localNotifications.sendPRCelebration(exercise, message);
 }
 
 /**
@@ -257,47 +204,15 @@ export function getPermissionStatusText(): string {
 /**
  * Streak Alert Notification - Celebrate milestones or warn about streak risk
  */
-export function sendStreakAlert(
+export async function sendStreakAlert(
   streakDays: number,
   type: 'milestone' | 'at-risk' | 'broken'
-): Notification | null {
-  let title: string;
-  let body: string;
-  let vibrate: number[];
-
-  switch (type) {
-    case 'milestone':
-      // Celebrate streak milestones (7, 14, 30, 60, 90, 100+ days)
-      title = `🔥 ${streakDays} DAY STREAK!`;
-      body = streakDays >= 100
-        ? `LEGENDARY! ${streakDays} days of consistency. You're unstoppable!`
-        : streakDays >= 30
-          ? `A full month of dedication! Keep the fire burning!`
-          : `${streakDays} days strong! Don't break the chain!`;
-      vibrate = [300, 100, 300, 100, 300];
-      break;
-
-    case 'at-risk':
-      title = '⚠️ STREAK AT RISK';
-      body = `Your ${streakDays}-day streak ends today if you don't train! Get after it!`;
-      vibrate = [200, 100, 200, 100, 200, 100, 200];
-      break;
-
-    case 'broken':
-      title = '💔 STREAK ENDED';
-      body = `Your ${streakDays}-day streak has ended. No worries - start fresh today!`;
-      vibrate = [100];
-      break;
+): Promise<void> {
+  // For now, only send milestone celebrations
+  // at-risk and broken can be handled by daily logs/dashboard
+  if (type === 'milestone') {
+    await localNotifications.sendStreakAlert(streakDays);
   }
-
-  return sendNotification({
-    title,
-    body,
-    tag: 'streak-alert',
-    requireInteraction: type === 'at-risk',
-    vibrate,
-    data: { type: 'streak-alert', streakDays, alertType: type },
-  });
 }
 
 /**
