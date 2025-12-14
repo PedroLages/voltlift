@@ -5,7 +5,11 @@ const config: CapacitorConfig = {
   appName: 'IronPath',
   webDir: 'dist',
   server: {
-    // Enable this for live reload during development
+    // PRODUCTION: Load from Firebase Hosting (auto-updates)
+    url: 'https://voltlift-app.web.app',
+    cleartext: false,
+
+    // DEVELOPMENT: Uncomment for local development
     // url: 'http://192.168.2.233:3002',
     // cleartext: true
   },
