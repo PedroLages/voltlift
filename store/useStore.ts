@@ -27,8 +27,15 @@ interface AppState {
 
   // Phase 4: Bio-Feedback & Cloud
   dailyLogs: Record<string, DailyLog>;
-  syncStatus: 'synced' | 'syncing' | 'offline' | 'error';
+  syncStatus: 'synced' | 'syncing' | 'offline' | 'error' | 'partial';
   activeBiometrics: BiometricPoint[];
+
+  // Dirty tracking for incremental sync
+  pendingSyncWorkouts: Set<string>;
+  pendingSyncTemplates: Set<string>;
+  pendingSyncPrograms: Set<string>;
+  pendingSyncDailyLogs: Set<string>;
+  settingsNeedsSync: boolean;
 
   // Undo Stack for deletions
   undoStack: UndoableAction | null;
@@ -123,6 +130,13 @@ export const useStore = create<AppState>()(
       dailyLogs: {},
       syncStatus: 'synced',
       activeBiometrics: [],
+
+      // Initialize dirty tracking
+      pendingSyncWorkouts: new Set<string>(),
+      pendingSyncTemplates: new Set<string>(),
+      pendingSyncPrograms: new Set<string>(),
+      pendingSyncDailyLogs: new Set<string>(),
+      settingsNeedsSync: false,
 
       undoStack: null,
 
@@ -318,14 +332,20 @@ export const useStore = create<AppState>()(
             }
         }
 
+        // Mark workout as dirty for sync
+        const newPendingWorkouts = new Set(get().pendingSyncWorkouts);
+        newPendingWorkouts.add(completedWorkout.id);
+
         set({
           settings: newSettings,
           history: [completedWorkout, ...history],
           activeWorkout: null,
           restTimerStart: null,
-          activeBiometrics: []
+          activeBiometrics: [],
+          pendingSyncWorkouts: newPendingWorkouts,
+          settingsNeedsSync: prUpdated || settings.activeProgram !== newSettings.activeProgram
         });
-        
+
         // Auto Sync on finish
         get().syncData();
       },
@@ -489,7 +509,10 @@ export const useStore = create<AppState>()(
       },
 
       updateSettings: (newSettings) => {
-        set((state) => ({ settings: { ...state.settings, ...newSettings } }));
+        set((state) => ({
+          settings: { ...state.settings, ...newSettings },
+          settingsNeedsSync: true
+        }));
         // Trigger sync if authenticated
         get().syncData();
       },
@@ -629,10 +652,22 @@ export const useStore = create<AppState>()(
                 sets: [{ id: uuidv4(), reps: 10, weight: 0, completed: false, type: 'N' }]
             }))
         };
-        set(state => ({ templates: [...state.templates, newTemplate] }));
+
+        const newPendingTemplates = new Set(get().pendingSyncTemplates);
+        newPendingTemplates.add(newTemplate.id);
+
+        set(state => ({
+          templates: [...state.templates, newTemplate],
+          pendingSyncTemplates: newPendingTemplates
+        }));
+
+        get().syncData();
       },
 
       updateTemplate: (id, name, exerciseIds) => {
+        const newPendingTemplates = new Set(get().pendingSyncTemplates);
+        newPendingTemplates.add(id);
+
         set(state => ({
           templates: state.templates.map(t =>
             t.id === id
@@ -650,8 +685,11 @@ export const useStore = create<AppState>()(
                   })
                 }
               : t
-          )
+          ),
+          pendingSyncTemplates: newPendingTemplates
         }));
+
+        get().syncData();
       },
 
       duplicateTemplate: (id) => {
@@ -668,7 +706,16 @@ export const useStore = create<AppState>()(
             sets: log.sets.map(set => ({ ...set, id: uuidv4(), completed: false }))
           }))
         };
-        set(state => ({ templates: [...state.templates, newTemplate] }));
+
+        const newPendingTemplates = new Set(get().pendingSyncTemplates);
+        newPendingTemplates.add(newTemplate.id);
+
+        set(state => ({
+          templates: [...state.templates, newTemplate],
+          pendingSyncTemplates: newPendingTemplates
+        }));
+
+        get().syncData();
       },
 
       deleteTemplate: (id) => {
@@ -699,7 +746,15 @@ export const useStore = create<AppState>()(
           }))
         };
 
-        set(state => ({ templates: [...state.templates, newTemplate] }));
+        const newPendingTemplates = new Set(get().pendingSyncTemplates);
+        newPendingTemplates.add(newTemplateId);
+
+        set(state => ({
+          templates: [...state.templates, newTemplate],
+          pendingSyncTemplates: newPendingTemplates
+        }));
+
+        get().syncData();
         return newTemplateId;
       },
 
@@ -805,9 +860,16 @@ export const useStore = create<AppState>()(
               ...program,
               id: newId
           };
+
+          const newPendingPrograms = new Set(get().pendingSyncPrograms);
+          newPendingPrograms.add(newId);
+
           set(state => ({
-              programs: [...state.programs, newProgram]
+              programs: [...state.programs, newProgram],
+              pendingSyncPrograms: newPendingPrograms
           }));
+
+          get().syncData();
           return newId;
       },
 
@@ -846,16 +908,23 @@ export const useStore = create<AppState>()(
       },
 
       logDailyBio: (date, data) => {
+          const newPendingDailyLogs = new Set(get().pendingSyncDailyLogs);
+          newPendingDailyLogs.add(date);
+
           set(state => ({
               dailyLogs: {
                   ...state.dailyLogs,
                   [date]: { ...(state.dailyLogs[date] || { date }), ...data }
-              }
+              },
+              pendingSyncDailyLogs: newPendingDailyLogs
           }));
           get().syncData();
       },
 
       updateBodyweight: (date, weight) => {
+          const newPendingDailyLogs = new Set(get().pendingSyncDailyLogs);
+          newPendingDailyLogs.add(date);
+
           set(state => ({
               dailyLogs: {
                   ...state.dailyLogs,
@@ -864,12 +933,17 @@ export const useStore = create<AppState>()(
               settings: {
                   ...state.settings,
                   bodyweight: weight
-              }
+              },
+              pendingSyncDailyLogs: newPendingDailyLogs,
+              settingsNeedsSync: true
           }));
           get().syncData();
       },
 
       updateMeasurements: (date, measurements) => {
+          const newPendingDailyLogs = new Set(get().pendingSyncDailyLogs);
+          newPendingDailyLogs.add(date);
+
           set(state => ({
               dailyLogs: {
                   ...state.dailyLogs,
@@ -880,7 +954,8 @@ export const useStore = create<AppState>()(
                           ...measurements
                       }
                   }
-              }
+              },
+              pendingSyncDailyLogs: newPendingDailyLogs
           }));
           get().syncData();
       },
@@ -912,7 +987,8 @@ export const useStore = create<AppState>()(
                       ...state.settings.bodyMetricsGoals,
                       ...goal
                   }
-              }
+              },
+              settingsNeedsSync: true
           }));
           get().syncData();
       },
@@ -980,39 +1056,119 @@ export const useStore = create<AppState>()(
           // Only sync if user is authenticated
           if (!backend.auth.isLoggedIn) return;
 
-          const { settings, history, templates, dailyLogs, programs } = get();
+          const {
+              settings,
+              history,
+              templates,
+              dailyLogs,
+              programs,
+              pendingSyncWorkouts,
+              pendingSyncTemplates,
+              pendingSyncPrograms,
+              pendingSyncDailyLogs,
+              settingsNeedsSync
+          } = get();
+
+          // Skip if nothing to sync
+          if (!settingsNeedsSync &&
+              pendingSyncWorkouts.size === 0 &&
+              pendingSyncTemplates.size === 0 &&
+              pendingSyncPrograms.size === 0 &&
+              pendingSyncDailyLogs.size === 0) {
+              return;
+          }
 
           try {
               set({ syncStatus: 'syncing' });
+              const errors: string[] = [];
 
-              // Push settings
-              await backend.settings.save(settings);
-
-              // Push history (completed workouts)
-              for (const workout of history) {
-                  if (workout.status === 'completed') {
-                      await backend.workouts.create(workout);
+              // Sync settings if needed
+              if (settingsNeedsSync) {
+                  try {
+                      await backend.settings.save(settings);
+                  } catch (err) {
+                      console.error('Settings sync failed:', err);
+                      errors.push(`Settings: ${err instanceof Error ? err.message : 'Unknown error'}`);
                   }
               }
 
-              // Push templates
-              for (const template of templates) {
-                  await backend.workouts.create(template);
+              // Sync dirty workouts (completed only)
+              if (pendingSyncWorkouts.size > 0) {
+                  const workoutsToSync = history.filter(w =>
+                      pendingSyncWorkouts.has(w.id) && w.status === 'completed'
+                  );
+
+                  for (const workout of workoutsToSync) {
+                      try {
+                          await backend.workouts.create(workout);
+                      } catch (err) {
+                          console.error(`Workout ${workout.id} sync failed:`, err);
+                          errors.push(`Workout "${workout.name}": ${err instanceof Error ? err.message : 'Unknown error'}`);
+                      }
+                  }
               }
 
-              // Push daily logs
-              for (const [date, log] of Object.entries(dailyLogs)) {
-                  await backend.dailyLogs.save(date, log);
+              // Sync dirty templates
+              if (pendingSyncTemplates.size > 0) {
+                  const templatesToSync = templates.filter(t => pendingSyncTemplates.has(t.id));
+
+                  for (const template of templatesToSync) {
+                      try {
+                          await backend.workouts.create(template);
+                      } catch (err) {
+                          console.error(`Template ${template.id} sync failed:`, err);
+                          errors.push(`Template "${template.name}": ${err instanceof Error ? err.message : 'Unknown error'}`);
+                      }
+                  }
               }
 
-              // Push programs
-              for (const program of programs) {
-                  await backend.programs.create(program);
+              // Sync dirty programs
+              if (pendingSyncPrograms.size > 0) {
+                  const programsToSync = programs.filter(p => pendingSyncPrograms.has(p.id));
+
+                  for (const program of programsToSync) {
+                      try {
+                          await backend.programs.create(program);
+                      } catch (err) {
+                          console.error(`Program ${program.id} sync failed:`, err);
+                          errors.push(`Program "${program.name}": ${err instanceof Error ? err.message : 'Unknown error'}`);
+                      }
+                  }
               }
 
-              set({ syncStatus: 'synced' });
+              // Sync dirty daily logs
+              if (pendingSyncDailyLogs.size > 0) {
+                  const datesToSync = Array.from(pendingSyncDailyLogs);
+
+                  for (const date of datesToSync) {
+                      const log = dailyLogs[date];
+                      if (log) {
+                          try {
+                              await backend.dailyLogs.save(date, log);
+                          } catch (err) {
+                              console.error(`Daily log ${date} sync failed:`, err);
+                              errors.push(`Daily log ${date}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                          }
+                      }
+                  }
+              }
+
+              // Clear dirty tracking for successful syncs
+              set({
+                  pendingSyncWorkouts: new Set<string>(),
+                  pendingSyncTemplates: new Set<string>(),
+                  pendingSyncPrograms: new Set<string>(),
+                  pendingSyncDailyLogs: new Set<string>(),
+                  settingsNeedsSync: false,
+                  syncStatus: errors.length > 0 ? 'partial' : 'synced'
+              });
+
+              // Log errors if any occurred
+              if (errors.length > 0) {
+                  console.warn(`Sync completed with ${errors.length} error(s):`, errors);
+              }
           } catch (err) {
-              console.error('Sync to cloud failed:', err);
+              console.error('Sync failed:', err);
               set({ syncStatus: 'error' });
           }
       },
@@ -1139,7 +1295,17 @@ export const useStore = create<AppState>()(
       name: 'voltlift-storage',
       version: 3, // Increment when schema changes
       partialize: (state) => {
-          const { customExerciseVisuals, restTimerStart, activeBiometrics, ...rest } = state;
+          const {
+              customExerciseVisuals,
+              restTimerStart,
+              activeBiometrics,
+              // Exclude Sets from persistence (they don't serialize to JSON)
+              pendingSyncWorkouts,
+              pendingSyncTemplates,
+              pendingSyncPrograms,
+              pendingSyncDailyLogs,
+              ...rest
+          } = state;
           return rest;
       },
       migrate: (persistedState: any, version: number) => {
