@@ -227,7 +227,7 @@ on:
     branches: [main]
 
 # Deploys to: https://voltlift-app.web.app
-# Firebase credentials injected from GitHub Secrets during build
+# Firebase credentials and service account injected from GitHub Secrets
 ```
 
 ### **iOS App Store**
