@@ -36,6 +36,7 @@ interface AppState {
   pendingSyncPrograms: Set<string>;
   pendingSyncDailyLogs: Set<string>;
   settingsNeedsSync: boolean;
+  isSyncing: boolean; // Lock to prevent concurrent syncs
 
   // Undo Stack for deletions
   undoStack: UndoableAction | null;
@@ -137,6 +138,7 @@ export const useStore = create<AppState>()(
       pendingSyncPrograms: new Set<string>(),
       pendingSyncDailyLogs: new Set<string>(),
       settingsNeedsSync: false,
+      isSyncing: false,
 
       undoStack: null,
 
@@ -1056,6 +1058,12 @@ export const useStore = create<AppState>()(
           // Only sync if user is authenticated
           if (!backend.auth.isLoggedIn) return;
 
+          // Prevent concurrent syncs
+          if (get().isSyncing) {
+              console.log('Sync already in progress, skipping...');
+              return;
+          }
+
           const {
               settings,
               history,
@@ -1079,13 +1087,21 @@ export const useStore = create<AppState>()(
           }
 
           try {
-              set({ syncStatus: 'syncing' });
+              set({ isSyncing: true, syncStatus: 'syncing' });
               const errors: string[] = [];
+
+              // Track successfully synced items
+              const syncedWorkouts = new Set<string>();
+              const syncedTemplates = new Set<string>();
+              const syncedPrograms = new Set<string>();
+              const syncedDailyLogs = new Set<string>();
+              let settingsSynced = false;
 
               // Sync settings if needed
               if (settingsNeedsSync) {
                   try {
                       await backend.settings.save(settings);
+                      settingsSynced = true;
                   } catch (err) {
                       console.error('Settings sync failed:', err);
                       errors.push(`Settings: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -1101,6 +1117,7 @@ export const useStore = create<AppState>()(
                   for (const workout of workoutsToSync) {
                       try {
                           await backend.workouts.create(workout);
+                          syncedWorkouts.add(workout.id);
                       } catch (err) {
                           console.error(`Workout ${workout.id} sync failed:`, err);
                           errors.push(`Workout "${workout.name}": ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -1115,6 +1132,7 @@ export const useStore = create<AppState>()(
                   for (const template of templatesToSync) {
                       try {
                           await backend.workouts.create(template);
+                          syncedTemplates.add(template.id);
                       } catch (err) {
                           console.error(`Template ${template.id} sync failed:`, err);
                           errors.push(`Template "${template.name}": ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -1129,6 +1147,7 @@ export const useStore = create<AppState>()(
                   for (const program of programsToSync) {
                       try {
                           await backend.programs.create(program);
+                          syncedPrograms.add(program.id);
                       } catch (err) {
                           console.error(`Program ${program.id} sync failed:`, err);
                           errors.push(`Program "${program.name}": ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -1145,6 +1164,7 @@ export const useStore = create<AppState>()(
                       if (log) {
                           try {
                               await backend.dailyLogs.save(date, log);
+                              syncedDailyLogs.add(date);
                           } catch (err) {
                               console.error(`Daily log ${date} sync failed:`, err);
                               errors.push(`Daily log ${date}: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -1153,23 +1173,37 @@ export const useStore = create<AppState>()(
                   }
               }
 
-              // Clear dirty tracking for successful syncs
+              // Only clear successfully synced items from dirty tracking
+              const newPendingWorkouts = new Set(pendingSyncWorkouts);
+              syncedWorkouts.forEach(id => newPendingWorkouts.delete(id));
+
+              const newPendingTemplates = new Set(pendingSyncTemplates);
+              syncedTemplates.forEach(id => newPendingTemplates.delete(id));
+
+              const newPendingPrograms = new Set(pendingSyncPrograms);
+              syncedPrograms.forEach(id => newPendingPrograms.delete(id));
+
+              const newPendingDailyLogs = new Set(pendingSyncDailyLogs);
+              syncedDailyLogs.forEach(date => newPendingDailyLogs.delete(date));
+
               set({
-                  pendingSyncWorkouts: new Set<string>(),
-                  pendingSyncTemplates: new Set<string>(),
-                  pendingSyncPrograms: new Set<string>(),
-                  pendingSyncDailyLogs: new Set<string>(),
-                  settingsNeedsSync: false,
-                  syncStatus: errors.length > 0 ? 'partial' : 'synced'
+                  pendingSyncWorkouts: newPendingWorkouts,
+                  pendingSyncTemplates: newPendingTemplates,
+                  pendingSyncPrograms: newPendingPrograms,
+                  pendingSyncDailyLogs: newPendingDailyLogs,
+                  settingsNeedsSync: settingsNeedsSync && !settingsSynced,
+                  syncStatus: errors.length > 0 ? 'partial' : 'synced',
+                  isSyncing: false
               });
 
               // Log errors if any occurred
               if (errors.length > 0) {
                   console.warn(`Sync completed with ${errors.length} error(s):`, errors);
+                  console.log(`Retrying failed items on next sync. Pending: ${newPendingWorkouts.size} workouts, ${newPendingTemplates.size} templates, ${newPendingPrograms.size} programs, ${newPendingDailyLogs.size} daily logs`);
               }
           } catch (err) {
               console.error('Sync failed:', err);
-              set({ syncStatus: 'error' });
+              set({ syncStatus: 'error', isSyncing: false });
           }
       },
 
