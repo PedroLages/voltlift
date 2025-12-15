@@ -1054,7 +1054,7 @@ export const useStore = create<AppState>()(
           }));
       },
 
-      syncData: async () => {
+      syncData: async (retryCount = 0) => {
           // Only sync if user is authenticated
           if (!backend.auth.isLoggedIn) return;
 
@@ -1203,7 +1203,20 @@ export const useStore = create<AppState>()(
               }
           } catch (err) {
               console.error('Sync failed:', err);
-              set({ syncStatus: 'error', isSyncing: false });
+              set({ isSyncing: false });
+
+              // Retry with exponential backoff (max 3 attempts)
+              if (retryCount < 3) {
+                  const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                  console.log(`Retrying sync in ${delay}ms (attempt ${retryCount + 1}/3)...`);
+
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  return get().syncData(retryCount + 1);
+              } else {
+                  // Max retries reached, set error status
+                  console.error('Sync failed after 3 retries');
+                  set({ syncStatus: 'error' });
+              }
           }
       },
 

@@ -8,6 +8,7 @@ import NotificationScheduler from './components/NotificationScheduler';
 import OfflineIndicator from './components/OfflineIndicator';
 import ScrollToTop from './components/ScrollToTop';
 import WorkoutRecoveryPrompt from './components/WorkoutRecoveryPrompt';
+import SyncStatusIndicator from './components/SyncStatusIndicator';
 import { initializeNotificationListeners } from './services/notificationService';
 import DesktopLayout from './components/desktop/DesktopLayout';
 
@@ -195,6 +196,9 @@ const AppContent = () => {
 
         {/* Workout recovery prompt for interrupted sessions */}
         <WorkoutRecoveryPrompt />
+
+        {/* Sync status indicator */}
+        <SyncStatusIndicator />
 
         <Suspense fallback={<PageLoader />}>
           <Routes>
