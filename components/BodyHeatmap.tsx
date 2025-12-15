@@ -134,7 +134,7 @@ const BodyHeatmap = ({ intensity }: { intensity: MuscleIntensity }) => {
   }, [shouldersSets, backSets, armsSets, coreSets, legsSets]);
 
   return (
-    <div className="w-full bg-[#0a0a0a] border border-[#222] p-4 rounded-xl">
+    <div className="w-full bg-[#0a0a0a] border border-[#222] p-4 rounded">
       <div className="flex justify-between items-center mb-4 px-8 border-b border-[#222] pb-2">
         <span className="text-[10px] font-mono text-[#666] uppercase tracking-widest">Anterior</span>
         <span className="text-[10px] font-mono text-[#666] uppercase tracking-widest">Posterior</span>

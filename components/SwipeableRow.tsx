@@ -182,7 +182,7 @@ export default function SwipeableRow({
           {onDelete && isRevealed === 'delete' && (
             <button
               onClick={handleDeleteClick}
-              className="flex items-center gap-2 bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+              className="flex items-center gap-2 bg-red-500 px-4 py-2 rounded hover:bg-red-600 transition-colors"
             >
               <Trash2 size={20} className="text-white" />
               <span className="text-white font-bold text-sm">DELETE</span>
@@ -228,7 +228,7 @@ export default function SwipeableRow({
           <div className="bg-[#111] border-2 border-red-500 max-w-sm w-full mx-4 animate-scale-in">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="bg-red-500/20 p-3 rounded-lg">
+                <div className="bg-red-500/20 p-3 rounded">
                   <Trash2 size={24} className="text-red-500" />
                 </div>
                 <h3 className="text-lg font-black uppercase text-white italic">

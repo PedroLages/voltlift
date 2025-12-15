@@ -82,7 +82,7 @@ const Login = () => {
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-12">
-        <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+        <div className="w-12 h-12 bg-primary rounded flex items-center justify-center">
           <Dumbbell className="text-black" size={28} />
         </div>
         <span className="text-3xl font-black italic tracking-tighter text-white">
@@ -108,7 +108,7 @@ const Login = () => {
                 placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[#111] border border-[#333] rounded-lg py-4 pl-12 pr-4 text-white placeholder:text-[#666] focus:outline-none focus:border-primary transition-colors"
+                className="w-full bg-[#111] border border-[#333] rounded py-4 pl-12 pr-4 text-white placeholder:text-[#666] focus:outline-none focus:border-primary transition-colors"
                 required
               />
             </div>
@@ -121,7 +121,7 @@ const Login = () => {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-[#111] border border-[#333] rounded-lg py-4 pl-12 pr-4 text-white placeholder:text-[#666] focus:outline-none focus:border-primary transition-colors"
+              className="w-full bg-[#111] border border-[#333] rounded py-4 pl-12 pr-4 text-white placeholder:text-[#666] focus:outline-none focus:border-primary transition-colors"
               required
             />
           </div>
@@ -133,7 +133,7 @@ const Login = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#111] border border-[#333] rounded-lg py-4 pl-12 pr-4 text-white placeholder:text-[#666] focus:outline-none focus:border-primary transition-colors"
+              className="w-full bg-[#111] border border-[#333] rounded py-4 pl-12 pr-4 text-white placeholder:text-[#666] focus:outline-none focus:border-primary transition-colors"
               required
               minLength={8}
             />
@@ -160,7 +160,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-primary text-black font-black italic py-4 rounded-lg flex items-center justify-center gap-2 hover:bg-[#b8e600] transition-colors disabled:opacity-50"
+            className="w-full bg-primary text-black font-black italic py-4 rounded flex items-center justify-center gap-2 hover:bg-[#b8e600] transition-colors disabled:opacity-50"
           >
             {isLoading ? (
               <Loader2 className="animate-spin" size={20} />
@@ -189,7 +189,7 @@ const Login = () => {
             <button
               onClick={handleGoogleLogin}
               disabled={isLoading}
-              className="w-full bg-[#111] border border-[#333] text-white py-4 rounded-lg flex items-center justify-center gap-3 hover:bg-[#1a1a1a] transition-colors disabled:opacity-50"
+              className="w-full bg-[#111] border border-[#333] text-white py-4 rounded flex items-center justify-center gap-3 hover:bg-[#1a1a1a] transition-colors disabled:opacity-50"
             >
               <GoogleIcon />
               <span className="font-semibold">Continue with Google</span>
@@ -198,7 +198,7 @@ const Login = () => {
             <button
               onClick={handleAppleLogin}
               disabled={isLoading}
-              className="w-full bg-white text-black py-4 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors disabled:opacity-50"
+              className="w-full bg-white text-black py-4 rounded flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors disabled:opacity-50"
             >
               <AppleIcon />
               <span className="font-semibold">Continue with Apple</span>

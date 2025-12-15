@@ -470,7 +470,7 @@ const WorkoutLogger = () => {
 
       {/* Rest Timer Overlay */}
       {restTimerStart !== null && (
-          <div className={`fixed bottom-4 left-4 right-4 bg-[#0a0a0a] border ${timeLeft === 0 ? 'border-primary animate-pulse' : 'border-[#333]'} p-0 z-40 shadow-2xl overflow-hidden animate-slide-up rounded-lg`}>
+          <div className={`fixed bottom-4 left-4 right-4 bg-[#0a0a0a] border ${timeLeft === 0 ? 'border-primary animate-pulse' : 'border-[#333]'} p-0 z-40 shadow-2xl overflow-hidden animate-slide-up rounded`}>
               {/* Progress Bar Background */}
               <div
                 className="absolute top-0 left-0 bottom-0 bg-[#222] transition-all duration-500 ease-linear z-0"
@@ -561,7 +561,7 @@ const WorkoutLogger = () => {
 
       {/* Workout Notes Section */}
       <div className="p-4 pb-0">
-        <details className="bg-[#111] border border-[#222] rounded-lg overflow-hidden">
+        <details className="bg-[#111] border border-[#222] rounded overflow-hidden">
           <summary className="px-4 py-3 cursor-pointer flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#888] hover:text-white transition-colors">
             <StickyNote size={14} />
             {activeWorkout.notes ? 'Edit Workout Notes' : 'Add Workout Notes'}

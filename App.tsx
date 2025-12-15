@@ -101,7 +101,7 @@ const BottomNav = () => {
             onClick={handlePlayClick}
             onTouchStart={handlePlayClick}
             aria-label={activeWorkout ? "Continue active workout" : nextProgramTemplate ? "Start next program session" : "Start workout"}
-            className={`flex items-center justify-center w-16 h-16 rounded-lg shadow-[0_0_20px_rgba(204,255,0,0.3)] transition-transform active:scale-95 cursor-pointer ${activeWorkout || restTimerStart ? 'bg-primary animate-pulse text-black' : 'bg-primary text-black'}`}
+            className={`flex items-center justify-center w-16 h-16 rounded shadow-[0_0_20px_rgba(204,255,0,0.3)] transition-transform active:scale-95 cursor-pointer ${activeWorkout || restTimerStart ? 'bg-primary animate-pulse text-black' : 'bg-primary text-black'}`}
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'rgba(204, 255, 0, 0.2)' }}
         >
           {restTimerStart ? (

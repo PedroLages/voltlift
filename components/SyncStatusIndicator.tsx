@@ -21,7 +21,7 @@ export default function SyncStatusIndicator() {
 
   return (
     <div className="fixed bottom-20 left-0 right-0 flex justify-center z-50 pointer-events-none">
-      <div className="bg-black/90 backdrop-blur-sm border border-[#ccff00]/20 rounded-lg px-4 py-2 flex items-center gap-2 shadow-lg">
+      <div className="bg-black/90 backdrop-blur-sm border border-[#ccff00]/20 rounded px-4 py-2 flex items-center gap-2 shadow-lg">
         {syncStatus === 'syncing' && (
           <>
             <div className="w-4 h-4 border-2 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
