@@ -418,6 +418,23 @@ const WorkoutLogger = () => {
     return data;
   }, [activeWorkout?.logs, getVolumeWarning, getProgressiveSuggestion]);
 
+  // Parse RPE target from template notes (e.g., "RPE 7-8 |" returns 7 or 8)
+  const parseRPETarget = useCallback((notes?: string): number | undefined => {
+    if (!notes) return undefined;
+    const match = notes.match(/RPE\s*(\d+)(?:\s*-\s*(\d+))?/i);
+    if (match) {
+      // Return the lower bound of the range (e.g., 7 from "RPE 7-8")
+      return parseInt(match[1], 10);
+    }
+    return undefined;
+  }, []);
+
+  // Check if an exercise is bodyweight-based
+  const isBodyweightExercise = useCallback((exerciseId: string): boolean => {
+    const exercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
+    return exercise?.equipment === 'Bodyweight';
+  }, []);
+
   return (
     <div className="pb-8 bg-background min-h-screen" onClick={() => setActiveMenuId(null)}>
       {/* Enhanced PR Celebration (Multi-PR Detection + Confetti + Haptic) */}
@@ -776,9 +793,20 @@ const WorkoutLogger = () => {
               {/* Sets Header */}
               <div className="grid grid-cols-12 gap-2 p-3 text-[10px] font-bold text-[#666] uppercase tracking-widest text-center mt-2">
                 <div className="col-span-1">TAG</div>
-                <div className="col-span-3">{(settings.units || 'lbs').toUpperCase()}</div>
+                <div className="col-span-3">
+                  {isBodyweightExercise(log.exerciseId) ? (
+                    <span className="text-primary">+{(settings.units || 'lbs').toUpperCase()}</span>
+                  ) : (
+                    (settings.units || 'lbs').toUpperCase()
+                  )}
+                </div>
                 <div className="col-span-3">REPS</div>
-                <div className="col-span-2">RPE</div>
+                <div className="col-span-2">
+                  RPE
+                  {parseRPETarget(activeWorkout.notes) && (
+                    <span className="text-primary ml-0.5" title={`Target: RPE ${parseRPETarget(activeWorkout.notes)}`}>*</span>
+                  )}
+                </div>
                 <div className="col-span-3">DONE</div>
               </div>
 
@@ -786,6 +814,10 @@ const WorkoutLogger = () => {
               <div className="space-y-2 pb-4 px-3">
                 {log.sets.map((set, setIndex) => {
                   const previousSet = previousLog?.sets[setIndex];
+                  const isBW = isBodyweightExercise(log.exerciseId);
+                  const userBW = settings.bodyweight || 0;
+                  // Get RPE target from workout notes (template notes)
+                  const rpeTarget = parseRPETarget(activeWorkout.notes);
 
                   return (
                   <SwipeableRow
@@ -810,63 +842,116 @@ const WorkoutLogger = () => {
 
                     {/* Weight Input */}
                     <div className="col-span-3 relative">
-                      <input
-                        type="number"
-                        value={set.weight || ''}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          // Prevent negative weights
-                          if (!isNaN(value) && value >= 0) {
-                            updateSet(exerciseIndex, setIndex, { weight: value });
-                          } else if (e.target.value === '') {
-                            updateSet(exerciseIndex, setIndex, { weight: 0 });
-                          }
-                        }}
-                        onFocus={(e) => {
-                          // Scroll input into view when keyboard opens (with delay for keyboard animation)
-                          setTimeout(() => {
-                            e.currentTarget.scrollIntoView({
-                              behavior: 'smooth',
-                              block: 'center',
-                              inline: 'nearest'
-                            });
-                          }, 300);
-                        }}
-                        onKeyDown={(e) => {
-                          // Enter key: move to reps input and dismiss keyboard
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const repsInput = e.currentTarget.parentElement?.nextElementSibling?.querySelector('input');
-                            if (repsInput) {
-                              (repsInput as HTMLInputElement).focus();
-                              // Blur current input to dismiss keyboard
-                              e.currentTarget.blur();
-                            }
-                          }
-                        }}
-                        placeholder={previousSet ? `${previousSet.weight}` : "0"}
-                        aria-label={`Weight for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
-                        inputMode="decimal"
-                        enterKeyHint="next"
-                        min="0"
-                        step="0.5"
-                        className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
-                        onClick={(e) => e.stopPropagation()}
-                        disabled={set.completed}
-                      />
-                      {/* Calculator Button */}
-                      {set.weight > 0 && !set.completed && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setCalculatorTarget(set.weight); }}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors bg-black/50 p-1 rounded"
-                            aria-label="Open plate calculator"
-                          >
-                              <Calculator size={16} />
-                          </button>
-                      )}
+                      {isBW ? (
+                        // Bodyweight exercise: weight field is for ADDITIONAL weight only (vest, belt, etc.)
+                        // Like Hevy/Strong: "Weighted Bodyweight" type - user enters extra weight, not their bodyweight
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={set.weight || ''}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value);
+                              if (!isNaN(value) && value >= 0) {
+                                updateSet(exerciseIndex, setIndex, { weight: value });
+                              } else if (e.target.value === '') {
+                                updateSet(exerciseIndex, setIndex, { weight: 0 });
+                              }
+                            }}
+                            onFocus={(e) => {
+                              setTimeout(() => {
+                                e.currentTarget.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'center',
+                                  inline: 'nearest'
+                                });
+                              }, 300);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const repsInput = e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector('input');
+                                if (repsInput) {
+                                  (repsInput as HTMLInputElement).focus();
+                                  e.currentTarget.blur();
+                                }
+                              }
+                            }}
+                            placeholder="+0"
+                            aria-label={`Added weight for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'} (bodyweight exercise - enter extra weight only)`}
+                            inputMode="decimal"
+                            enterKeyHint="next"
+                            min="0"
+                            step="0.5"
+                            className="w-full bg-black border-b-2 border-primary/30 p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-primary/50"
+                            onClick={(e) => e.stopPropagation()}
+                            disabled={set.completed}
+                          />
+                          <div className="text-[9px] text-primary/80 text-center mt-1 font-mono">
+                            {set.weight > 0 ? `BW +${set.weight}` : 'BW only'}
+                          </div>
+                        </div>
+                      ) : (
+                        // Regular weighted exercise
+                        <>
+                          <input
+                            type="number"
+                            value={set.weight || ''}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value);
+                              // Prevent negative weights
+                              if (!isNaN(value) && value >= 0) {
+                                updateSet(exerciseIndex, setIndex, { weight: value });
+                              } else if (e.target.value === '') {
+                                updateSet(exerciseIndex, setIndex, { weight: 0 });
+                              }
+                            }}
+                            onFocus={(e) => {
+                              // Scroll input into view when keyboard opens (with delay for keyboard animation)
+                              setTimeout(() => {
+                                e.currentTarget.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'center',
+                                  inline: 'nearest'
+                                });
+                              }, 300);
+                            }}
+                            onKeyDown={(e) => {
+                              // Enter key: move to reps input and dismiss keyboard
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const repsInput = e.currentTarget.parentElement?.nextElementSibling?.querySelector('input');
+                                if (repsInput) {
+                                  (repsInput as HTMLInputElement).focus();
+                                  // Blur current input to dismiss keyboard
+                                  e.currentTarget.blur();
+                                }
+                              }
+                            }}
+                            placeholder={previousSet ? `${previousSet.weight}` : "0"}
+                            aria-label={`Weight for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
+                            inputMode="decimal"
+                            enterKeyHint="next"
+                            min="0"
+                            step="0.5"
+                            className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
+                            onClick={(e) => e.stopPropagation()}
+                            disabled={set.completed}
+                          />
+                          {/* Calculator Button */}
+                          {set.weight > 0 && !set.completed && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setCalculatorTarget(set.weight); }}
+                                className="absolute right-1 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors bg-black/50 p-1 rounded"
+                                aria-label="Open plate calculator"
+                              >
+                                  <Calculator size={16} />
+                              </button>
+                          )}
 
-                      {previousSet && !set.weight && (
-                          <div className="text-[9px] text-[#444] text-center mt-1 font-mono">{previousSet.weight}</div>
+                          {previousSet && !set.weight && (
+                              <div className="text-[9px] text-[#444] text-center mt-1 font-mono">{previousSet.weight}</div>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -923,20 +1008,25 @@ const WorkoutLogger = () => {
                       )}
                     </div>
 
-                    {/* RPE Input */}
+                    {/* RPE Input - Pre-populated with target from template notes */}
                     <div className="col-span-2">
                         <select
-                             value={set.rpe || ''}
-                             onChange={(e) => updateSet(exerciseIndex, setIndex, { rpe: parseInt(e.target.value) })}
-                             aria-label={`Rate of perceived exertion for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
-                             className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-sm font-bold text-[#888] focus:border-primary outline-none appearance-none"
+                             value={set.rpe || (rpeTarget && !set.completed ? rpeTarget : '')}
+                             onChange={(e) => updateSet(exerciseIndex, setIndex, { rpe: parseInt(e.target.value) || undefined })}
+                             aria-label={`Rate of perceived exertion for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}${rpeTarget ? ` (target: ${rpeTarget})` : ''}`}
+                             className={`w-full bg-black border-b-2 p-2 text-center text-sm font-bold focus:border-primary outline-none appearance-none ${
+                               set.rpe ? 'border-[#333] text-white' : rpeTarget ? 'border-primary/30 text-primary/60' : 'border-[#333] text-[#888]'
+                             }`}
                              onClick={(e) => e.stopPropagation()}
                         >
-                            <option value="">-</option>
+                            <option value="">{rpeTarget ? `${rpeTarget}*` : '-'}</option>
                             {[...Array(10)].map((_, i) => (
                                 <option key={i} value={10 - i}>{10 - i}</option>
                             ))}
                         </select>
+                        {rpeTarget && !set.rpe && (
+                            <div className="text-[8px] text-primary/60 text-center mt-0.5 font-mono">TARGET</div>
+                        )}
                     </div>
 
                     {/* Completion Check / Duplicate Button */}

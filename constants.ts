@@ -1895,6 +1895,258 @@ export const INITIAL_TEMPLATES: WorkoutSession[] = [
           { id: 'gn_dl_acc1', exerciseId: 'e19', sets: Array(3).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // Barbell Row 3x8
           { id: 'gn_dl_acc2', exerciseId: 'e11', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // RDL 3x10
       ]
+  },
+
+  // ========================================
+  // PERIODIZATION PROTOCOL (24-Week Program)
+  // Phase 1: Hypertrophy (Weeks 1-12) - PPLUL 5-Day Split
+  // Phase 2: Strength (Weeks 13-24) - Upper/Lower DUP 4-Day
+  // ========================================
+
+  // --- PHASE 1: HYPERTROPHY (PPLUL) ---
+
+  // Push A (Chest/Delts/Triceps) - Monday
+  {
+      id: 'prd_push_a',
+      name: 'PRD: Push A (Chest Focus)',
+      startTime: 0,
+      status: 'template',
+      notes: 'RPE 7-8 | Focus: Mechanical tension on chest. Rest 2-3 min compounds, 60-90s isolation.',
+      logs: [
+          { id: 'prd_pa_bp', exerciseId: 'e1', sets: Array(4).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // Bench Press 4x8
+          { id: 'prd_pa_inc', exerciseId: 'e2', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Incline DB Press 3x10
+          { id: 'prd_pa_fly', exerciseId: 'e24', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Cable Chest Fly 3x12
+          { id: 'prd_pa_ohp', exerciseId: 'e16', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // OHP 3x10
+          { id: 'prd_pa_lat', exerciseId: 'e12', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Lateral Raise 3x15
+          { id: 'prd_pa_tri', exerciseId: 'e66', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Tricep Pushdown 3x12
+      ]
+  },
+
+  // Pull A (Back/Biceps/Rear Delt) - Tuesday
+  {
+      id: 'prd_pull_a',
+      name: 'PRD: Pull A (Back Width)',
+      startTime: 0,
+      status: 'template',
+      notes: 'RPE 7-8 | Focus: Lat width development. Rest 2-3 min compounds, 60-90s isolation. PULL-UP PROGRESSION: Do max reps per set (start ~3-4), aim +1 rep/week until 3x8.',
+      logs: [
+          { id: 'prd_pla_lat', exerciseId: 'e18', sets: Array(4).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Lat Pulldown 4x10 (builds pull-up strength)
+          { id: 'prd_pla_pull', exerciseId: 'e3', sets: Array(3).fill({ id: 's', reps: 4, weight: 0, completed: false, type: 'N' }) }, // Pull Ups 3xMAX (do your max each set)
+          { id: 'prd_pla_row', exerciseId: 'e19', sets: Array(4).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Barbell Row 4x10
+          { id: 'prd_pla_face', exerciseId: 'e14', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Face Pull 3x15
+          { id: 'prd_pla_curl', exerciseId: 'e8', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Bicep Curl 3x12
+          { id: 'prd_pla_ham', exerciseId: 'e61', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Hammer Curl 3x15
+      ]
+  },
+
+  // Legs A (Quad Dominant) - Wednesday
+  {
+      id: 'prd_legs_a',
+      name: 'PRD: Legs A (Quad Focus)',
+      startTime: 0,
+      status: 'template',
+      notes: 'RPE 7-8 | Focus: Quad hypertrophy. Rest 3 min squats, 2 min accessories.',
+      logs: [
+          { id: 'prd_la_sq', exerciseId: 'e4', sets: Array(4).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // Barbell Squat 4x8
+          { id: 'prd_la_lp', exerciseId: 'e13', sets: Array(4).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Leg Press 4x12
+          { id: 'prd_la_ext', exerciseId: 'e9', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Leg Extension 3x15
+          { id: 'prd_la_rdl', exerciseId: 'e11', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // RDL 3x10
+          { id: 'prd_la_curl', exerciseId: 'e79', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Leg Curl 3x12
+          { id: 'prd_la_calf', exerciseId: 'e20', sets: Array(4).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Calf Raise 4x15
+      ]
+  },
+
+  // Upper B (Torso + Arms) - Friday
+  {
+      id: 'prd_upper_b',
+      name: 'PRD: Upper B (Balanced)',
+      startTime: 0,
+      status: 'template',
+      notes: 'RPE 7-8 | Focus: Balanced upper development with arm emphasis. Rest 2 min. CHIN-UP PROGRESSION: Do max reps per set (chin-ups easier than pull-ups).',
+      logs: [
+          { id: 'prd_ub_inc', exerciseId: 'e2', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Incline DB Press 3x12
+          { id: 'prd_ub_row', exerciseId: 'e35', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Seated Cable Row 3x12
+          { id: 'prd_ub_ohp', exerciseId: 'e6', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // DB Shoulder Press 3x10
+          { id: 'prd_ub_chin', exerciseId: 'e39', sets: Array(3).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // Chin Ups 3xMAX (easier than pull-ups, do your max)
+          { id: 'prd_ub_lat', exerciseId: 'e53', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Cable Lateral Raise 3x15
+          { id: 'prd_ub_curl', exerciseId: 'e68', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Incline DB Curl 3x12 (stretched position)
+          { id: 'prd_ub_ohtri', exerciseId: 'e73', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Cable OH Tricep Ext 3x12 (long head)
+      ]
+  },
+
+  // Lower B (Posterior Chain) - Saturday
+  {
+      id: 'prd_lower_b',
+      name: 'PRD: Lower B (Posterior Chain)',
+      startTime: 0,
+      status: 'template',
+      notes: 'RPE 7-8 | Focus: Hamstrings/glutes. Rest 3 min deadlifts, 2 min accessories.',
+      logs: [
+          { id: 'prd_lb_dl', exerciseId: 'e5', sets: Array(3).fill({ id: 's', reps: 6, weight: 0, completed: false, type: 'N' }) }, // Deadlift 3x6
+          { id: 'prd_lb_rdl', exerciseId: 'e11', sets: Array(4).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // RDL 4x10
+          { id: 'prd_lb_lunge', exerciseId: 'e76', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Walking Lunge 3x12
+          { id: 'prd_lb_curl', exerciseId: 'e94', sets: Array(4).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Lying Leg Curl 4x12
+          { id: 'prd_lb_hip', exerciseId: 'e88', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Glute Bridge 3x12
+          { id: 'prd_lb_calf', exerciseId: 'e91', sets: Array(4).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Standing Calf Raise 4x12
+      ]
+  },
+
+  // Phase 1 DELOAD Week (Week 12)
+  {
+      id: 'prd_deload_push',
+      name: 'PRD: Deload Push',
+      startTime: 0,
+      status: 'template',
+      notes: 'DELOAD: 2 sets per exercise, -10% load, RPE 5-6. Maintain frequency, reduce volume.',
+      logs: [
+          { id: 'prd_dp_bp', exerciseId: 'e1', sets: Array(2).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_dp_inc', exerciseId: 'e2', sets: Array(2).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_dp_lat', exerciseId: 'e12', sets: Array(2).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) },
+      ]
+  },
+  {
+      id: 'prd_deload_pull',
+      name: 'PRD: Deload Pull',
+      startTime: 0,
+      status: 'template',
+      notes: 'DELOAD: 2 sets per exercise, -10% load, RPE 5-6.',
+      logs: [
+          { id: 'prd_dpl_pull', exerciseId: 'e3', sets: Array(2).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_dpl_row', exerciseId: 'e19', sets: Array(2).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_dpl_curl', exerciseId: 'e8', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) },
+      ]
+  },
+  {
+      id: 'prd_deload_legs',
+      name: 'PRD: Deload Legs',
+      startTime: 0,
+      status: 'template',
+      notes: 'DELOAD: 2 sets per exercise, -10% load, RPE 5-6.',
+      logs: [
+          { id: 'prd_dl_sq', exerciseId: 'e4', sets: Array(2).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_dl_rdl', exerciseId: 'e11', sets: Array(2).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_dl_calf', exerciseId: 'e20', sets: Array(2).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) },
+      ]
+  },
+  {
+      id: 'prd_deload_upper',
+      name: 'PRD: Deload Upper',
+      startTime: 0,
+      status: 'template',
+      notes: 'DELOAD: 2 sets per exercise, -10% load, RPE 5-6.',
+      logs: [
+          { id: 'prd_du_inc', exerciseId: 'e2', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_du_row', exerciseId: 'e35', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_du_lat', exerciseId: 'e53', sets: Array(2).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) },
+      ]
+  },
+  {
+      id: 'prd_deload_lower',
+      name: 'PRD: Deload Lower',
+      startTime: 0,
+      status: 'template',
+      notes: 'DELOAD: 2 sets per exercise, -10% load, RPE 5-6.',
+      logs: [
+          { id: 'prd_dlw_dl', exerciseId: 'e5', sets: Array(2).fill({ id: 's', reps: 6, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_dlw_lunge', exerciseId: 'e76', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_dlw_calf', exerciseId: 'e91', sets: Array(2).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) },
+      ]
+  },
+
+  // --- PHASE 2: STRENGTH (Upper/Lower DUP) ---
+
+  // Lower A - Strength Focus (Heavy) - Monday
+  {
+      id: 'prd_str_lower_a',
+      name: 'PRD: Lower Strength (Heavy)',
+      startTime: 0,
+      status: 'template',
+      notes: 'RPE 8-9 | Heavy: 85% 1RM target. Rest 3-5 min between sets. Linear progression.',
+      logs: [
+          { id: 'prd_sla_sq', exerciseId: 'e4', sets: Array(5).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // Squat 5x5
+          { id: 'prd_sla_rdl', exerciseId: 'e11', sets: Array(3).fill({ id: 's', reps: 6, weight: 0, completed: false, type: 'N' }) }, // RDL 3x6
+          { id: 'prd_sla_lp', exerciseId: 'e13', sets: Array(3).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // Leg Press 3x8
+          { id: 'prd_sla_curl', exerciseId: 'e79', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Leg Curl 3x10
+          { id: 'prd_sla_calf', exerciseId: 'e91', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Calf Raise 3x10
+      ]
+  },
+
+  // Upper A - Strength Focus (Heavy) - Tuesday
+  {
+      id: 'prd_str_upper_a',
+      name: 'PRD: Upper Strength (Heavy)',
+      startTime: 0,
+      status: 'template',
+      notes: 'RPE 8-9 | Heavy: 85% 1RM target. Rest 3-5 min between sets. Linear progression. PULL-UPS: Do max reps per set, by Phase 2 you should be at 5-6+.',
+      logs: [
+          { id: 'prd_sua_bp', exerciseId: 'e1', sets: Array(5).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // Bench Press 5x5
+          { id: 'prd_sua_row', exerciseId: 'e19', sets: Array(5).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // Barbell Row 5x5
+          { id: 'prd_sua_ohp', exerciseId: 'e16', sets: Array(4).fill({ id: 's', reps: 6, weight: 0, completed: false, type: 'N' }) }, // OHP 4x6
+          { id: 'prd_sua_pull', exerciseId: 'e3', sets: Array(3).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) }, // Pull Ups 3xMAX (should be 5-6+ by Phase 2)
+          { id: 'prd_sua_curl', exerciseId: 'e61', sets: Array(2).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Barbell Curl 2x10
+      ]
+  },
+
+  // Lower B - Hypertrophy Focus (Volume) - Thursday
+  {
+      id: 'prd_str_lower_b',
+      name: 'PRD: Lower Volume (Hypertrophy)',
+      startTime: 0,
+      status: 'template',
+      notes: 'RPE 7-8 | Volume: 70-75% 1RM. Rest 90s-2 min. Double progression.',
+      logs: [
+          { id: 'prd_slb_sq', exerciseId: 'e4', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Squat 3x10
+          { id: 'prd_slb_dl', exerciseId: 'e5', sets: Array(3).fill({ id: 's', reps: 8, weight: 0, completed: false, type: 'N' }) }, // Deadlift 3x8
+          { id: 'prd_slb_hack', exerciseId: 'e77', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Hack Squat 3x12
+          { id: 'prd_slb_ext', exerciseId: 'e9', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Leg Extension 3x15
+          { id: 'prd_slb_curl', exerciseId: 'e94', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Lying Leg Curl 3x12
+          { id: 'prd_slb_calf', exerciseId: 'e92', sets: Array(4).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Leg Press Calf Raise 4x15
+      ]
+  },
+
+  // Upper B - Hypertrophy Focus (Volume + Arms) - Friday
+  {
+      id: 'prd_str_upper_b',
+      name: 'PRD: Upper Volume (Hypertrophy)',
+      startTime: 0,
+      status: 'template',
+      notes: 'RPE 7-8 | Volume: 70-75% 1RM. Rest 90s-2 min. Double progression.',
+      logs: [
+          { id: 'prd_sub_inc', exerciseId: 'e2', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Incline DB Press 3x10
+          { id: 'prd_sub_lat', exerciseId: 'e18', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Lat Pulldown 3x10
+          { id: 'prd_sub_dbp', exerciseId: 'e57', sets: Array(3).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) }, // Seated DB Press 3x10
+          { id: 'prd_sub_row', exerciseId: 'e35', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Seated Cable Row 3x12
+          { id: 'prd_sub_fly', exerciseId: 'e24', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Cable Fly 3x15
+          { id: 'prd_sub_lat2', exerciseId: 'e12', sets: Array(3).fill({ id: 's', reps: 15, weight: 0, completed: false, type: 'N' }) }, // Lateral Raise 3x15
+          { id: 'prd_sub_curl', exerciseId: 'e62', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // Preacher Curl 3x12 (short head)
+          { id: 'prd_sub_tri', exerciseId: 'e65', sets: Array(3).fill({ id: 's', reps: 12, weight: 0, completed: false, type: 'N' }) }, // OH Tricep Extension 3x12 (long head)
+      ]
+  },
+
+  // Phase 2 DELOAD templates (Week 24)
+  {
+      id: 'prd_str_deload_lower',
+      name: 'PRD: Strength Deload Lower',
+      startTime: 0,
+      status: 'template',
+      notes: 'DELOAD: 2 sets per exercise, -10% load, RPE 5-6.',
+      logs: [
+          { id: 'prd_sdl_sq', exerciseId: 'e4', sets: Array(2).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_sdl_rdl', exerciseId: 'e11', sets: Array(2).fill({ id: 's', reps: 6, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_sdl_calf', exerciseId: 'e91', sets: Array(2).fill({ id: 's', reps: 10, weight: 0, completed: false, type: 'N' }) },
+      ]
+  },
+  {
+      id: 'prd_str_deload_upper',
+      name: 'PRD: Strength Deload Upper',
+      startTime: 0,
+      status: 'template',
+      notes: 'DELOAD: 2 sets per exercise, -10% load, RPE 5-6.',
+      logs: [
+          { id: 'prd_sdu_bp', exerciseId: 'e1', sets: Array(2).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_sdu_row', exerciseId: 'e19', sets: Array(2).fill({ id: 's', reps: 5, weight: 0, completed: false, type: 'N' }) },
+          { id: 'prd_sdu_ohp', exerciseId: 'e16', sets: Array(2).fill({ id: 's', reps: 6, weight: 0, completed: false, type: 'N' }) },
+      ]
   }
 ];
 
@@ -2660,6 +2912,160 @@ export const INITIAL_PROGRAMS: Program[] = [
             { templateId: 'ul_upper_power', week: 8, day: 2 },
             { templateId: 'ul_lower_hypertrophy', week: 8, day: 4 },
             { templateId: 'ul_upper_hypertrophy', week: 8, day: 5 },
+        ]
+    },
+    // ========================================
+    // PERIODIZATION PROTOCOL - 24 WEEK PROGRAM
+    // Scientific framework for intermediate trainees
+    // Phase 1: Hypertrophy (Weeks 1-12) - PPLUL 5-Day
+    // Phase 2: Strength (Weeks 13-24) - Upper/Lower DUP 4-Day
+    // ========================================
+    {
+        id: 'prog_periodization_24',
+        name: 'Periodization Protocol (24 Weeks)',
+        description: 'Scientific periodization for intermediates. Phase 1 (Wk 1-12): Hypertrophy-focused PPLUL building muscle mass. Phase 2 (Wk 13-24): Strength-focused Upper/Lower DUP maximizing force output. Includes programmed deloads and RPE-based auto-regulation. 5 days/week (Phase 1) → 4 days/week (Phase 2).',
+        weeks: 24,
+        goal: 'Power-Building',
+        splitType: 'PPL',
+        difficulty: 'Intermediate',
+        frequency: 5,
+        supportedFrequencies: [5],
+        sessions: [
+            // ===== PHASE 1: HYPERTROPHY (Weeks 1-11) =====
+            // Week 1 (MEV - Baseline)
+            { templateId: 'prd_push_a', week: 1, day: 1 },
+            { templateId: 'prd_pull_a', week: 1, day: 2 },
+            { templateId: 'prd_legs_a', week: 1, day: 3 },
+            { templateId: 'prd_upper_b', week: 1, day: 5 },
+            { templateId: 'prd_lower_b', week: 1, day: 6 },
+            // Week 2 (MEV - Baseline)
+            { templateId: 'prd_push_a', week: 2, day: 1 },
+            { templateId: 'prd_pull_a', week: 2, day: 2 },
+            { templateId: 'prd_legs_a', week: 2, day: 3 },
+            { templateId: 'prd_upper_b', week: 2, day: 5 },
+            { templateId: 'prd_lower_b', week: 2, day: 6 },
+            // Week 3 (MEV - Baseline)
+            { templateId: 'prd_push_a', week: 3, day: 1 },
+            { templateId: 'prd_pull_a', week: 3, day: 2 },
+            { templateId: 'prd_legs_a', week: 3, day: 3 },
+            { templateId: 'prd_upper_b', week: 3, day: 5 },
+            { templateId: 'prd_lower_b', week: 3, day: 6 },
+            // Week 4 (MEV - Baseline)
+            { templateId: 'prd_push_a', week: 4, day: 1 },
+            { templateId: 'prd_pull_a', week: 4, day: 2 },
+            { templateId: 'prd_legs_a', week: 4, day: 3 },
+            { templateId: 'prd_upper_b', week: 4, day: 5 },
+            { templateId: 'prd_lower_b', week: 4, day: 6 },
+            // Week 5 (MAV - Volume Increase)
+            { templateId: 'prd_push_a', week: 5, day: 1 },
+            { templateId: 'prd_pull_a', week: 5, day: 2 },
+            { templateId: 'prd_legs_a', week: 5, day: 3 },
+            { templateId: 'prd_upper_b', week: 5, day: 5 },
+            { templateId: 'prd_lower_b', week: 5, day: 6 },
+            // Week 6 (MAV - Volume Increase)
+            { templateId: 'prd_push_a', week: 6, day: 1 },
+            { templateId: 'prd_pull_a', week: 6, day: 2 },
+            { templateId: 'prd_legs_a', week: 6, day: 3 },
+            { templateId: 'prd_upper_b', week: 6, day: 5 },
+            { templateId: 'prd_lower_b', week: 6, day: 6 },
+            // Week 7 (MAV - Volume Increase)
+            { templateId: 'prd_push_a', week: 7, day: 1 },
+            { templateId: 'prd_pull_a', week: 7, day: 2 },
+            { templateId: 'prd_legs_a', week: 7, day: 3 },
+            { templateId: 'prd_upper_b', week: 7, day: 5 },
+            { templateId: 'prd_lower_b', week: 7, day: 6 },
+            // Week 8 (MAV - Volume Increase)
+            { templateId: 'prd_push_a', week: 8, day: 1 },
+            { templateId: 'prd_pull_a', week: 8, day: 2 },
+            { templateId: 'prd_legs_a', week: 8, day: 3 },
+            { templateId: 'prd_upper_b', week: 8, day: 5 },
+            { templateId: 'prd_lower_b', week: 8, day: 6 },
+            // Week 9 (MRV - Peak Volume)
+            { templateId: 'prd_push_a', week: 9, day: 1 },
+            { templateId: 'prd_pull_a', week: 9, day: 2 },
+            { templateId: 'prd_legs_a', week: 9, day: 3 },
+            { templateId: 'prd_upper_b', week: 9, day: 5 },
+            { templateId: 'prd_lower_b', week: 9, day: 6 },
+            // Week 10 (MRV - Peak Volume)
+            { templateId: 'prd_push_a', week: 10, day: 1 },
+            { templateId: 'prd_pull_a', week: 10, day: 2 },
+            { templateId: 'prd_legs_a', week: 10, day: 3 },
+            { templateId: 'prd_upper_b', week: 10, day: 5 },
+            { templateId: 'prd_lower_b', week: 10, day: 6 },
+            // Week 11 (MRV - Peak Volume)
+            { templateId: 'prd_push_a', week: 11, day: 1 },
+            { templateId: 'prd_pull_a', week: 11, day: 2 },
+            { templateId: 'prd_legs_a', week: 11, day: 3 },
+            { templateId: 'prd_upper_b', week: 11, day: 5 },
+            { templateId: 'prd_lower_b', week: 11, day: 6 },
+            // Week 12 (DELOAD - Phase 1 End)
+            { templateId: 'prd_deload_push', week: 12, day: 1 },
+            { templateId: 'prd_deload_pull', week: 12, day: 2 },
+            { templateId: 'prd_deload_legs', week: 12, day: 3 },
+            { templateId: 'prd_deload_upper', week: 12, day: 5 },
+            { templateId: 'prd_deload_lower', week: 12, day: 6 },
+
+            // ===== PHASE 2: STRENGTH (Weeks 13-24) =====
+            // Week 13 (Strength Base)
+            { templateId: 'prd_str_lower_a', week: 13, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 13, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 13, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 13, day: 5 },
+            // Week 14
+            { templateId: 'prd_str_lower_a', week: 14, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 14, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 14, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 14, day: 5 },
+            // Week 15
+            { templateId: 'prd_str_lower_a', week: 15, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 15, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 15, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 15, day: 5 },
+            // Week 16
+            { templateId: 'prd_str_lower_a', week: 16, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 16, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 16, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 16, day: 5 },
+            // Week 17
+            { templateId: 'prd_str_lower_a', week: 17, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 17, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 17, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 17, day: 5 },
+            // Week 18
+            { templateId: 'prd_str_lower_a', week: 18, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 18, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 18, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 18, day: 5 },
+            // Week 19
+            { templateId: 'prd_str_lower_a', week: 19, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 19, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 19, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 19, day: 5 },
+            // Week 20
+            { templateId: 'prd_str_lower_a', week: 20, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 20, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 20, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 20, day: 5 },
+            // Week 21
+            { templateId: 'prd_str_lower_a', week: 21, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 21, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 21, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 21, day: 5 },
+            // Week 22
+            { templateId: 'prd_str_lower_a', week: 22, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 22, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 22, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 22, day: 5 },
+            // Week 23
+            { templateId: 'prd_str_lower_a', week: 23, day: 1 },
+            { templateId: 'prd_str_upper_a', week: 23, day: 2 },
+            { templateId: 'prd_str_lower_b', week: 23, day: 4 },
+            { templateId: 'prd_str_upper_b', week: 23, day: 5 },
+            // Week 24 (DELOAD - Phase 2 End)
+            { templateId: 'prd_str_deload_lower', week: 24, day: 1 },
+            { templateId: 'prd_str_deload_upper', week: 24, day: 2 },
+            { templateId: 'prd_str_deload_lower', week: 24, day: 4 },
+            { templateId: 'prd_str_deload_upper', week: 24, day: 5 },
         ]
     }
 ];
