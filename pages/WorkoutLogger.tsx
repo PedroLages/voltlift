@@ -791,17 +791,10 @@ const WorkoutLogger = () => {
                   <SwipeableRow
                     key={set.id}
                     onDelete={() => removeSet(exerciseIndex, setIndex)}
-                    onDuplicate={() => duplicateSet(exerciseIndex, setIndex)}
                     disabled={set.completed}
                   >
                   <div
                     className={`grid grid-cols-12 gap-2 items-start relative ${set.completed ? 'opacity-40 grayscale' : ''}`}
-                    onTouchStart={() => handleLongPressStart(exerciseIndex, setIndex)}
-                    onTouchEnd={handleLongPressEnd}
-                    onTouchCancel={handleLongPressEnd}
-                    onMouseDown={() => handleLongPressStart(exerciseIndex, setIndex)}
-                    onMouseUp={handleLongPressEnd}
-                    onMouseLeave={handleLongPressEnd}
                   >
                     {/* Set Type Selector */}
                     <div className="col-span-1 flex justify-center pt-2">
@@ -957,67 +950,18 @@ const WorkoutLogger = () => {
                            <Check size={20} strokeWidth={3} />
                          </button>
                        ) : (
-                         <>
-                           <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                duplicateSet(exerciseIndex, setIndex);
-                            }}
-                            className="flex-1 h-10 flex items-center justify-center transition-all bg-primary/20 text-primary hover:bg-primary hover:text-black border border-primary/30"
-                            aria-label="Duplicate this set"
-                           >
-                             <Copy size={16} strokeWidth={2.5} />
-                           </button>
-                           <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleSetComplete(exerciseIndex, setIndex, false, set.weight, set.reps, log.exerciseId);
-                            }}
-                            className="w-10 h-10 flex items-center justify-center transition-all bg-primary text-black hover:bg-white"
-                            aria-label="Mark as incomplete"
-                           >
-                             <Check size={16} strokeWidth={3} />
-                           </button>
-                         </>
+                         <button
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              handleSetComplete(exerciseIndex, setIndex, false, set.weight, set.reps, log.exerciseId);
+                          }}
+                          className="w-full h-10 flex items-center justify-center transition-all bg-primary text-black hover:bg-white"
+                          aria-label="Mark as incomplete"
+                         >
+                           <Check size={16} strokeWidth={3} />
+                         </button>
                        )}
                     </div>
-
-                    {/* Long-Press Context Menu */}
-                    {activeSetMenu?.exerciseIndex === exerciseIndex && activeSetMenu?.setIndex === setIndex && (
-                      <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-                        <div className="bg-[#111] border border-primary shadow-2xl min-w-[200px] flex flex-col">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              duplicateSet(exerciseIndex, setIndex);
-                              setActiveSetMenu(null);
-                            }}
-                            className="px-4 py-3 text-left text-sm font-bold uppercase tracking-wider text-white hover:bg-[#222] flex items-center gap-2 border-b border-[#333]"
-                          >
-                            <Copy size={16} className="text-primary" /> Duplicate Set
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeSet(exerciseIndex, setIndex);
-                              setActiveSetMenu(null);
-                            }}
-                            className="px-4 py-3 text-left text-sm font-bold uppercase tracking-wider text-red-500 hover:bg-[#1a0000] flex items-center gap-2"
-                          >
-                            <Trash2 size={16} /> Delete Set
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveSetMenu(null);
-                            }}
-                            className="px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-[#666] hover:bg-[#222] border-t border-[#333]"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                   </SwipeableRow>
                 )})}
