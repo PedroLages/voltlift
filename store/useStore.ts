@@ -113,7 +113,6 @@ export const useStore = create<AppState>()(
         personalRecords: {},
         defaultRestTimer: 90,
         barWeight: 45,
-        ironCloud: { enabled: false }
       },
       history: MOCK_HISTORY,
       templates: INITIAL_TEMPLATES,
@@ -491,10 +490,8 @@ export const useStore = create<AppState>()(
 
       updateSettings: (newSettings) => {
         set((state) => ({ settings: { ...state.settings, ...newSettings } }));
-        // Trigger sync
-        if (newSettings.ironCloud) {
-            get().syncData();
-        }
+        // Trigger sync if authenticated
+        get().syncData();
       },
 
       toggleFavoriteExercise: (exerciseId) => {
@@ -980,24 +977,44 @@ export const useStore = create<AppState>()(
       },
 
       syncData: async () => {
-          const { settings } = get();
-          if (!settings.ironCloud?.enabled) return;
+          // Only sync if user is authenticated
+          if (!backend.auth.isLoggedIn) return;
 
-          set({ syncStatus: 'syncing' });
-          
-          // Simulated Network Delay
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-          set(state => ({
-              syncStatus: 'synced',
-              settings: {
-                  ...state.settings,
-                  ironCloud: {
-                      ...state.settings.ironCloud!,
-                      lastSync: Date.now()
+          const { settings, history, templates, dailyLogs, programs } = get();
+
+          try {
+              set({ syncStatus: 'syncing' });
+
+              // Push settings
+              await backend.settings.save(settings);
+
+              // Push history (completed workouts)
+              for (const workout of history) {
+                  if (workout.status === 'completed') {
+                      await backend.workouts.create(workout);
                   }
               }
-          }));
+
+              // Push templates
+              for (const template of templates) {
+                  await backend.workouts.create(template);
+              }
+
+              // Push daily logs
+              for (const [date, log] of Object.entries(dailyLogs)) {
+                  await backend.dailyLogs.save(date, log);
+              }
+
+              // Push programs
+              for (const program of programs) {
+                  await backend.programs.create(program);
+              }
+
+              set({ syncStatus: 'synced' });
+          } catch (err) {
+              console.error('Sync to cloud failed:', err);
+              set({ syncStatus: 'error' });
+          }
       },
 
       getFatigueStatus: () => {

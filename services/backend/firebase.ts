@@ -343,8 +343,13 @@ export class FirebaseBackend implements BackendService {
     create: async (workout: WorkoutSession): Promise<WorkoutSession> => {
       const userId = this.getUserId();
       const workoutData = { ...workout, userId };
-      const docRef = doc(collection(this.db, 'workouts'));
-      await setDoc(docRef, workoutData);
+
+      // Use workout.id to preserve document ID (upsert logic)
+      const docRef = workout.id
+        ? doc(this.db, 'workouts', workout.id)
+        : doc(collection(this.db, 'workouts'));
+
+      await setDoc(docRef, workoutData, { merge: true });
       return { ...workoutData, id: docRef.id };
     },
 
@@ -445,8 +450,13 @@ export class FirebaseBackend implements BackendService {
     create: async (program: Program): Promise<Program> => {
       const userId = this.getUserId();
       const programData = { ...program, userId };
-      const docRef = doc(collection(this.db, 'programs'));
-      await setDoc(docRef, programData);
+
+      // Use program.id to preserve document ID (upsert logic)
+      const docRef = program.id
+        ? doc(this.db, 'programs', program.id)
+        : doc(collection(this.db, 'programs'));
+
+      await setDoc(docRef, programData, { merge: true });
       return { ...programData, id: docRef.id };
     },
 
