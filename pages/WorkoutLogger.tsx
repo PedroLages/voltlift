@@ -830,11 +830,15 @@ const WorkoutLogger = () => {
                           }
                         }}
                         onKeyDown={(e) => {
-                          // Enter key: move to reps input
+                          // Enter key: move to reps input and dismiss keyboard
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             const repsInput = e.currentTarget.parentElement?.nextElementSibling?.querySelector('input');
-                            if (repsInput) (repsInput as HTMLInputElement).focus();
+                            if (repsInput) {
+                              (repsInput as HTMLInputElement).focus();
+                              // Blur current input to dismiss keyboard
+                              e.currentTarget.blur();
+                            }
                           }
                         }}
                         placeholder={previousSet ? `${previousSet.weight}` : "0"}
@@ -877,11 +881,16 @@ const WorkoutLogger = () => {
                           }
                         }}
                         onKeyDown={(e) => {
-                          // Enter key: complete the set (if weight and reps are valid)
+                          // Enter key: complete the set (if weight and reps are valid) and dismiss keyboard
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             if (set.weight > 0 && set.reps > 0 && !set.completed) {
                               handleSetComplete(exerciseIndex, setIndex, true, set.weight, set.reps, log.exerciseId);
+                              // Blur input to dismiss keyboard after completing set
+                              e.currentTarget.blur();
+                            } else {
+                              // If set can't be completed, still dismiss keyboard
+                              e.currentTarget.blur();
                             }
                           }
                         }}
