@@ -169,10 +169,73 @@ All UI changes must meet these requirements:
 
 ### Quick Reference
 
-- **Design Principles:** [`docs/design-principles.md`](docs/design-principles.md)
+- **Design Principles:** [`docs/design-principles.md`](docs/design-principles.md) (human documentation)
+- **Context Files:** [`/context/design-principles.md`](context/design-principles.md) + [`/context/style-guide.md`](context/style-guide.md) (for workflows)
 - **Slash Command:** `/design-review` (run before merging UI changes)
 - **Color Palette:** See `tailwind.config.js`
 - **Accessibility:** Focus states defined in `index.html`
+
+## Automated Workflows
+
+VoltLift uses automated workflows from the [claude-code-workflows](https://github.com/OneRedOak/claude-code-workflows) repository to maintain quality standards.
+
+### Design Context Files
+
+**Location:** `/context/` directory (separate from `/docs/` for human documentation)
+
+- **`/context/design-principles.md`** - Comprehensive design checklist (copy of `/docs/design-principles.md`)
+- **`/context/style-guide.md`** - Brand implementation guide with code examples (colors, typography, components)
+
+**Why two locations?**
+- `/docs/` - Human-readable documentation and philosophy
+- `/context/` - Machine-readable reference for automated workflows and LLM agents
+
+**When making UI changes**, workflows automatically reference `/context/` files to:
+- Verify brand consistency (colors, typography, border-radius)
+- Check WCAG AA accessibility compliance
+- Validate component patterns match style guide
+- Ensure aggressive aesthetic is maintained
+
+### Available Workflows
+
+All workflows are in `.claude/workflows/`:
+
+#### 1. **Code Review** (`.claude/workflows/code-review/`)
+- **Slash Command:** `/code-reviewer`
+- **GitHub Action:** `.github/workflows/claude-code-review.yml`
+- **Purpose:** Automated code quality reviews on PRs
+- **Checks:** Syntax, style adherence, bug detection, maintainability
+
+#### 2. **Design Review** (`.claude/workflows/design-review/`)
+- **Slash Command:** `/design-review`
+- **Purpose:** Comprehensive front-end UI/UX validation
+- **Uses:** Playwright MCP for browser automation
+- **Checks:** Accessibility, responsive design, brand compliance, performance
+- **References:** `/context/design-principles.md` and `/context/style-guide.md`
+
+#### 3. **Security Review** (`.claude/workflows/security-review/`)
+- **GitHub Action:** `.github/workflows/security.yml`
+- **Purpose:** Identify vulnerabilities, exposed secrets, attack vectors
+- **Output:** Severity classification and remediation guidance
+
+### Using Workflows
+
+**Quick Visual Check (after any UI change):**
+```bash
+# 1. Identify what changed
+# 2. Navigate to affected pages
+# 3. Verify against /context/design-principles.md
+# 4. Capture screenshots
+# 5. Check console errors
+```
+
+**Comprehensive Review (before PR merge):**
+```bash
+/design-review  # Full accessibility + brand + performance audit
+```
+
+**Automated PR Reviews:**
+GitHub Actions automatically run code and security reviews on all pull requests.
 
 ## Key Competitive Insights
 
