@@ -4,15 +4,15 @@ const config: CapacitorConfig = {
   appId: 'com.ironpath.app',
   appName: 'IronPath',
   webDir: 'dist',
-  server: {
-    // PRODUCTION: Load from Firebase Hosting (auto-updates)
-    url: 'https://voltlift-app.web.app',
-    cleartext: false,
-
-    // DEVELOPMENT: Use Mac's local IP so iPhone can connect
-    // url: 'http://192.168.2.233:3000',
-    // cleartext: true
-  },
+  // server: {
+  //   // PRODUCTION: Load from Firebase Hosting (auto-updates)
+  //   url: 'https://voltlift-app.web.app',
+  //   cleartext: false,
+  //
+  //   // DEVELOPMENT: Use Mac's local IP so iPhone can connect
+  //   // url: 'http://192.168.2.233:3000',
+  //   // cleartext: true
+  // },
   ios: {
     contentInset: 'always',
     scrollEnabled: true,
