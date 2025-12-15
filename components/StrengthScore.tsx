@@ -172,11 +172,11 @@ export const StrengthScore: React.FC<StrengthScoreProps> = ({
       {liftClassifications.length === 0 && (
         <div className="text-center py-6">
           <Target size={32} className="text-[#444] mx-auto mb-2" />
-          <p className="text-sm text-[#666] font-mono">
-            Log major lifts to track strength score
+          <p className="text-sm text-white font-bold uppercase">
+            DESTROY BENCHMARKS. LOG YOUR POWER.
           </p>
-          <p className="text-[10px] text-[#555] font-mono mt-1">
-            (Bench, Squat, Deadlift, OHP)
+          <p className="text-[10px] text-[#666] font-mono mt-2">
+            BENCH • SQUAT • DEADLIFT • OHP
           </p>
         </div>
       )}

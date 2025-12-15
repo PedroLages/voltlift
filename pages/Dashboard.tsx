@@ -210,7 +210,7 @@ const Dashboard = () => {
     <div className="p-6 space-y-8 animate-fade-in pb-32">
       {/* Desktop Banner */}
       {showDesktopBanner && (
-        <div className="bg-primary/10 border-2 border-primary p-4 -mx-6 -mt-6 mb-4">
+        <div className="hidden md:block bg-primary/10 border-2 border-primary p-4 -mx-6 -mt-6 mb-4">
           <div className="flex items-start gap-3">
             <Monitor size={24} className="text-primary flex-shrink-0" />
             <div className="flex-1">
@@ -276,7 +276,7 @@ const Dashboard = () => {
             className="bg-[#111] p-2 border border-[#333] flex flex-col items-center justify-center text-center hover:bg-[#222] transition-colors"
         >
             <div className="mb-2 text-[#666]"><BarChart2 size={18} /></div>
-            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Charts</span>
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Analyze Gains</span>
         </button>
       </div>
 
@@ -317,8 +317,8 @@ const Dashboard = () => {
                   </div>
               ) : (
                   <div>
-                      <div className="text-[#444] font-bold text-sm uppercase">No Active Program</div>
-                      <button onClick={() => navigate('/programs')} className="text-[10px] text-primary underline font-mono uppercase mt-1">Browse Programs</button>
+                      <div className="text-[#444] font-bold text-sm uppercase">CHOOSE YOUR PROTOCOL</div>
+                      <button onClick={() => navigate('/programs')} className="text-[10px] text-primary underline font-mono uppercase mt-1">SELECT PROGRAM</button>
                   </div>
               )}
           </div>
@@ -597,9 +597,9 @@ const Dashboard = () => {
           {history.length === 0 ? (
               <EmptyState
                   icon={Dumbbell}
-                  title="No Training History"
-                  description="Start your first workout to see your training logs and track your progress over time."
-                  actionLabel="Start Workout"
+                  title="ZERO SESSIONS LOGGED"
+                  description="DESTROY YOUR FIRST WORKOUT. BUILD YOUR LEGACY. TRACK EVERY REP."
+                  actionLabel="DOMINATE NOW"
                   onAction={() => navigate('/lift')}
               />
           ) : (

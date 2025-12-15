@@ -161,7 +161,7 @@ export const SmartInsightsPanel: React.FC<SmartInsightsPanelProps> = ({
           onClick={() => setShowGoalSetup(true)}
           className="text-xs text-primary font-bold uppercase hover:text-white transition-colors"
         >
-          Set a weight goal
+          DOMINATE YOUR GOAL WEIGHT
         </button>
       </div>
     );
@@ -173,7 +173,7 @@ export const SmartInsightsPanel: React.FC<SmartInsightsPanelProps> = ({
       {showGoalSetup && (
         <div className="bg-[#111] border border-primary/50 p-4">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-sm font-black uppercase text-white">Set Weight Goal</h4>
+            <h4 className="text-sm font-black uppercase text-white">DOMINATE YOUR GOAL WEIGHT</h4>
             <button onClick={() => setShowGoalSetup(false)} className="text-[#666] hover:text-white">
               <X size={16} />
             </button>
@@ -225,7 +225,7 @@ export const SmartInsightsPanel: React.FC<SmartInsightsPanelProps> = ({
               disabled={goalDirection !== 'maintain' && !targetWeight}
               className="w-full py-2 bg-primary text-black font-bold uppercase text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors"
             >
-              Set Goal
+              LOCK TARGET
             </button>
           </div>
         </div>
@@ -374,7 +374,7 @@ export const SmartInsightsPanel: React.FC<SmartInsightsPanelProps> = ({
             <div className="flex items-center gap-2">
               <Target className="text-[#666] group-hover:text-primary" size={18} />
               <span className="text-xs text-[#666] uppercase font-bold group-hover:text-white">
-                Set Weight Goal
+                DOMINATE YOUR GOAL WEIGHT
               </span>
             </div>
             <ChevronRight className="text-[#444] group-hover:text-primary" size={16} />

@@ -225,7 +225,7 @@ const Profile = () => {
           />
         </div>
         <div>
-          <h2 className="text-2xl font-bold uppercase tracking-tight text-white">{settings.name || 'Athlete'}</h2>
+          <h2 className="text-2xl font-black italic uppercase tracking-wide text-white">{settings.name || 'Athlete'}</h2>
           <div className="flex items-center gap-2 mt-2">
               <span className="px-2 py-1 bg-[#222] text-[#888] text-[10px] font-mono uppercase">{settings.goal?.type || 'Training'}</span>
           </div>

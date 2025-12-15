@@ -991,8 +991,8 @@ const WorkoutLogger = () => {
 
       {/* Exercise Selector Modal */}
       {showExerciseSelector && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-end sm:items-center justify-center animate-fade-in backdrop-blur-sm">
-          <div className="bg-[#111] w-full max-w-md h-[80vh] border-t border-[#333] flex flex-col">
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center animate-fade-in backdrop-blur-sm">
+          <div className="bg-[#111] w-full h-full sm:max-w-md sm:h-[90vh] border-t border-[#333] flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-[#333] flex justify-between items-center">
               <h2 className="volt-header text-xl text-white">
@@ -1016,6 +1016,11 @@ const WorkoutLogger = () => {
                 placeholder="Search exercises..."
                 value={exerciseSearchQuery}
                 onChange={(e) => setExerciseSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                  }
+                }}
                 className="w-full bg-[#0a0a0a] border border-[#333] text-white px-4 py-3 font-mono text-sm focus:border-primary focus:outline-none placeholder-[#666]"
                 autoFocus
               />
