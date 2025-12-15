@@ -52,12 +52,12 @@ const BottomNav = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Hide nav on onboarding, welcome, login, desktop routes, and during active workouts
+  // Hide nav on onboarding, welcome, login, desktop routes, and on the workout page
   if (location.pathname === '/onboarding' ||
       location.pathname === '/welcome' ||
       location.pathname === '/login' ||
       location.pathname.startsWith('/desktop') ||
-      activeWorkout !== null) return null;
+      location.pathname === '/workout') return null;
 
   // Check if there's an active program and get next session
   let nextProgramTemplate = null;
@@ -181,10 +181,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 // Need separate component to use useNavigate in BottomNav
 const AppContent = () => {
-  const { activeWorkout } = useStore();
+  const location = useLocation();
+  const isWorkoutPage = location.pathname === '/workout';
 
   return (
-    <div className={`min-h-screen bg-background text-text font-sans selection:bg-primary selection:text-black ${activeWorkout ? '' : 'pb-28'}`}>
+    <div className={`min-h-screen bg-background text-text font-sans selection:bg-primary selection:text-black ${isWorkoutPage ? '' : 'pb-28'}`}>
         {/* Scroll to top on route change */}
         <ScrollToTop />
 
