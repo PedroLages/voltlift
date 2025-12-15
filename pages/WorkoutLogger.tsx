@@ -829,6 +829,16 @@ const WorkoutLogger = () => {
                             updateSet(exerciseIndex, setIndex, { weight: 0 });
                           }
                         }}
+                        onFocus={(e) => {
+                          // Scroll input into view when keyboard opens (with delay for keyboard animation)
+                          setTimeout(() => {
+                            e.currentTarget.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                            });
+                          }, 300);
+                        }}
                         onKeyDown={(e) => {
                           // Enter key: move to reps input and dismiss keyboard
                           if (e.key === 'Enter') {
@@ -879,6 +889,16 @@ const WorkoutLogger = () => {
                           } else if (e.target.value === '') {
                             updateSet(exerciseIndex, setIndex, { reps: 0 });
                           }
+                        }}
+                        onFocus={(e) => {
+                          // Scroll input into view when keyboard opens (with delay for keyboard animation)
+                          setTimeout(() => {
+                            e.currentTarget.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                            });
+                          }, 300);
                         }}
                         onKeyDown={(e) => {
                           // Enter key: complete the set (if weight and reps are valid) and dismiss keyboard
