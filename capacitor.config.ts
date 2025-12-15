@@ -6,12 +6,12 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     // PRODUCTION: Load from Firebase Hosting (auto-updates)
-    url: 'https://voltlift-app.web.app',
-    cleartext: false,
+    // url: 'https://voltlift-app.web.app',
+    // cleartext: false,
 
     // DEVELOPMENT: Use Mac's local IP so iPhone can connect
-    // url: 'http://192.168.2.233:3000',
-    // cleartext: true
+    url: 'http://192.168.2.233:3000',
+    cleartext: true
   },
   ios: {
     contentInset: 'always',
