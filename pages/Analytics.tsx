@@ -135,7 +135,7 @@ const Analytics = () => {
     <div className="p-6 pb-24 min-h-screen bg-black">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate('/lift')} className="text-[#666] hover:text-white">
+        <button onClick={() => navigate('/')} className="text-[#666] hover:text-white">
           <ArrowLeft size={24} />
         </button>
         <h1 className="volt-header text-3xl text-white">ANALYTICS</h1>
