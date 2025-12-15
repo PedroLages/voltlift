@@ -847,6 +847,7 @@ const WorkoutLogger = () => {
                         placeholder={previousSet ? `${previousSet.weight}` : "0"}
                         aria-label={`Weight for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
                         inputMode="decimal"
+                        enterKeyHint="next"
                         min="0"
                         step="0.5"
                         className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
@@ -910,6 +911,7 @@ const WorkoutLogger = () => {
                         placeholder={previousSet ? `${previousSet.reps}` : "0"}
                         aria-label={`Repetitions for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}`}
                         inputMode="numeric"
+                        enterKeyHint="done"
                         min="1"
                         step="1"
                         className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
