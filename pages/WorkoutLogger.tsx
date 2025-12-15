@@ -87,7 +87,7 @@ const WorkoutLogger = () => {
     try {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioContext) return;
-        
+
         const ctx = new AudioContext();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -96,8 +96,8 @@ const WorkoutLogger = () => {
         gain.connect(ctx.destination);
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime); 
-        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1); 
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
 
         gain.gain.setValueAtTime(0.1, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
@@ -187,8 +187,8 @@ const WorkoutLogger = () => {
       <div className="flex flex-col items-center justify-center h-screen p-6 text-center bg-background">
         <h2 className="volt-header text-3xl mb-4 text-white">NO SESSION ACTIVE</h2>
         <p className="text-[#666] mb-8 font-mono text-xs uppercase">Select a protocol to begin tracking.</p>
-        <button onClick={() => { 
-            useStore.getState().startWorkout(); 
+        <button onClick={() => {
+            useStore.getState().startWorkout();
         }} className="bg-primary text-black px-8 py-4 font-black italic uppercase tracking-wider mb-4 w-full max-w-xs">
           Quick Start
         </button>
@@ -323,14 +323,14 @@ const WorkoutLogger = () => {
           stopRestTimer();
       }
   };
-  
+
   const handleSetTypeChange = (exerciseIndex: number, setIndex: number, newType: SetType) => {
       updateSet(exerciseIndex, setIndex, { type: newType });
   };
 
   const handleGetAiTip = async (exerciseId: string) => {
     setLoadingAi(exerciseId);
-    const exerciseHistory = history.flatMap(s => 
+    const exerciseHistory = history.flatMap(s =>
       s.logs.filter(l => l.exerciseId === exerciseId)
     );
     const tip = await getProgressiveOverloadTip(exerciseId, exerciseHistory, settings);
@@ -343,9 +343,9 @@ const WorkoutLogger = () => {
   const findSubstitutes = (exerciseId: string) => {
       const currentEx = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
       if (!currentEx) return [];
-      
-      return EXERCISE_LIBRARY.filter(e => 
-          e.muscleGroup === currentEx.muscleGroup && 
+
+      return EXERCISE_LIBRARY.filter(e =>
+          e.muscleGroup === currentEx.muscleGroup &&
           e.id !== exerciseId &&
           settings.availableEquipment.includes(e.equipment)
       );
@@ -354,7 +354,7 @@ const WorkoutLogger = () => {
   const handleSwap = (logId: string, currentExerciseId: string) => {
       const subs = findSubstitutes(currentExerciseId);
       const currentEx = EXERCISE_LIBRARY.find(e => e.id === currentExerciseId);
-      
+
       if (subs.length > 0) {
           const suggestion = subs[0];
           if(confirm(`Smart Swap: Replace ${currentEx?.name} with ${suggestion.name} based on your equipment?`)) {
@@ -419,7 +419,7 @@ const WorkoutLogger = () => {
   }, [activeWorkout?.logs, getVolumeWarning, getProgressiveSuggestion]);
 
   return (
-    <div className="pb-32 bg-background min-h-screen" onClick={() => setActiveMenuId(null)}>
+    <div className="pb-8 bg-background min-h-screen" onClick={() => setActiveMenuId(null)}>
       {/* Enhanced PR Celebration (Multi-PR Detection + Confetti + Haptic) */}
       {activePRs && (
           <Suspense fallback={<div />}>
@@ -431,19 +431,19 @@ const WorkoutLogger = () => {
             />
           </Suspense>
       )}
-      
+
       {/* Plate Calculator Modal */}
       {calculatorTarget !== null && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in" onClick={() => setCalculatorTarget(null)}>
               <div className="bg-[#111] border border-[#333] p-8 max-w-sm w-full mx-4 relative" onClick={e => e.stopPropagation()}>
                   <button onClick={() => setCalculatorTarget(null)} className="absolute top-4 right-4 text-[#666] hover:text-white" aria-label="Close calculator"><X size={24} /></button>
                   <h3 className="volt-header text-2xl text-white mb-6">LOAD BAR</h3>
-                  
+
                   <div className="flex justify-between items-end border-b border-[#333] pb-4 mb-6">
                       <span className="text-[#888] font-mono text-sm uppercase">TARGET</span>
                       <span className="text-4xl font-black italic text-primary">{calculatorTarget} <span className="text-lg text-white">{(settings.units || 'lbs').toUpperCase()}</span></span>
                   </div>
-                  
+
                   <div className="flex justify-center items-center gap-2 mb-8 flex-wrap">
                       <div className="h-24 w-4 bg-[#444] rounded-sm"></div> {/* Bar End */}
                       {getPlates(calculatorTarget).map((p, i) => {
@@ -460,7 +460,7 @@ const WorkoutLogger = () => {
                       })}
                       {getPlates(calculatorTarget).length === 0 && <span className="text-[#444] font-mono text-xs uppercase">BAR ONLY</span>}
                   </div>
-                  
+
                   <div className="text-center text-[#666] font-mono text-[10px] uppercase">
                       Based on {settings.barWeight}{(settings.units || 'lbs').toUpperCase()} Bar • Per Side Shown
                   </div>
@@ -470,7 +470,7 @@ const WorkoutLogger = () => {
 
       {/* Rest Timer Overlay */}
       {restTimerStart !== null && (
-          <div className={`fixed bottom-24 left-4 right-4 bg-[#0a0a0a] border ${timeLeft === 0 ? 'border-primary animate-pulse' : 'border-[#333]'} p-0 z-40 shadow-2xl overflow-hidden animate-slide-up rounded-lg`}>
+          <div className={`fixed bottom-4 left-4 right-4 bg-[#0a0a0a] border ${timeLeft === 0 ? 'border-primary animate-pulse' : 'border-[#333]'} p-0 z-40 shadow-2xl overflow-hidden animate-slide-up rounded-lg`}>
               {/* Progress Bar Background */}
               <div
                 className="absolute top-0 left-0 bottom-0 bg-[#222] transition-all duration-500 ease-linear z-0"
@@ -585,11 +585,11 @@ const WorkoutLogger = () => {
           const hasEquipment = exerciseDef && settings.availableEquipment.includes(exerciseDef.equipment);
           const canSubstitute = exerciseDef && !hasEquipment;
           const showNotes = showNotesId === log.id || (log.notes && log.notes.length > 0);
-          
+
           // Fetch previous session data for "Ghost Text"
           const previousLog = getExerciseHistory(log.exerciseId);
           const prevBestSet = previousLog ? [...previousLog.sets].sort((a,b) => b.weight - a.weight)[0] : null;
-          
+
           // Superset Logic
           const isSupersetStart = log.supersetId && (exerciseIndex === 0 || activeWorkout.logs[exerciseIndex - 1].supersetId !== log.supersetId);
           const isSupersetEnd = log.supersetId && (exerciseIndex === activeWorkout.logs.length - 1 || activeWorkout.logs[exerciseIndex + 1].supersetId !== log.supersetId);
@@ -614,8 +614,8 @@ const WorkoutLogger = () => {
           }
 
           return (
-            <div 
-                key={log.id} 
+            <div
+                key={log.id}
                 className={`bg-[#111] border-x border-[#222] relative group transition-all
                     ${isSupersetStart ? 'border-t border-[#222] rounded-t-xl mt-4' : ''}
                     ${isSupersetEnd ? 'border-b border-[#222] rounded-b-xl mb-4' : ''}
@@ -668,7 +668,7 @@ const WorkoutLogger = () => {
                         </div>
                     )}
                 </div>
-                
+
                 {/* Context Menu */}
                 <div className="relative">
                     <button
@@ -678,29 +678,29 @@ const WorkoutLogger = () => {
                     >
                         <MoreHorizontal size={20} />
                     </button>
-                    
+
                     {activeMenuId === log.id && (
                         <div className="absolute right-0 top-full mt-1 w-56 bg-[#222] border border-[#333] shadow-xl z-20 flex flex-col">
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); setShowNotesId(log.id); setActiveMenuId(null); }}
                                 className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[#ccc] hover:bg-[#333] hover:text-white flex items-center gap-2"
                             >
                                 <StickyNote size={14} /> {log.notes ? 'Edit Notes' : 'Add Note'}
                             </button>
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); toggleSuperset(log.id); setActiveMenuId(null); }}
                                 className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[#ccc] hover:bg-[#333] hover:text-white flex items-center gap-2"
                             >
-                                {isLinkedToNext ? <Unlink size={14} /> : <LinkIcon size={14} />} 
+                                {isLinkedToNext ? <Unlink size={14} /> : <LinkIcon size={14} />}
                                 {isLinkedToNext ? 'Unlink from Next' : 'Link with Next (Superset)'}
                             </button>
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); initiateManualSwap(log.id); }}
                                 className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[#ccc] hover:bg-[#333] hover:text-white flex items-center gap-2"
                             >
                                 <RefreshCw size={14} /> Swap Movement
                             </button>
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); removeExerciseLog(log.id); setActiveMenuId(null); }}
                                 className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-red-500 hover:bg-[#1a0000] flex items-center gap-2 border-t border-[#333]"
                             >
@@ -814,7 +814,7 @@ const WorkoutLogger = () => {
                         />
                       </Suspense>
                     </div>
-                    
+
                     {/* Weight Input */}
                     <div className="col-span-3 relative">
                       <input
@@ -1034,7 +1034,7 @@ const WorkoutLogger = () => {
         })}
 
         {/* Add Exercise Button */}
-        <button 
+        <button
           onClick={(e) => { e.stopPropagation(); setSwapTargetLogId(null); setShowExerciseSelector(true); }}
           className="w-full py-6 border border-[#333] bg-[#0a0a0a] text-[#666] font-bold uppercase tracking-widest hover:border-primary hover:text-primary transition-colors flex flex-col items-center justify-center gap-2"
         >
