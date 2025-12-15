@@ -285,7 +285,7 @@ const Lift = () => {
                 className="bg-[#0a0a0a] p-5 border-l-4 border-[#333] hover:border-primary flex justify-between items-center cursor-pointer transition-colors group relative"
               >
                 <div>
-                  <h3 className="font-bold text-white uppercase italic tracking-wide text-lg group-hover:text-primary transition-colors">{t.name}</h3>
+                  <h3 className="font-black text-white uppercase italic tracking-wide text-lg group-hover:text-primary transition-colors">{t.name}</h3>
                   <div className="flex gap-2 mt-1">
                       <span className="px-1.5 py-0.5 bg-[#222] text-[#888] text-[10px] font-mono uppercase">{t.logs.length} MOVEMENTS</span>
                       {['t1', 't2'].includes(t.id) && <span className="px-1.5 py-0.5 bg-primary/20 text-primary text-[10px] font-mono uppercase">SYSTEM</span>}

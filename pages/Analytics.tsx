@@ -394,7 +394,7 @@ const Analytics = () => {
       {/* PR Forecast Section */}
       {prForecast && (
         <div className="mb-8 border-t border-[#222] pt-8">
-          <h2 className="text-2xl font-black italic uppercase text-white mb-6 flex items-center gap-2">
+          <h2 className="text-2xl font-black italic uppercase tracking-wide text-white mb-6 flex items-center gap-2">
             <TrendingUp size={24} /> PR Forecast (8 Weeks)
           </h2>
 
@@ -502,7 +502,7 @@ const Analytics = () => {
 
       {/* Muscle Group Volume Analytics */}
       <div className="mb-8 border-t border-[#222] pt-8">
-          <h2 className="text-2xl font-black italic uppercase text-white mb-6">Muscle Group Analytics</h2>
+          <h2 className="text-2xl font-black italic uppercase tracking-wide text-white mb-6">Muscle Group Analytics</h2>
 
           {/* Muscle Group Volume Distribution */}
           <div className="mb-6">
