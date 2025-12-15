@@ -15,6 +15,83 @@ npm run build        # Production build
 npm run preview      # Preview production build
 ```
 
+## Deployment & CI/CD
+
+### Automatic Firebase Deployment
+
+VoltLift uses **GitHub Actions** for automatic deployment to Firebase Hosting. Every push to `main` triggers a build and deploy.
+
+**Workflow File:** `.github/workflows/firebase-deploy.yml`
+
+
+**How it works:**
+1. Push changes to `main` branch
+2. GitHub Actions automatically triggers
+3. Builds production bundle with Node.js 20
+4. Deploys to Firebase Hosting: `<https://voltlift-app.web.app>`
+5. iOS app loads new version instantly (live updates enabled)
+
+**No manual deployment needed!** Changes go live in ~45 seconds.
+
+### Required GitHub Secrets
+
+The workflow requires these secrets in GitHub repo settings (`Settings` → `Secrets and variables` → `Actions`):
+
+```bash
+# Firebase Configuration (8 secrets required)
+VITE_BACKEND_TYPE=firebase
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=voltlift-app.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=voltlift-app
+VITE_FIREBASE_STORAGE_BUCKET=voltlift-app.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+
+# Firebase Service Account (JSON file contents)
+FIREBASE_SERVICE_ACCOUNT_VOLTLIFT_APP='{...json...}'
+```
+
+### iOS App Configuration
+
+**Capacitor Config:** `capacitor.config.ts`
+
+The iOS app is configured to load from Firebase Hosting for **instant updates without App Store review**:
+
+```typescript
+server: {
+  url: '<https://voltlift-app.web.app>', // Live updates enabled
+  cleartext: false
+}
+```
+
+
+**Benefits:**
+- ✅ Push to `main` → Auto-deploy → iOS updates instantly
+- ✅ No App Store submission for feature updates
+- ✅ Fix bugs immediately without review delays
+- ✅ A/B test features rapidly
+
+
+**When you need App Store submission:**
+- Native iOS code changes
+- Capacitor plugin updates
+- Bundle ID or permissions changes
+- App icon or name changes
+
+### Manual Deployment (if needed)
+
+If you need to deploy manually (e.g., CI/CD is down):
+
+```bash
+npm run ship  # Build + deploy to Firebase Hosting
+```
+
+### Monitoring Deployments
+
+- **GitHub Actions:** <https://github.com/PedroLages/voltlift/actions>
+- **Firebase Console:** <https://console.firebase.google.com/project/voltlift-app>
+- **Live App:** <https://voltlift-app.web.app>
+
 ## Environment Setup
 
 Create `.env.local` with:
