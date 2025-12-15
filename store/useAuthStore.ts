@@ -255,6 +255,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 }));
 
+// Timeout: If auth doesn't respond in 3 seconds, continue loading anyway
+setTimeout(() => {
+  const state = useAuthStore.getState();
+  if (state.isAuthLoading) {
+    console.warn('⏱️  Auth check timed out after 3 seconds, continuing without auth...');
+    useAuthStore.setState({
+      isAuthLoading: false,
+      isAuthenticated: false,
+      user: null,
+    });
+  }
+}, 3000);
+
 // Listen for auth changes (including persistence restoration on app startup)
 backend.auth.onAuthChange(async (user) => {
   console.log('🔄 Auth state changed:', { email: user?.email, loggedIn: !!user });
