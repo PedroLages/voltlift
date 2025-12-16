@@ -24,8 +24,8 @@ jobs:
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
-          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Using same API key as Security Review workflow
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Note: claude-code-action uses 'anthropic_api_key' while claude-code-security-review uses 'claude-api-key'
           # When track_progress is enabled:
           # - Creates a tracking comment with progress checkboxes
           # - Includes all PR context (comments, attachments, images)
