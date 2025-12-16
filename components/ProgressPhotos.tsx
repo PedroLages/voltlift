@@ -1,30 +1,75 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Camera, Image as ImageIcon, X, Calendar, TrendingUp, GitCompare, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { backend } from '../services/backend';
+import { saveImageToDB, getImageFromDB } from '../services/indexedDBService';
 
 export const ProgressPhotos: React.FC = () => {
   const { dailyLogs, logDailyBio, settings } = useStore();
   const [showUpload, setShowUpload] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Validate image URL (base64 or HTTP URL)
+  const isValidImageUrl = (url: string | undefined): url is string => {
+    if (!url) return false;
+    if (url.startsWith('data:')) {
+      return url.startsWith('data:image/') && url.length > 50;
+    }
+    return url.startsWith('http://') || url.startsWith('https://');
+  };
+
+  // Lazy migration: Upload existing local-only progress photos to cloud
+  useEffect(() => {
+    const migrateLocalPhotosToCloud = async () => {
+      try {
+        const photosToMigrate = Object.entries(dailyLogs)
+          .filter(([_, log]) => {
+            // Find photos that are base64 (local-only), not cloud URLs
+            return log.progressPhoto && log.progressPhoto.startsWith('data:image/');
+          });
+
+        if (photosToMigrate.length === 0) return;
+
+        console.log(`🔄 Migrating ${photosToMigrate.length} local progress photos to cloud...`);
+
+        for (const [date, log] of photosToMigrate) {
+          try {
+            const cloudUrl = await backend.storage.uploadImage(
+              `progress-photo-${date}`,
+              log.progressPhoto!
+            );
+
+            // Update daily log with cloud URL
+            logDailyBio(date, { progressPhoto: cloudUrl });
+
+            // Cache locally for offline access
+            await saveImageToDB(`progress-photo-${date}`, log.progressPhoto!);
+
+            console.log(`✅ Migrated progress photo for ${date}`);
+          } catch (error) {
+            console.warn(`⚠️ Failed to migrate photo for ${date}:`, error);
+            // Don't fail migration for one photo - continue with others
+          }
+        }
+
+        console.log('✅ Progress photo migration complete');
+      } catch (error) {
+        console.error('❌ Progress photo migration failed:', error);
+      }
+    };
+
+    // Run migration after a short delay to avoid blocking initial render
+    const timer = setTimeout(migrateLocalPhotosToCloud, 2000);
+    return () => clearTimeout(timer);
+  }, []); // Run once on mount
 
   // Comparison Mode State
   const [showComparison, setShowComparison] = useState(false);
   const [beforeIndex, setBeforeIndex] = useState(0);
   const [afterIndex, setAfterIndex] = useState(0);
-
-  // Validate that an image URL is properly formed (not corrupted data)
-  const isValidImageUrl = (url: string | undefined): url is string => {
-    if (!url) return false;
-    // Check for proper data URL format or http(s) URL
-    if (url.startsWith('data:')) {
-      // Valid data URLs have format: data:[<mediatype>][;base64],<data>
-      // Invalid: data:;base64,= (no mime type, empty data)
-      return url.startsWith('data:image/') && url.length > 50; // Real images are much longer than 50 chars
-    }
-    return url.startsWith('http://') || url.startsWith('https://');
-  };
 
   // Get all photos sorted by date (oldest first for comparison indexes)
   const photos = Object.values(dailyLogs)
@@ -77,10 +122,36 @@ export const ProgressPhotos: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSavePhoto = () => {
+  const handleSavePhoto = async () => {
     if (!previewImage) return;
 
-    logDailyBio(selectedDate, { progressPhoto: previewImage });
+    setUploadingPhoto(true);
+
+    try {
+      // Try to upload to cloud storage first
+      const cloudUrl = await backend.storage.uploadImage(
+        `progress-photo-${selectedDate}`,
+        previewImage
+      );
+
+      // Save cloud URL to daily logs (will trigger sync)
+      logDailyBio(selectedDate, { progressPhoto: cloudUrl });
+
+      // Cache locally for offline access
+      await saveImageToDB(`progress-photo-${selectedDate}`, previewImage);
+
+      console.log(`✅ Progress photo uploaded to cloud: ${cloudUrl}`);
+    } catch (cloudError) {
+      console.warn('⚠️ Cloud upload failed, saving locally only:', cloudError);
+
+      // Fallback: Save to local state only
+      logDailyBio(selectedDate, { progressPhoto: previewImage });
+
+      // Note: No IndexedDB fallback needed here since the base64 is in dailyLogs
+      alert('Photo saved locally. Enable cloud sync to access across devices.');
+    }
+
+    setUploadingPhoto(false);
     setPreviewImage(null);
     setShowUpload(false);
     setSelectedDate(new Date().toISOString().split('T')[0]);
@@ -346,10 +417,17 @@ export const ProgressPhotos: React.FC = () => {
                 </button>
                 <button
                   onClick={handleSavePhoto}
-                  disabled={!previewImage}
-                  className="flex-1 py-3 bg-primary text-black font-bold uppercase text-xs hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!previewImage || uploadingPhoto}
+                  className="flex-1 py-3 bg-primary text-black font-bold uppercase text-xs hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Save Photo
+                  {uploadingPhoto ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    'Save Photo'
+                  )}
                 </button>
               </div>
             </div>
