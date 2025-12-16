@@ -199,6 +199,7 @@ export interface UserSettings {
       email?: string;
       lastSync?: number;
   };
+  profilePictureUrl?: string; // Cloud storage URL for profile picture
   notifications?: NotificationSettings;
   favoriteExercises?: string[]; // Array of exerciseIds that user has starred
 
@@ -217,6 +218,25 @@ export interface UserSettings {
 
   // Body Metrics Goals (P2 Enhancement)
   bodyMetricsGoals?: BodyMetricsGoals;
+
+  // Auto-Progression Settings (Phase 3)
+  autoProgression?: {
+    enabled: boolean;
+    upperBodyIncrement: number; // lbs or kg
+    lowerBodyIncrement: number; // lbs or kg
+  };
+
+  // Enhanced Rest Timer Options (Phase 3)
+  restTimerOptions?: {
+    sound: boolean;
+    vibration: boolean;
+    autoStart: boolean;
+    customRestTimes?: {
+      compound: number; // Heavy compound lifts (squat, bench, deadlift)
+      isolation: number; // Isolation exercises
+      cardio: number; // Cardio/conditioning
+    };
+  };
 }
 
 // Body Metrics Goals

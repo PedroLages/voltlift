@@ -31,6 +31,7 @@ import {
 import { saveImageToDB, getImageFromDB } from '../utils/db';
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
+import { backend } from '../services/backend';
 import NotificationSettings from '../components/NotificationSettings';
 import DataExport from '../components/DataExport';
 import BodyMetricsLogger from '../components/BodyMetricsLogger';
@@ -147,14 +148,32 @@ const Profile = () => {
     return url.startsWith('http://') || url.startsWith('https://');
   };
 
-  // Load profile picture
+  // Load profile picture (cloud first, then local fallback)
   useEffect(() => {
-    getImageFromDB('profile-picture').then((data) => {
-      if (isValidImageUrl(data)) setProfilePicture(data);
-    }).catch(err => console.error('Error loading profile picture:', err));
-  }, []);
+    const loadProfilePicture = async () => {
+      try {
+        // Priority 1: Load from cloud if URL exists in settings
+        if (settings.profilePictureUrl) {
+          setProfilePicture(settings.profilePictureUrl);
+          // Cache to IndexedDB for offline access
+          await saveImageToDB('profile-picture', settings.profilePictureUrl);
+          return;
+        }
 
-  // Handle profile picture upload
+        // Priority 2: Fallback to local IndexedDB (for offline or legacy data)
+        const localData = await getImageFromDB('profile-picture');
+        if (isValidImageUrl(localData)) {
+          setProfilePicture(localData);
+        }
+      } catch (err) {
+        console.error('Error loading profile picture:', err);
+      }
+    };
+
+    loadProfilePicture();
+  }, [settings.profilePictureUrl]);
+
+  // Handle profile picture upload (cloud-first with local fallback)
   const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -175,8 +194,31 @@ const Profile = () => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64 = e.target?.result as string;
-        await saveImageToDB('profile-picture', base64);
-        setProfilePicture(base64);
+
+        try {
+          // Try to upload to cloud storage
+          const cloudUrl = await backend.storage.uploadImage('profile-picture', base64);
+
+          // Save cloud URL to settings (will trigger sync)
+          updateSettings({ profilePictureUrl: cloudUrl });
+
+          // Cache locally for offline access
+          await saveImageToDB('profile-picture', base64);
+
+          // Update local state
+          setProfilePicture(cloudUrl);
+
+          console.log('✅ Profile picture uploaded to cloud:', cloudUrl);
+        } catch (cloudError) {
+          console.warn('⚠️ Cloud upload failed, saving locally only:', cloudError);
+
+          // Fallback: Save to IndexedDB only
+          await saveImageToDB('profile-picture', base64);
+          setProfilePicture(base64);
+
+          alert('Profile picture saved locally. Enable cloud sync to access across devices.');
+        }
+
         setUploadingPicture(false);
       };
       reader.onerror = () => {
