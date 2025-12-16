@@ -1063,12 +1063,24 @@ export const useStore = create<AppState>()(
       },
 
       syncData: async (retryCount = 0) => {
-          // Only sync if user is authenticated
-          if (!backend.auth.isLoggedIn) return;
-
           // Prevent concurrent syncs
           if (get().isSyncing) {
               console.log('Sync already in progress, skipping...');
+              return;
+          }
+
+          // Always show syncing status for user feedback (before auth check)
+          set({ isSyncing: true, syncStatus: 'syncing' });
+
+          // Check if user is authenticated
+          if (!backend.auth.isLoggedIn) {
+              // User not logged in - provide feedback and exit
+              await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay for visual feedback
+              set({
+                  isSyncing: false,
+                  syncStatus: 'error'
+              });
+              console.log('❌ Sync failed: User not authenticated');
               return;
           }
 
@@ -1086,8 +1098,6 @@ export const useStore = create<AppState>()(
           } = get();
 
           try {
-              // Always show syncing status for user feedback
-              set({ isSyncing: true, syncStatus: 'syncing' });
 
               // Check if nothing to sync
               const nothingToSync = !settingsNeedsSync &&
