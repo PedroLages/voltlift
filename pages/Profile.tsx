@@ -36,10 +36,20 @@ const Profile = () => {
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const [showYearInReview, setShowYearInReview] = useState(false);
 
+  // Validate image URL is properly formed (not corrupted data)
+  const isValidImageUrl = (url: string | null): url is string => {
+    if (!url) return false;
+    if (url.startsWith('data:')) {
+      // Valid data URLs: data:image/png;base64,... (real images are > 50 chars)
+      return url.startsWith('data:image/') && url.length > 50;
+    }
+    return url.startsWith('http://') || url.startsWith('https://');
+  };
+
   // Load profile picture on mount
   useEffect(() => {
     getImageFromDB('profile-picture').then((data) => {
-      if (data) setProfilePicture(data);
+      if (isValidImageUrl(data)) setProfilePicture(data);
     }).catch(err => console.error('Error loading profile picture:', err));
   }, []);
 

@@ -14,9 +14,21 @@ export const ProgressPhotos: React.FC = () => {
   const [beforeIndex, setBeforeIndex] = useState(0);
   const [afterIndex, setAfterIndex] = useState(0);
 
+  // Validate that an image URL is properly formed (not corrupted data)
+  const isValidImageUrl = (url: string | undefined): url is string => {
+    if (!url) return false;
+    // Check for proper data URL format or http(s) URL
+    if (url.startsWith('data:')) {
+      // Valid data URLs have format: data:[<mediatype>][;base64],<data>
+      // Invalid: data:;base64,= (no mime type, empty data)
+      return url.startsWith('data:image/') && url.length > 50; // Real images are much longer than 50 chars
+    }
+    return url.startsWith('http://') || url.startsWith('https://');
+  };
+
   // Get all photos sorted by date (oldest first for comparison indexes)
   const photos = Object.values(dailyLogs)
-    .filter(log => log.progressPhoto)
+    .filter(log => isValidImageUrl(log.progressPhoto))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   // Memoize comparison photos

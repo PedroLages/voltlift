@@ -546,8 +546,11 @@ export const useStore = create<AppState>()(
             experienceLevel: experience,
             availableEquipment: equipment,
             onboardingCompleted: true
-          }
+          },
+          settingsNeedsSync: true
         }));
+        // Sync to cloud so settings persist across devices
+        get().syncData();
       },
 
       saveExerciseVisual: async (exerciseId, url) => {

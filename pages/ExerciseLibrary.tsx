@@ -47,12 +47,23 @@ const ExerciseLibrary = () => {
       setIsGenerating(false);
   }
 
-  // Determine which image to show for the selected exercise
-  const getDisplayImage = (ex: Exercise) => {
-      return customExerciseVisuals[ex.id] || ex.gifUrl;
+  // Validate image URL is properly formed (not corrupted data)
+  const isValidImageUrl = (url: string | undefined): url is string => {
+    if (!url) return false;
+    if (url.startsWith('data:')) {
+      // Valid data URLs: data:image/png;base64,... (real images are > 50 chars)
+      return url.startsWith('data:image/') && url.length > 50;
+    }
+    return url.startsWith('http://') || url.startsWith('https://');
   };
 
-  const hasCustomVisual = (ex: Exercise) => !!customExerciseVisuals[ex.id];
+  // Determine which image to show for the selected exercise
+  const getDisplayImage = (ex: Exercise) => {
+      const customVisual = customExerciseVisuals[ex.id];
+      return isValidImageUrl(customVisual) ? customVisual : ex.gifUrl;
+  };
+
+  const hasCustomVisual = (ex: Exercise) => isValidImageUrl(customExerciseVisuals[ex.id]);
 
   return (
     <div className="p-6 pb-20">
