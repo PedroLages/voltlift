@@ -31,12 +31,15 @@ VoltLift uses **Vercel** for automatic deployment. Every push to `main` triggers
 5. Vercel deploys to production (~30 seconds)
 6. iOS app loads new version instantly
 
-### PR-Based Workflow
+### PR-Based Workflow with Auto-Merge
 
 Branch protection is enabled on `main`:
-- All changes must go through PRs
-- Claude Code Review runs automatically on every PR
-- Preview URLs let you test before merging
+
+- ✅ All changes must go through PRs
+- ✅ **Security Review** runs automatically (~2-3 min)
+- ✅ **Claude Code Review** runs automatically (~5-10 min)
+- ✅ **Auto-merge** enabled - PRs merge automatically when both workflows pass
+- ✅ Preview URLs let you test before merging
 
 ```bash
 # Create feature branch
@@ -46,8 +49,14 @@ git checkout -b feat/my-feature
 git add . && git commit -m "feat: Add feature"
 git push -u origin feat/my-feature
 
-# Create PR via GitHub CLI
+# Create PR with auto-merge enabled
 gh pr create --title "feat: My feature" --body "Description"
+gh pr merge <PR-NUMBER> --squash --auto
+
+# Workflows run automatically:
+# → Security Review (2-3 min)
+# → Claude Code Review (5-10 min)
+# → Auto-merges when both pass ✅
 ```
 
 ### iOS App Configuration
