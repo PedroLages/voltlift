@@ -24,8 +24,9 @@ jobs:
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Note: claude-code-action uses 'anthropic_api_key' while claude-code-security-review uses 'claude-api-key'
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Uses OAuth token from Claude Code subscription (Pro/Max) instead of API credits
+          # Generate with: claude setup-token
           # When track_progress is enabled:
           # - Creates a tracking comment with progress checkboxes
           # - Includes all PR context (comments, attachments, images)
