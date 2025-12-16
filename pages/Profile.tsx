@@ -114,8 +114,8 @@ const MilitaryToggle = ({ enabled, onToggle, label }: { enabled: boolean; onTogg
     aria-pressed={enabled}
   >
     <span
-      className={`absolute top-0.5 w-5 h-5 rounded-full transition-all duration-300 ease-in-out ${
-        enabled ? 'translate-x-7 bg-primary' : 'translate-x-0.5 bg-[#666]'
+      className={`absolute left-0.5 top-0.5 w-5 h-5 rounded-full transition-all duration-300 ease-in-out ${
+        enabled ? 'translate-x-7 bg-primary' : 'translate-x-0 bg-[#666]'
       }`}
     />
   </button>

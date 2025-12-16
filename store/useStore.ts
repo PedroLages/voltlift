@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { backend } from '../services/backend';
 import { getSuggestion, checkVolumeWarning, shouldDeloadWeek, ProgressiveSuggestion } from '../services/progressiveOverload';
 import { calculate1RM, getBest1RM, classifyStrengthLevel, calculateOverallStrengthScore, OneRepMax } from '../services/strengthScore';
+import { detectDefaultUnits, getDefaultBarWeight } from '../utils/geolocation';
 
 interface UndoableAction {
   type: 'set' | 'exercise';
@@ -110,18 +111,22 @@ interface AppState {
 
 export const useStore = create<AppState>()(
   persist(
-    (set, get) => ({
-      settings: {
-        name: 'Athlete',
-        units: 'lbs',
-        goal: { type: 'Build Muscle', targetPerWeek: 4 },
-        experienceLevel: 'Beginner',
-        availableEquipment: ['Barbell', 'Dumbbell', 'Machine', 'Bodyweight', 'Cable'],
-        onboardingCompleted: false,
-        personalRecords: {},
-        defaultRestTimer: 90,
-        barWeight: 45,
-      },
+    (set, get) => {
+      // Detect default units based on user's location (browser language)
+      const defaultUnits = detectDefaultUnits();
+
+      return {
+        settings: {
+          name: 'Athlete',
+          units: defaultUnits,
+          goal: { type: 'Build Muscle', targetPerWeek: 4 },
+          experienceLevel: 'Beginner',
+          availableEquipment: ['Barbell', 'Dumbbell', 'Machine', 'Bodyweight', 'Cable'],
+          onboardingCompleted: false,
+          personalRecords: {},
+          defaultRestTimer: 90,
+          barWeight: getDefaultBarWeight(defaultUnits),
+        },
       history: MOCK_HISTORY,
       templates: INITIAL_TEMPLATES,
       programs: INITIAL_PROGRAMS,
@@ -1080,17 +1085,34 @@ export const useStore = create<AppState>()(
               settingsNeedsSync
           } = get();
 
-          // Skip if nothing to sync
-          if (!settingsNeedsSync &&
-              pendingSyncWorkouts.size === 0 &&
-              pendingSyncTemplates.size === 0 &&
-              pendingSyncPrograms.size === 0 &&
-              pendingSyncDailyLogs.size === 0) {
-              return;
-          }
-
           try {
+              // Always show syncing status for user feedback
               set({ isSyncing: true, syncStatus: 'syncing' });
+
+              // Check if nothing to sync
+              const nothingToSync = !settingsNeedsSync &&
+                  pendingSyncWorkouts.size === 0 &&
+                  pendingSyncTemplates.size === 0 &&
+                  pendingSyncPrograms.size === 0 &&
+                  pendingSyncDailyLogs.size === 0;
+
+              if (nothingToSync) {
+                  // Everything already synced - update lastSync and show success
+                  await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay for visual feedback
+                  set(state => ({
+                      settings: {
+                          ...state.settings,
+                          ironCloud: {
+                              ...state.settings.ironCloud,
+                              enabled: state.settings.ironCloud?.enabled || false,
+                              lastSync: new Date().toISOString()
+                          }
+                      },
+                      isSyncing: false,
+                      syncStatus: 'synced'
+                  }));
+                  return;
+              }
               const errors: string[] = [];
 
               // Track successfully synced items
@@ -1189,15 +1211,23 @@ export const useStore = create<AppState>()(
               const newPendingDailyLogs = new Set(pendingSyncDailyLogs);
               syncedDailyLogs.forEach(date => newPendingDailyLogs.delete(date));
 
-              set({
+              set(state => ({
                   pendingSyncWorkouts: newPendingWorkouts,
                   pendingSyncTemplates: newPendingTemplates,
                   pendingSyncPrograms: newPendingPrograms,
                   pendingSyncDailyLogs: newPendingDailyLogs,
                   settingsNeedsSync: settingsNeedsSync && !settingsSynced,
                   syncStatus: errors.length > 0 ? 'partial' : 'synced',
-                  isSyncing: false
-              });
+                  isSyncing: false,
+                  settings: {
+                      ...state.settings,
+                      ironCloud: {
+                          ...state.settings.ironCloud,
+                          enabled: state.settings.ironCloud?.enabled || false,
+                          lastSync: new Date().toISOString()
+                      }
+                  }
+              }));
 
               // Log errors if any occurred
               if (errors.length > 0) {
@@ -1339,8 +1369,9 @@ export const useStore = create<AppState>()(
                   activeProgram: undefined,
               }
           });
-      }
-    }),
+        }
+      };
+    },
     {
       name: 'voltlift-storage',
       version: 3, // Increment when schema changes
