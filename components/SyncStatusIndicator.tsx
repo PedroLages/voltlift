@@ -24,28 +24,6 @@ if (!document.querySelector('style[data-sync-toast]')) {
   document.head.appendChild(style);
 }
 
-// Add slide-down animation
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slide-down {
-    from {
-      transform: translateY(-100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-  .animate-slide-down {
-    animation: slide-down 0.3s ease-out;
-  }
-`;
-if (!document.querySelector('style[data-sync-toast]')) {
-  style.setAttribute('data-sync-toast', 'true');
-  document.head.appendChild(style);
-}
-
 export default function SyncStatusIndicator() {
   const syncStatus = useStore((state) => state.syncStatus);
   const { isAuthenticated } = useAuthStore();
