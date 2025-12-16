@@ -610,15 +610,35 @@ const Profile = () => {
             <div>
               <div className="flex justify-between items-center text-xs font-mono uppercase text-[#666] mb-4 border-t border-[#1a1a1a] pt-4 tracking-wider">
                 <span>Last Sync</span>
-                <span className="text-primary">{settings.ironCloud.lastSync ? new Date(settings.ironCloud.lastSync).toLocaleTimeString() : 'NEVER'}</span>
+                <span className="text-primary">{
+                  settings.ironCloud.lastSync
+                    ? (() => {
+                        const date = new Date(settings.ironCloud.lastSync);
+                        const use24h = settings.units === 'kg'; // KG users get 24-hour format
+                        const timeOptions: Intl.DateTimeFormatOptions = {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: !use24h
+                        };
+                        const dateOptions: Intl.DateTimeFormatOptions = {
+                          month: 'short',
+                          day: 'numeric'
+                        };
+                        const time = date.toLocaleTimeString('en-US', timeOptions);
+                        const dateStr = date.toLocaleDateString('en-US', dateOptions);
+                        return `${dateStr}, ${time}`;
+                      })()
+                    : 'NEVER'
+                }</span>
               </div>
               <button
                 onClick={() => syncData()}
-                className="w-full py-3 border-2 border-[#222] hover:border-primary text-xs font-black italic uppercase tracking-[0.15em] text-white hover:text-primary transition-all flex items-center justify-center gap-2 min-h-[48px]"
+                disabled={syncStatus === 'syncing'}
+                className="w-full py-3 border-2 border-[#222] hover:border-primary text-xs font-black italic uppercase tracking-[0.15em] text-white hover:text-primary transition-all flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Force sync data"
               >
-                <RefreshCw size={14} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
-                FORCE SYNC
+                <RefreshCw size={14} className={syncStatus === 'syncing' ? 'animate-spin text-primary' : ''} />
+                {syncStatus === 'syncing' ? 'SYNCING...' : 'FORCE SYNC'}
               </button>
             </div>
           )}
