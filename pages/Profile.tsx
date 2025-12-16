@@ -1,9 +1,33 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { Settings, User, BarChart, Zap, Check, Sparkles, Image, RefreshCw, Clock, Cloud, ToggleLeft, ToggleRight, LogOut, Trash2, AlertTriangle, AlertCircle, Target, Calendar, Activity, Repeat, Camera } from 'lucide-react';
+import {
+  Settings,
+  User,
+  BarChart,
+  Zap,
+  Check,
+  Sparkles,
+  Image,
+  RefreshCw,
+  Clock,
+  Cloud,
+  LogOut,
+  Trash2,
+  AlertTriangle,
+  AlertCircle,
+  Target,
+  Calendar,
+  Activity,
+  Repeat,
+  Camera,
+  Search,
+  TrendingUp,
+  Shield,
+  Radio,
+  Crosshair
+} from 'lucide-react';
 import { saveImageToDB, getImageFromDB } from '../utils/db';
 import { EXERCISE_LIBRARY } from '../constants';
 import { generateExerciseVisual } from '../services/geminiService';
@@ -14,39 +38,116 @@ import BodyweightChart from '../components/BodyweightChart';
 import ProgressPhotos from '../components/ProgressPhotos';
 import MeasurementTrends from '../components/MeasurementTrends';
 import BodyLiftCorrelation from '../components/BodyLiftCorrelation';
-import { getPeriodizationStatus, generateMesocyclePlan } from '../services/periodization';
-import { getRecoveryAssessment } from '../services/adaptiveRecovery';
-import { analyzeWeakPoints, suggestExerciseVariations } from '../services/workoutIntelligence';
-import { calculateVolumeLandmarks, getVolumeRecommendation } from '../services/volumeOptimization';
 import PerformanceInsights from '../components/PerformanceInsights';
 import YearInReview from '../components/YearInReview';
+import CollapsibleSection from '../components/CollapsibleSection';
+import QuickSettings from '../components/QuickSettings';
+import WeeklyGoalTracker from '../components/WeeklyGoalTracker';
+
+// Tactical Section Header Component
+const TacticalHeader = ({ title, statusLabel, statusActive }: { title: string; statusLabel: string; statusActive: boolean }) => (
+  <div className="relative mb-6 flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className="relative">
+        {/* Corner brackets */}
+        <div className="absolute -left-2 -top-2 w-3 h-3 border-l-2 border-t-2 border-primary"></div>
+        <div className="absolute -right-2 -top-2 w-3 h-3 border-r-2 border-t-2 border-primary"></div>
+        <h3 className="text-xs font-black italic uppercase tracking-[0.2em] text-white px-4 py-2 bg-[#0a0a0a]">
+          {title}
+        </h3>
+        <div className="absolute -left-2 -bottom-2 w-3 h-3 border-l-2 border-b-2 border-primary"></div>
+        <div className="absolute -right-2 -bottom-2 w-3 h-3 border-r-2 border-b-2 border-primary"></div>
+      </div>
+    </div>
+    <div className="flex items-center gap-2">
+      <div className={`w-2 h-2 rounded-full ${statusActive ? 'bg-primary animate-pulse' : 'bg-[#333]'}`}></div>
+      <span className={`text-[9px] font-mono uppercase tracking-wider ${statusActive ? 'text-primary' : 'text-[#666]'}`}>
+        {statusLabel}
+      </span>
+    </div>
+  </div>
+);
+
+// Glitch Text Effect Component
+const GlitchText = ({ children }: { children: React.ReactNode }) => (
+  <div className="relative group">
+    <span className="relative z-10">{children}</span>
+    <span className="absolute top-0 left-0 opacity-0 group-hover:opacity-70 text-primary group-hover:animate-ping duration-100" aria-hidden="true">
+      {children}
+    </span>
+  </div>
+);
+
+// Tactical Stat Card with diagonal cut
+const TacticalStatCard = ({ icon, value, label, trend }: { icon: React.ReactNode; value: string; label: string; trend?: string }) => (
+  <div className="relative bg-[#0a0a0a] border-l-2 border-primary overflow-hidden group hover:bg-[#111] transition-colors"
+       style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)' }}>
+    {/* Scanline effect */}
+    <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-b from-transparent via-primary to-transparent animate-pulse pointer-events-none"></div>
+
+    <div className="relative p-5">
+      <div className="flex items-start justify-between mb-3">
+        <div className="text-primary">{icon}</div>
+        {trend && (
+          <span className="text-[9px] font-mono text-primary bg-primary/10 px-2 py-0.5 border border-primary/30">
+            {trend}
+          </span>
+        )}
+      </div>
+      <div className="text-3xl font-black italic text-white leading-none mb-1 tabular-nums">{value}</div>
+      <div className="text-[9px] text-[#666] uppercase tracking-[0.15em] font-mono">{label}</div>
+    </div>
+
+    {/* Diagonal accent */}
+    <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary/20" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+  </div>
+);
+
+// Rounded Toggle Switch
+const MilitaryToggle = ({ enabled, onToggle, label }: { enabled: boolean; onToggle: () => void; label: string }) => (
+  <button
+    onClick={onToggle}
+    className={`relative w-14 h-7 rounded-full border-2 transition-all duration-300 ${
+      enabled ? 'bg-primary/20 border-primary' : 'bg-[#111] border-[#333]'
+    }`}
+    aria-label={label}
+    aria-pressed={enabled}
+  >
+    <span
+      className={`absolute top-0.5 w-5 h-5 rounded-full transition-all duration-300 ease-in-out ${
+        enabled ? 'translate-x-7 bg-primary' : 'translate-x-0.5 bg-[#666]'
+      }`}
+    />
+  </button>
+);
 
 const Profile = () => {
   const navigate = useNavigate();
   const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData, resetAllData, dailyLogs } = useStore();
   const { isAuthenticated, user, logout } = useAuthStore();
+
+  // State
   const [generatingBatch, setGeneratingBatch] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [batchSize, setBatchSize] = useState<'1K' | '2K' | '4K'>('1K');
   const [showPlateConfig, setShowPlateConfig] = useState(false);
   const [bodyMetricsTab, setBodyMetricsTab] = useState<'logger' | 'trends' | 'photos' | 'correlation'>('logger');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [intelligenceTab, setIntelligenceTab] = useState<'periodization' | 'recovery' | 'weak-points' | 'variations'>('periodization');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const [showYearInReview, setShowYearInReview] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Validate image URL is properly formed (not corrupted data)
+  // Validate image URL
   const isValidImageUrl = (url: string | null): url is string => {
     if (!url) return false;
     if (url.startsWith('data:')) {
-      // Valid data URLs: data:image/png;base64,... (real images are > 50 chars)
       return url.startsWith('data:image/') && url.length > 50;
     }
     return url.startsWith('http://') || url.startsWith('https://');
   };
 
-  // Load profile picture on mount
+  // Load profile picture
   useEffect(() => {
     getImageFromDB('profile-picture').then((data) => {
       if (isValidImageUrl(data)) setProfilePicture(data);
@@ -58,13 +159,11 @@ const Profile = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('Image size must be less than 5MB');
       return;
@@ -73,12 +172,9 @@ const Profile = () => {
     setUploadingPicture(true);
 
     try {
-      // Convert to base64
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64 = e.target?.result as string;
-
-        // Save to IndexedDB
         await saveImageToDB('profile-picture', base64);
         setProfilePicture(base64);
         setUploadingPicture(false);
@@ -95,6 +191,7 @@ const Profile = () => {
     }
   };
 
+  // Calculations
   const totalWorkouts = history.length;
   const totalVolume = history.reduce((acc, sess) => {
     let vol = 0;
@@ -103,11 +200,11 @@ const Profile = () => {
   }, 0);
 
   const toggleEquipment = (eq: string) => {
-      const current = settings.availableEquipment;
-      const updated = current.includes(eq) 
-        ? current.filter(i => i !== eq)
-        : [...current, eq];
-      updateSettings({ availableEquipment: updated });
+    const current = settings.availableEquipment;
+    const updated = current.includes(eq)
+      ? current.filter(i => i !== eq)
+      : [...current, eq];
+    updateSettings({ availableEquipment: updated });
   };
 
   const EQUIPMENT_TYPES = ['Barbell', 'Dumbbell', 'Machine', 'Bodyweight', 'Cable', 'Kettlebell'];
@@ -115,147 +212,186 @@ const Profile = () => {
   const exercisesWithoutVisuals = EXERCISE_LIBRARY.filter(ex => !customExerciseVisuals[ex.id]);
   const progressPercent = Math.round((Object.keys(customExerciseVisuals).length / EXERCISE_LIBRARY.length) * 100);
 
-  // Phase 3: Training Intelligence Data
-  const dailyLogsArray = useMemo(() => {
-    return Object.values(dailyLogs).map(log => ({
-      date: new Date(log.date).getTime(),
-      sleepHours: log.sleepHours,
-      mood: log.mood,
-      stressLevel: log.stressLevel,
-      energyLevel: log.energyLevel,
-      notes: log.notes || '',
-      waterLitres: log.waterLitres
-    }));
-  }, [dailyLogs]);
-
-  const periodizationStatus = useMemo(() => {
-    if (history.length < 3) return null;
-    return getPeriodizationStatus(history, dailyLogsArray, settings.experienceLevel);
-  }, [history, dailyLogsArray, settings.experienceLevel]);
-
-  const mesocyclePlan = useMemo(() => {
-    if (!periodizationStatus) return null;
-    return generateMesocyclePlan(periodizationStatus, settings.experienceLevel);
-  }, [periodizationStatus, settings.experienceLevel]);
-
-  const recoveryAssessment = useMemo(() => {
-    if (history.length < 2) return null;
-    return getRecoveryAssessment(history, dailyLogsArray, settings.experienceLevel);
-  }, [history, dailyLogsArray, settings.experienceLevel]);
-
-  const weakPointAnalysis = useMemo(() => {
-    if (history.length < 5) return null;
-    return analyzeWeakPoints(history, settings.experienceLevel);
-  }, [history, settings.experienceLevel]);
-
-  const exerciseVariations = useMemo(() => {
-    if (history.length < 3) return null;
-    return suggestExerciseVariations(history, 8);
-  }, [history]);
-
   const handleBatchGenerate = async () => {
-      // API Key Check for Paid Model
-      const w = window as any;
-      if (w.aistudio && w.aistudio.hasSelectedApiKey) {
-          const hasKey = await w.aistudio.hasSelectedApiKey();
-          if (!hasKey && w.aistudio.openSelectKey) {
-              await w.aistudio.openSelectKey();
-          }
+    const w = window as any;
+    if (w.aistudio && w.aistudio.hasSelectedApiKey) {
+      const hasKey = await w.aistudio.hasSelectedApiKey();
+      if (!hasKey && w.aistudio.openSelectKey) {
+        await w.aistudio.openSelectKey();
       }
+    }
 
-      setGeneratingBatch(true);
-      setGenerationProgress(0);
-      let completed = 0;
+    setGeneratingBatch(true);
+    setGenerationProgress(0);
+    let completed = 0;
 
-      for (const ex of exercisesWithoutVisuals) {
-          try {
-              // Add delay to prevent race conditions and be nice to API
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              const url = await generateExerciseVisual(ex.name, batchSize);
-              if (url) {
-                  await saveExerciseVisual(ex.id, url);
-              }
-          } catch (e) {
-              console.error(`Failed to gen for ${ex.name}`, e);
-          }
-          completed++;
-          setGenerationProgress(Math.round((completed / exercisesWithoutVisuals.length) * 100));
+    for (const ex of exercisesWithoutVisuals) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const url = await generateExerciseVisual(ex.name, batchSize);
+        if (url) {
+          await saveExerciseVisual(ex.id, url);
+        }
+      } catch (e) {
+        console.error(`Failed to gen for ${ex.name}`, e);
       }
-      setGeneratingBatch(false);
+      completed++;
+      setGenerationProgress(Math.round((completed / exercisesWithoutVisuals.length) * 100));
+    }
+    setGeneratingBatch(false);
   };
-  
+
   const toggleIronCloud = () => {
-      updateSettings({
-          ironCloud: {
-              ...settings.ironCloud,
-              enabled: !settings.ironCloud?.enabled
-          }
-      });
+    updateSettings({
+      ironCloud: {
+        ...settings.ironCloud,
+        enabled: !settings.ironCloud?.enabled
+      }
+    });
   };
 
   const handleResetAllData = () => {
-      resetAllData();
-      setShowResetConfirm(false);
+    resetAllData();
+    setShowResetConfirm(false);
   };
 
-  return (
-    <div className="p-6 pb-20">
-      <h1 className="text-4xl volt-header mb-8">ATHLETE ID</h1>
+  // Empty state for new users
+  const isNewUser = totalWorkouts === 0;
 
-      <div className="flex items-center gap-6 mb-10 border-b border-[#222] pb-8">
-        <div className="relative group">
-          {profilePicture ? (
-            <img
-              src={profilePicture}
-              alt="Profile"
-              className="w-24 h-24 object-cover rounded-sm border-2 border-primary"
-            />
-          ) : (
-            <div className="w-24 h-24 bg-primary flex items-center justify-center text-5xl font-black italic text-black rounded-sm">
-              {(settings.name || 'A').charAt(0)}
-            </div>
-          )}
-          {/* Upload button overlay */}
-          <label
-            htmlFor="profile-picture-upload"
-            className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-sm"
-          >
-            {uploadingPicture ? (
-              <RefreshCw size={24} className="text-primary animate-spin" />
-            ) : (
-              <Camera size={24} className="text-primary" />
-            )}
-          </label>
-          <input
-            id="profile-picture-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleProfilePictureUpload}
-            className="hidden"
-          />
+  return (
+    <div className="p-6 pb-20 relative">
+      {/* Hexagon grid background pattern */}
+      <div className="fixed inset-0 opacity-[0.02] pointer-events-none"
+           style={{
+             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l25.98 15v30L30 60 4.02 45V15z' fill='none' stroke='%23ccff00' stroke-width='0.5'/%3E%3C/svg%3E")`,
+             backgroundSize: '60px 60px'
+           }}>
+      </div>
+
+      {/* Main Header - Command Center Style */}
+      <div className="relative mb-10">
+        <div className="absolute -left-6 top-0 w-1 h-full bg-gradient-to-b from-primary via-primary/50 to-transparent"></div>
+        <div className="flex items-baseline gap-3 mb-1">
+          <h1 className="text-3xl font-black italic uppercase text-white tracking-wider">
+            <GlitchText>COMMAND DECK</GlitchText>
+          </h1>
+          <div className="flex items-center gap-1.5">
+            <Radio size={12} className="text-primary animate-pulse" />
+            <span className="text-[10px] font-mono text-primary uppercase tracking-wider">ONLINE</span>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-black italic uppercase tracking-wide text-white">{settings.name || 'Athlete'}</h2>
-          <div className="flex items-center gap-2 mt-2">
-              <span className="px-2 py-1 bg-[#222] text-[#888] text-[10px] font-mono uppercase">{settings.goal?.type || 'Training'}</span>
+        <div className="text-[10px] font-mono text-[#666] tracking-[0.2em] uppercase">
+          Operator ID: {(settings.name || 'ALPHA').toUpperCase().slice(0, 12)}
+        </div>
+      </div>
+
+      {/* Profile Header - Military ID Card Style */}
+      <div className="mb-12 bg-[#0a0a0a] border border-[#222] relative overflow-hidden">
+        {/* Circuit board corner detail */}
+        <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
+          <svg viewBox="0 0 100 100" className="text-primary fill-current">
+            <circle cx="50" cy="50" r="2"/>
+            <line x1="50" y1="50" x2="80" y2="20" stroke="currentColor" strokeWidth="0.5"/>
+            <line x1="50" y1="50" x2="20" y2="80" stroke="currentColor" strokeWidth="0.5"/>
+            <circle cx="80" cy="20" r="2"/>
+            <circle cx="20" cy="80" r="2"/>
+          </svg>
+        </div>
+
+        <div className="relative flex items-start gap-6 p-6 border-l-4 border-primary">
+          {/* Profile picture with targeting reticle */}
+          <div className="relative group shrink-0">
+            <div className="absolute -inset-1 border border-primary/30 pointer-events-none"></div>
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <Crosshair size={32} className="text-primary animate-pulse" />
+            </div>
+
+            {profilePicture ? (
+              <img
+                src={profilePicture}
+                alt="Profile"
+                className="w-24 h-24 object-cover border-2 border-[#222] group-hover:border-primary transition-colors"
+              />
+            ) : (
+              <div className="w-24 h-24 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border-2 border-[#222] group-hover:border-primary transition-colors flex items-center justify-center text-5xl font-black italic text-primary">
+                {(settings.name || 'A').charAt(0)}
+              </div>
+            )}
+
+            <label
+              htmlFor="profile-picture-upload"
+              className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              aria-label="Upload profile picture"
+            >
+              {uploadingPicture ? (
+                <RefreshCw size={24} className="text-primary animate-spin" />
+              ) : (
+                <Camera size={24} className="text-primary" />
+              )}
+            </label>
+            <input
+              id="profile-picture-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePictureUpload}
+              className="hidden"
+            />
+
+            {/* Corner brackets */}
+            <div className="absolute -top-1 -left-1 w-3 h-3 border-l border-t border-primary pointer-events-none"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 border-r border-t border-primary pointer-events-none"></div>
+            <div className="absolute -bottom-1 -left-1 w-3 h-3 border-l border-b border-primary pointer-events-none"></div>
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 border-r border-b border-primary pointer-events-none"></div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-2xl font-black italic uppercase tracking-wide text-white mb-2">
+                  {settings.name || 'OPERATOR'}
+                </h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#0a0a0a] border border-primary/30 text-[10px] font-mono uppercase tracking-wider text-primary">
+                    <Shield size={10} />
+                    [{settings.goal?.type || 'TRAINING'}]
+                  </span>
+                  <span className="text-[9px] font-mono text-[#666] uppercase tracking-wider">
+                    CLEARANCE: ALPHA-1
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick stats - inline tactical display */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="bg-[#000] border border-[#1a1a1a] p-3">
+                <div className="text-[9px] font-mono text-[#666] uppercase tracking-wider mb-1">Missions</div>
+                <div className="text-xl font-black italic text-white tabular-nums">{totalWorkouts}</div>
+              </div>
+              <div className="bg-[#000] border border-[#1a1a1a] p-3">
+                <div className="text-[9px] font-mono text-[#666] uppercase tracking-wider mb-1">Volume</div>
+                <div className="text-xl font-black italic text-primary tabular-nums">{(totalVolume / 1000).toFixed(0)}K</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Account Section */}
       {isAuthenticated && user && (
-        <section className="mb-10">
-          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Account</h3>
-          <div className="bg-[#111] border border-[#222] divide-y divide-[#222]">
-            <div className="p-5 flex justify-between items-center">
+        <section className="mb-12">
+          <TacticalHeader title="⌜AUTHENTICATION⌟" statusLabel="VERIFIED" statusActive={true} />
+
+          <div className="bg-[#0a0a0a] border-l-2 border-primary divide-y divide-[#1a1a1a]">
+            <div className="p-5 flex justify-between items-center min-h-[56px]">
               <div>
-                <span className="font-bold uppercase text-sm">Email</span>
-                <p className="text-xs text-[#666] font-mono mt-1">{user.email}</p>
+                <span className="font-bold uppercase text-sm text-white tracking-wider">Comm Link</span>
+                <p className="text-xs text-[#999] font-mono mt-1">{user.email}</p>
               </div>
             </div>
-            <div className="p-5 flex justify-between items-center">
-              <span className="font-bold uppercase text-sm">User ID</span>
-              <span className="text-xs text-[#666] font-mono">{user.id.substring(0, 12)}...</span>
+            <div className="p-5 flex justify-between items-center min-h-[56px]">
+              <span className="font-bold uppercase text-sm text-white tracking-wider">Operator ID</span>
+              <span className="text-xs text-[#999] font-mono">{user.id.substring(0, 12)}...</span>
             </div>
             <div className="p-5">
               <button
@@ -263,40 +399,140 @@ const Profile = () => {
                   await logout();
                   navigate('/login');
                 }}
-                className="w-full py-4 bg-red-900/20 border border-red-900/50 hover:border-red-500 text-red-400 hover:text-red-300 font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                className="w-full py-4 bg-red-900/20 border-2 border-red-900/50 hover:border-red-500 text-red-400 hover:text-red-300 font-black italic uppercase tracking-widest flex items-center justify-center gap-3 transition-all min-h-[48px] group"
+                aria-label="Sign out of account"
+                style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}
               >
-                <LogOut size={16} />
-                Sign Out
+                <LogOut size={16} className="group-hover:rotate-180 transition-transform duration-300" />
+                <span className="tracking-[0.2em]">TERMINATE SESSION</span>
               </button>
             </div>
           </div>
         </section>
       )}
 
-      <section className="mb-10">
-        <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Performance Data</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-[#111] p-6 border border-[#222]">
-            <Zap className="text-primary mb-2" size={24} fill="currentColor" />
-            <div className="text-4xl font-black italic text-white leading-none">{totalWorkouts}</div>
-            <div className="text-[10px] text-[#666] uppercase tracking-widest mt-1">Sessions Complete</div>
+      {/* Control Matrix - Redesigned Quick Settings */}
+      <section className="mb-12">
+        <TacticalHeader title="⌜CONTROL MATRIX⌟" statusLabel="OPERATIONAL" statusActive={true} />
+
+        <div className="space-y-3">
+          {/* Units */}
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-5 relative group hover:border-primary/30 transition-colors">
+            <div className="absolute top-0 right-0 w-2 h-2 bg-primary/20" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 0)' }}></div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-black uppercase text-white tracking-wider mb-1">Measurement Protocol</div>
+                <div className="text-[10px] font-mono text-[#666] uppercase tracking-wider">SYSTEM UNITS</div>
+              </div>
+              <div className="flex gap-1 bg-[#000] p-1 border border-[#222]">
+                <button
+                  onClick={() => updateSettings({ units: 'kg' })}
+                  className={`px-4 py-2 text-xs font-black italic uppercase tracking-wider transition-all min-h-[44px] ${
+                    settings.units === 'kg' ? 'bg-primary text-black' : 'text-[#666] hover:text-white'
+                  }`}
+                  aria-label="Set units to kilograms"
+                  aria-pressed={settings.units === 'kg'}
+                >
+                  KG
+                </button>
+                <button
+                  onClick={() => updateSettings({ units: 'lbs' })}
+                  className={`px-4 py-2 text-xs font-black italic uppercase tracking-wider transition-all min-h-[44px] ${
+                    settings.units === 'lbs' ? 'bg-primary text-black' : 'text-[#666] hover:text-white'
+                  }`}
+                  aria-label="Set units to pounds"
+                  aria-pressed={settings.units === 'lbs'}
+                >
+                  LBS
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="bg-[#111] p-6 border border-[#222]">
-            <div className="text-primary mb-2 font-black italic text-xl">{(settings.units || 'lbs').toUpperCase()}</div>
-            <div className="text-4xl font-black italic text-white leading-none">{(totalVolume / 1000).toFixed(0)}K</div>
-            <div className="text-[10px] text-[#666] uppercase tracking-widest mt-1">Total Volume</div>
+
+          {/* Rest Timer */}
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-5 relative group hover:border-primary/30 transition-colors"
+               style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-black uppercase text-white tracking-wider mb-1">Recovery Protocol</div>
+                <div className="text-[10px] font-mono text-[#666] uppercase tracking-wider">DEFAULT INTERVAL</div>
+              </div>
+              <select
+                value={settings.defaultRestTimer}
+                onChange={(e) => updateSettings({ defaultRestTimer: parseInt(e.target.value) })}
+                className="bg-[#000] border border-[#333] text-primary font-mono px-4 py-2 text-sm uppercase tracking-wider focus:border-primary focus:outline-none min-h-[44px]"
+                aria-label="Default rest timer duration"
+              >
+                <option value="60">60S</option>
+                <option value="90">90S</option>
+                <option value="120">120S</option>
+                <option value="180">180S</option>
+                <option value="240">240S</option>
+                <option value="300">300S</option>
+              </select>
+            </div>
           </div>
         </div>
-        {/* Year in Review Button */}
-        {totalWorkouts >= 10 && (
-          <button
-            onClick={() => setShowYearInReview(true)}
-            className="w-full mt-4 py-4 bg-gradient-to-r from-primary/20 to-purple-900/30 border border-primary/30 hover:border-primary text-white font-bold uppercase text-xs tracking-widest flex items-center justify-center gap-3 transition-all group"
-          >
-            <Calendar size={18} className="text-primary group-hover:animate-bounce" />
-            <span>View Your {new Date().getFullYear()} Wrapped</span>
-            <Zap size={14} className="text-primary" />
-          </button>
+      </section>
+
+      {/* Performance Data with Weekly Goal */}
+      <section className="mb-12">
+        <TacticalHeader title="⌜MISSION DATA⌟" statusLabel={isNewUser ? 'STANDBY' : 'ACTIVE'} statusActive={!isNewUser} />
+
+        {isNewUser ? (
+          <div className="bg-[#0a0a0a] border-2 border-primary/30 p-8 text-center relative overflow-hidden">
+            <div className="absolute inset-0 opacity-5">
+              <div className="w-full h-full" style={{
+                backgroundImage: 'repeating-linear-gradient(0deg, #ccff00 0px, #ccff00 1px, transparent 1px, transparent 4px)',
+                animation: 'scanlines 8s linear infinite'
+              }}></div>
+            </div>
+            <Zap size={48} className="text-primary mx-auto mb-4" fill="currentColor" />
+            <h3 className="text-xl font-black italic uppercase mb-2 text-white tracking-wider">
+              READY TO DEPLOY?
+            </h3>
+            <p className="text-sm text-[#999] mb-6 font-mono uppercase tracking-wider">
+              Initialize first mission to unlock tactical data
+            </p>
+            <button
+              onClick={() => navigate('/lift')}
+              className="px-8 py-4 bg-primary text-black font-black italic uppercase tracking-[0.2em] min-h-[48px] hover:bg-primary/90 transition-all relative group"
+              style={{ clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))' }}
+            >
+              <span className="relative z-10">LAUNCH MISSION</span>
+              <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <TacticalStatCard
+                icon={<Zap size={24} fill="currentColor" />}
+                value={totalWorkouts.toString()}
+                label="MISSIONS COMPLETE"
+                trend="+12%"
+              />
+              <TacticalStatCard
+                icon={<div className="text-primary font-black italic text-xl">{settings.units.toUpperCase()}</div>}
+                value={`${(totalVolume / 1000).toFixed(0)}K`}
+                label="TOTAL ORDNANCE"
+                trend="+24%"
+              />
+            </div>
+
+            <WeeklyGoalTracker />
+
+            {totalWorkouts >= 10 && (
+              <button
+                onClick={() => setShowYearInReview(true)}
+                className="w-full mt-4 py-3 border-2 border-[#222] hover:border-primary text-white hover:text-primary text-xs font-black italic uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all min-h-[48px] group"
+                aria-label="View year in review"
+              >
+                <Calendar size={14} className="group-hover:rotate-12 transition-transform" />
+                <span>TACTICAL REVIEW {new Date().getFullYear()}</span>
+              </button>
+            )}
+          </>
         )}
       </section>
 
@@ -305,55 +541,33 @@ const Profile = () => {
         <YearInReview year={new Date().getFullYear()} onClose={() => setShowYearInReview(false)} />
       )}
 
-      {/* Body Metrics Section */}
-      <section className="mb-10">
-        <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Body Metrics</h3>
-
-        {/* Tabs */}
+      {/* Body Tracking - renamed to "BIOMETRICS" */}
+      <CollapsibleSection
+        title="Biometric Scanner"
+        icon={<Activity size={18} className="text-primary" />}
+        defaultExpanded={false}
+        summary={`${Object.keys(dailyLogs).length} logs recorded`}
+        tier="medium"
+      >
         <div className="flex gap-2 mb-4 overflow-x-auto">
-          <button
-            onClick={() => setBodyMetricsTab('logger')}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-              bodyMetricsTab === 'logger'
-                ? 'bg-primary text-black'
-                : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
-            }`}
-          >
-            Logger
-          </button>
-          <button
-            onClick={() => setBodyMetricsTab('trends')}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-              bodyMetricsTab === 'trends'
-                ? 'bg-primary text-black'
-                : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
-            }`}
-          >
-            Trends
-          </button>
-          <button
-            onClick={() => setBodyMetricsTab('photos')}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-              bodyMetricsTab === 'photos'
-                ? 'bg-primary text-black'
-                : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
-            }`}
-          >
-            Photos
-          </button>
-          <button
-            onClick={() => setBodyMetricsTab('correlation')}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-              bodyMetricsTab === 'correlation'
-                ? 'bg-primary text-black'
-                : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
-            }`}
-          >
-            Correlation
-          </button>
+          {['logger', 'trends', 'photos', 'correlation'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setBodyMetricsTab(tab as any)}
+              className={`px-5 py-3 text-xs font-black italic uppercase tracking-wider whitespace-nowrap transition-all min-h-[44px] ${
+                bodyMetricsTab === tab
+                  ? 'bg-primary text-black'
+                  : 'bg-transparent text-[#888] border-2 border-[#222] hover:border-primary/50 hover:text-white'
+              }`}
+              aria-label={`View ${tab}`}
+              aria-pressed={bodyMetricsTab === tab}
+              style={bodyMetricsTab === tab ? { clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)' } : {}}
+            >
+              {tab === 'logger' ? '◼ LOGGER' : tab === 'trends' ? '◼ TRENDS' : tab === 'photos' ? '◼ PHOTOS' : '◼ DATA'}
+            </button>
+          ))}
         </div>
 
-        {/* Tab Content */}
         <div className="space-y-4">
           {bodyMetricsTab === 'logger' && (
             <>
@@ -365,512 +579,110 @@ const Profile = () => {
           {bodyMetricsTab === 'photos' && <ProgressPhotos />}
           {bodyMetricsTab === 'correlation' && <BodyLiftCorrelation />}
         </div>
-      </section>
+      </CollapsibleSection>
 
-      {/* Phase 3: Training Intelligence Section */}
-      {(periodizationStatus || recoveryAssessment || weakPointAnalysis || exerciseVariations) && (
-        <section className="mb-10">
-          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Training Intelligence</h3>
-
-          {/* Tabs */}
-          <div className="flex gap-2 mb-4 overflow-x-auto">
-            <button
-              onClick={() => setIntelligenceTab('periodization')}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-                intelligenceTab === 'periodization'
-                  ? 'bg-primary text-black'
-                  : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
-              }`}
-            >
-              Periodization
-            </button>
-            <button
-              onClick={() => setIntelligenceTab('recovery')}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-                intelligenceTab === 'recovery'
-                  ? 'bg-primary text-black'
-                  : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
-              }`}
-            >
-              Recovery
-            </button>
-            <button
-              onClick={() => setIntelligenceTab('weak-points')}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-                intelligenceTab === 'weak-points'
-                  ? 'bg-primary text-black'
-                  : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
-              }`}
-            >
-              Weak Points
-            </button>
-            <button
-              onClick={() => setIntelligenceTab('variations')}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-                intelligenceTab === 'variations'
-                  ? 'bg-primary text-black'
-                  : 'bg-[#111] text-[#666] border border-[#222] hover:text-white'
-              }`}
-            >
-              Variations
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="space-y-4">
-            {/* Periodization Tab */}
-            {intelligenceTab === 'periodization' && periodizationStatus && mesocyclePlan && (
-              <>
-                {/* Current Status */}
-                <div className="bg-[#111] border border-[#222] p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Repeat size={18} className="text-primary" />
-                    <h4 className="text-sm font-bold uppercase text-white">Current Cycle Status</h4>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-[10px] text-[#666] uppercase mb-1">Phase</div>
-                      <div className="text-2xl font-black uppercase italic" style={{
-                        color: periodizationStatus.currentPhase === 'accumulation' ? '#4ade80' :
-                               periodizationStatus.currentPhase === 'intensification' ? '#f59e0b' :
-                               periodizationStatus.currentPhase === 'deload' ? '#60a5fa' : '#888'
-                      }}>
-                        {periodizationStatus.currentPhase}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-[#666] uppercase mb-1">Days Until Deload</div>
-                      <div className={`text-2xl font-black italic ${periodizationStatus.daysUntilDeload <= 3 ? 'text-orange-400' : 'text-white'}`}>
-                        {periodizationStatus.daysUntilDeload}
-                      </div>
-                    </div>
-                  </div>
-
-                  {periodizationStatus.needsDeload && (
-                    <div className="mt-4 bg-orange-500/10 border border-orange-500/30 p-3">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle size={14} className="text-orange-400" />
-                        <span className="text-xs text-orange-400 font-bold uppercase">Deload Week Recommended</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Mesocycle Plan */}
-                <div className="bg-[#111] border border-[#222] p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Calendar size={18} className="text-primary" />
-                    <h4 className="text-sm font-bold uppercase text-white">Current {mesocyclePlan.durationWeeks} Week Block</h4>
-                  </div>
-
-                  <div className="bg-[#0a0a0a] border border-[#333] p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="text-sm font-bold uppercase" style={{
-                        color: mesocyclePlan.phase === 'accumulation' ? '#4ade80' :
-                               mesocyclePlan.phase === 'intensification' ? '#f59e0b' :
-                               mesocyclePlan.phase === 'deload' ? '#60a5fa' : '#888'
-                      }}>
-                        {mesocyclePlan.phase}
-                      </div>
-                      <div className="text-[10px] text-[#666] font-mono">
-                        {mesocyclePlan.durationWeeks} weeks
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-[#888] font-mono leading-relaxed mb-3">
-                      {mesocyclePlan.focus}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mt-3">
-                      <div className="bg-black border border-[#222] p-2">
-                        <div className="text-[9px] text-[#666] uppercase mb-1">Volume</div>
-                        <div className="text-xs font-bold text-white uppercase">{mesocyclePlan.volumeProgression}</div>
-                      </div>
-                      <div className="bg-black border border-[#222] p-2">
-                        <div className="text-[9px] text-[#666] uppercase mb-1">Intensity</div>
-                        <div className="text-xs font-bold text-white uppercase">{mesocyclePlan.intensityProgression}</div>
-                      </div>
-                    </div>
-                    {mesocyclePlan.deloadScheduled && (
-                      <div className="mt-3 p-2 bg-blue-500/10 border border-blue-500/30">
-                        <span className="text-xs font-bold uppercase text-blue-400">Deload Scheduled</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Recovery Tab */}
-            {intelligenceTab === 'recovery' && recoveryAssessment && (
-              <>
-                {/* Overall Recovery Score */}
-                <div className="bg-[#111] border border-[#222] p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Activity size={18} className="text-primary" />
-                    <h4 className="text-sm font-bold uppercase text-white">Recovery Status</h4>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <div className="text-[10px] text-[#666] uppercase mb-1">Recovery Score</div>
-                      <div className={`text-3xl font-black italic ${recoveryAssessment.overallRecoveryScore >= 70 ? 'text-green-500' : recoveryAssessment.overallRecoveryScore >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
-                        {recoveryAssessment.overallRecoveryScore}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-[#666] uppercase mb-1">Sleep Debt</div>
-                      <div className={`text-3xl font-black italic ${recoveryAssessment.sleepDebt > 5 ? 'text-red-500' : 'text-white'}`}>
-                        {recoveryAssessment.sleepDebt.toFixed(1)}h
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-[#666] uppercase mb-1">Training Stress</div>
-                      <div className={`text-3xl font-black italic ${recoveryAssessment.trainingStress > 75 ? 'text-orange-400' : 'text-white'}`}>
-                        {recoveryAssessment.trainingStress}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`text-center p-3 border ${recoveryAssessment.readyToTrain ? 'border-green-500/30 bg-green-500/10' : 'border-red-500/30 bg-red-500/10'}`}>
-                    <span className={`text-sm font-bold uppercase ${recoveryAssessment.readyToTrain ? 'text-green-400' : 'text-red-400'}`}>
-                      {recoveryAssessment.readyToTrain ? '✓ Ready to Train' : '⚠ Need More Recovery'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Recovery Recommendations */}
-                <div className="bg-[#111] border border-[#222] p-6">
-                  <h4 className="text-xs font-bold uppercase text-[#666] mb-3">Recommendations</h4>
-                  <div className="space-y-3">
-                    {recoveryAssessment.recommendations.slice(0, 5).map((rec, idx) => (
-                      <div key={idx} className="bg-[#0a0a0a] border border-[#333] p-4">
-                        <div className="flex items-start gap-2 mb-2">
-                          <div className={`w-2 h-2 rounded-full mt-1.5 ${rec.priority === 'critical' ? 'bg-red-500' : rec.priority === 'high' ? 'bg-orange-400' : rec.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`} />
-                          <div className="flex-1">
-                            <div className="text-sm font-bold text-white uppercase mb-1">{rec.title}</div>
-                            <div className="text-[10px] text-[#888] font-mono mb-2">{rec.description}</div>
-                            <ul className="space-y-1">
-                              {rec.actionItems.map((item, i) => (
-                                <li key={i} className="text-[10px] text-[#666] font-mono flex items-start gap-2">
-                                  <span className="text-primary">→</span>
-                                  <span>{item}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Weak Points Tab */}
-            {intelligenceTab === 'weak-points' && weakPointAnalysis && (
-              <>
-                {/* Overall Balance Score */}
-                <div className="bg-[#111] border border-[#222] p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Target size={18} className="text-primary" />
-                    <h4 className="text-sm font-bold uppercase text-white">Training Balance</h4>
-                  </div>
-
-                  <div className="text-center mb-4">
-                    <div className={`text-5xl font-black italic ${weakPointAnalysis.overallBalance >= 80 ? 'text-green-500' : weakPointAnalysis.overallBalance >= 60 ? 'text-yellow-500' : 'text-orange-400'}`}>
-                      {weakPointAnalysis.overallBalance}
-                    </div>
-                    <div className="text-[10px] text-[#666] uppercase mt-1">Balance Score</div>
-                  </div>
-
-                  {weakPointAnalysis.priorityAreas.length > 0 && (
-                    <div className="bg-[#0a0a0a] border border-[#333] p-3">
-                      <div className="text-[10px] text-[#888] uppercase mb-2">Priority Areas:</div>
-                      <div className="flex flex-wrap gap-2">
-                        {weakPointAnalysis.priorityAreas.map(area => (
-                          <span key={area} className="px-2 py-1 bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold uppercase">
-                            {area}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Weak Points List */}
-                <div className="bg-[#111] border border-[#222] p-6">
-                  <h4 className="text-xs font-bold uppercase text-[#666] mb-3">Detected Weak Points</h4>
-                  {weakPointAnalysis.weakPoints.length === 0 ? (
-                    <div className="text-center p-6 text-[#666]">
-                      <Check size={24} className="mx-auto mb-2 text-green-500" />
-                      <div className="text-sm uppercase">No Weak Points Detected!</div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {weakPointAnalysis.weakPoints.slice(0, 10).map((wp, idx) => (
-                        <div key={idx} className="bg-[#0a0a0a] border border-[#333] p-4">
-                          <div className="flex items-start gap-2 mb-2">
-                            <div className={`w-2 h-2 rounded-full mt-1.5 ${wp.severity === 'severe' ? 'bg-red-500' : wp.severity === 'moderate' ? 'bg-orange-400' : 'bg-yellow-500'}`} />
-                            <div className="flex-1">
-                              <div className="text-sm font-bold text-white uppercase mb-1">{wp.description}</div>
-                              <ul className="space-y-1">
-                                {wp.recommendations.map((rec, i) => (
-                                  <li key={i} className="text-[10px] text-[#666] font-mono flex items-start gap-2">
-                                    <span className="text-primary">→</span>
-                                    <span>{rec}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Variations Tab */}
-            {intelligenceTab === 'variations' && exerciseVariations && (
-              <div className="bg-[#111] border border-[#222] p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Repeat size={18} className="text-primary" />
-                  <h4 className="text-sm font-bold uppercase text-white">Suggested Variations</h4>
-                </div>
-
-                {exerciseVariations.length === 0 ? (
-                  <div className="text-center p-6 text-[#666]">
-                    <Check size={24} className="mx-auto mb-2 text-green-500" />
-                    <div className="text-sm uppercase">Exercise Selection Looks Good!</div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {exerciseVariations.slice(0, 8).map((variation, idx) => (
-                      <div key={idx} className="bg-[#0a0a0a] border border-[#333] p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <div className="text-sm font-bold text-white uppercase">
-                              {variation.currentExercise.name}
-                            </div>
-                            <div className="text-[10px] text-[#666] font-mono mt-1">
-                              {variation.weeksSinceVariation} weeks • {variation.isPlateaued ? 'Plateaued' : 'Due for change'}
-                            </div>
-                          </div>
-                          {variation.isPlateaued && (
-                            <span className="px-2 py-1 bg-red-500/10 border border-red-500/30 text-red-400 text-[9px] font-bold uppercase">
-                              Stalled
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 my-3">
-                          <div className="h-px flex-1 bg-[#333]" />
-                          <span className="text-[10px] text-primary font-mono">→</span>
-                          <div className="h-px flex-1 bg-[#333]" />
-                        </div>
-
-                        <div className="mb-2">
-                          <div className="text-sm font-bold text-primary uppercase">
-                            {variation.suggestedVariation.name}
-                          </div>
-                        </div>
-
-                        <div className="text-[10px] text-[#888] font-mono leading-relaxed">
-                          {variation.reason}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+      {/* Cloud Armor */}
+      <CollapsibleSection
+        title="Data Shield"
+        icon={<Cloud size={18} className={settings.ironCloud?.enabled ? 'text-primary' : 'text-[#666]'} />}
+        defaultExpanded={false}
+        summary={settings.ironCloud?.enabled ? 'Sync Active' : 'Local Only'}
+        tier="low"
+      >
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <div className="text-sm font-black italic uppercase text-white tracking-wider">
+                {settings.ironCloud?.enabled ? 'SYNCHRONIZED' : 'OFFLINE MODE'}
               </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Phase 5: Performance Insights Section (Greg Nuckols & Training Max Analysis) */}
-      {settings.trainingMaxes && Object.keys(settings.trainingMaxes).length > 0 && (
-        <section className="mb-10">
-          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Performance Insights</h3>
-          <div className="space-y-4">
-            {Object.values(settings.trainingMaxes)
-              .filter(tm => tm.history && tm.history.length >= 2)
-              .map(tm => {
-                const exercise = EXERCISE_LIBRARY.find(ex => ex.id === tm.exerciseId);
-                if (!exercise) return null;
-
-                return (
-                  <PerformanceInsights
-                    key={tm.exerciseId}
-                    exerciseId={tm.exerciseId}
-                    exerciseName={exercise.name}
-                    trainingMax={tm}
-                    recentSessions={history.slice(0, 12)}
-                  />
-                );
-              })}
-          </div>
-        </section>
-      )}
-
-      {/* VoltCloud Sync Section */}
-      <section className="mb-10">
-          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">VoltCloud Network</h3>
-          <div className="bg-[#111] border border-[#222] p-6 relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-6 opacity-5">
-                   <Cloud size={120} />
-               </div>
-               
-               <div className="flex justify-between items-center mb-6 relative z-10">
-                   <div>
-                       <div className="text-lg font-black italic uppercase text-white flex items-center gap-2">
-                           <Cloud size={20} className={settings.ironCloud?.enabled ? 'text-primary' : 'text-[#666]'} />
-                           Sync Status
-                       </div>
-                       <p className="text-xs text-[#666] font-mono mt-1 uppercase">
-                           {settings.ironCloud?.enabled ? (syncStatus === 'synced' ? 'All Systems Operational' : 'Syncing Data...') : 'Local Storage Only'}
-                       </p>
-                   </div>
-                   <button onClick={toggleIronCloud} className="text-white hover:text-primary transition-colors">
-                       {settings.ironCloud?.enabled ? <ToggleRight size={32} className="text-primary"/> : <ToggleLeft size={32} className="text-[#444]" />}
-                   </button>
-               </div>
-               
-               {settings.ironCloud?.enabled && (
-                   <div className="relative z-10">
-                       <div className="flex justify-between items-center text-xs font-bold uppercase text-[#888] mb-4 border-t border-[#222] pt-4">
-                           <span>Last Sync</span>
-                           <span>{settings.ironCloud.lastSync ? new Date(settings.ironCloud.lastSync).toLocaleTimeString() : 'Never'}</span>
-                       </div>
-                       <button 
-                         onClick={() => syncData()} 
-                         className="w-full py-3 border border-[#333] hover:border-primary text-xs font-bold uppercase tracking-widest text-white hover:text-primary transition-colors flex items-center justify-center gap-2"
-                        >
-                           <RefreshCw size={14} className={syncStatus === 'syncing' ? 'animate-spin' : ''} /> Force Sync
-                       </button>
-                   </div>
-               )}
-          </div>
-      </section>
-
-      <section className="mb-10">
-        <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Visual Database</h3>
-        <div className="bg-[#111] border border-[#222] p-6">
-            <div className="flex justify-between items-end mb-4">
-                <div>
-                    <div className="flex items-center gap-2 text-white font-bold uppercase italic text-lg mb-1">
-                        <Image size={18} />
-                        Assets Status
-                    </div>
-                    <p className="text-xs text-[#666] font-mono">
-                        {exercisesWithoutVisuals.length} MISSING CUSTOM VISUALS
-                    </p>
-                </div>
-                <div className="text-3xl font-black italic text-primary">{progressPercent}%</div>
+              <p className="text-xs text-[#666] mt-1 uppercase font-mono tracking-wider">
+                {settings.ironCloud?.enabled ? 'Cloud backup active' : 'Local storage only'}
+              </p>
             </div>
-            
-            <div className="flex justify-end mb-2">
-                <select 
-                    value={batchSize} 
-                    onChange={(e) => setBatchSize(e.target.value as any)}
-                    className="bg-[#111] text-[10px] text-white border border-[#333] px-2 py-1 outline-none font-mono uppercase focus:border-primary"
-                    disabled={generatingBatch}
-                >
-                    <option value="1K">1K High Res</option>
-                    <option value="2K">2K Ultra Res</option>
-                    <option value="4K">4K Max Res</option>
-                </select>
-            </div>
-            
-            {/* Progress Bar */}
-            <div className="w-full h-2 bg-[#222] mb-6 overflow-hidden">
-                <div 
-                    className="h-full bg-primary transition-all duration-300" 
-                    style={{ width: `${generatingBatch ? generationProgress : progressPercent}%` }}
-                />
-            </div>
-
-            <button 
-                onClick={handleBatchGenerate}
-                disabled={generatingBatch || exercisesWithoutVisuals.length === 0}
-                className="w-full py-4 bg-[#222] border border-[#333] hover:border-primary text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-                {generatingBatch ? (
-                    <>
-                        <RefreshCw size={16} className="animate-spin text-primary" />
-                        Generating Assets... {generationProgress}%
-                    </>
-                ) : (
-                    <>
-                        <Sparkles size={16} className="text-primary" />
-                        Generate Missing Assets
-                    </>
-                )}
-            </button>
-            <p className="text-[10px] text-[#444] mt-2 text-center uppercase">Requires Paid API Key for High Res</p>
-        </div>
-      </section>
-
-      <section className="mb-10">
-        <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">System Config</h3>
-        <div className="bg-[#111] border border-[#222] divide-y divide-[#222]">
-          <div className="p-5 flex justify-between items-center">
-            <span className="font-bold uppercase text-sm">Codename</span>
-            <input 
-              className="bg-transparent text-right outline-none text-[#888] focus:text-primary uppercase font-mono"
-              value={settings.name}
-              onChange={(e) => updateSettings({ name: e.target.value })}
+            <MilitaryToggle
+              enabled={settings.ironCloud?.enabled || false}
+              onToggle={toggleIronCloud}
+              label={settings.ironCloud?.enabled ? 'Disable cloud sync' : 'Enable cloud sync'}
             />
           </div>
-          <div className="p-5 flex justify-between items-center">
-            <span className="font-bold uppercase text-sm">Units</span>
-            <div className="flex bg-[#222] p-1">
-              <button 
-                onClick={() => updateSettings({ units: 'lbs' })}
-                className={`px-4 py-1 text-xs font-bold uppercase ${settings.units === 'lbs' ? 'bg-primary text-black' : 'text-[#666]'}`}
+
+          {settings.ironCloud?.enabled && (
+            <div>
+              <div className="flex justify-between items-center text-xs font-mono uppercase text-[#666] mb-4 border-t border-[#1a1a1a] pt-4 tracking-wider">
+                <span>Last Sync</span>
+                <span className="text-primary">{settings.ironCloud.lastSync ? new Date(settings.ironCloud.lastSync).toLocaleTimeString() : 'NEVER'}</span>
+              </div>
+              <button
+                onClick={() => syncData()}
+                className="w-full py-3 border-2 border-[#222] hover:border-primary text-xs font-black italic uppercase tracking-[0.15em] text-white hover:text-primary transition-all flex items-center justify-center gap-2 min-h-[48px]"
+                aria-label="Force sync data"
               >
-                LBS
-              </button>
-              <button 
-                onClick={() => updateSettings({ units: 'kg' })}
-                className={`px-4 py-1 text-xs font-bold uppercase ${settings.units === 'kg' ? 'bg-primary text-black' : 'text-[#666]'}`}
-              >
-                KG
+                <RefreshCw size={14} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
+                FORCE SYNC
               </button>
             </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      {/* Rig Setup */}
+      <CollapsibleSection
+        title="Hardware Config"
+        icon={<Settings size={18} className="text-[#666]" />}
+        defaultExpanded={false}
+        summary={`${settings.units.toUpperCase()} • ${settings.defaultRestTimer}s • ${settings.barWeight}${settings.units}`}
+        tier="low"
+      >
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] divide-y divide-[#1a1a1a]">
+          {/* Codename */}
+          <div className="p-5 flex justify-between items-center min-h-[56px]">
+            <span className="font-black uppercase text-sm text-white tracking-wider">Call Sign</span>
+            <input
+              className="bg-[#000] border-2 border-[#222] px-3 py-2 text-right outline-none text-primary focus:border-primary uppercase font-mono tracking-wider min-h-[44px]"
+              value={settings.name}
+              onChange={(e) => updateSettings({ name: e.target.value })}
+              aria-label="Your call sign"
+            />
           </div>
-          <div className="p-5 flex justify-between items-center">
-            <span className="font-bold uppercase text-sm">Bar Weight</span>
-            <div className="flex bg-[#222] p-1">
+
+          {/* Bar Weight */}
+          <div className="p-5 flex justify-between items-center min-h-[56px]">
+            <span className="font-black uppercase text-sm text-white tracking-wider">Bar Mass</span>
+            <div className="flex bg-[#000] p-1 border border-[#222]">
               <button
                 onClick={() => updateSettings({ barWeight: settings.units === 'kg' ? 20 : 45 })}
-                className={`px-3 py-1 text-xs font-bold uppercase ${settings.barWeight === (settings.units === 'kg' ? 20 : 45) ? 'bg-primary text-black' : 'text-[#666]'}`}
+                className={`px-4 py-2 text-xs font-black italic uppercase tracking-wider transition-all ${settings.barWeight === (settings.units === 'kg' ? 20 : 45) ? 'bg-primary text-black' : 'text-[#666] hover:text-white'}`}
+                aria-label={`Set bar weight to ${settings.units === 'kg' ? '20kg' : '45lbs'}`}
+                aria-pressed={settings.barWeight === (settings.units === 'kg' ? 20 : 45)}
               >
-                {settings.units === 'kg' ? '20KG' : '45LBS'}
+                {settings.units === 'kg' ? '20KG' : '45LB'}
               </button>
               <button
                 onClick={() => updateSettings({ barWeight: settings.units === 'kg' ? 15 : 35 })}
-                className={`px-3 py-1 text-xs font-bold uppercase ${settings.barWeight === (settings.units === 'kg' ? 15 : 35) ? 'bg-primary text-black' : 'text-[#666]'}`}
+                className={`px-4 py-2 text-xs font-black italic uppercase tracking-wider transition-all ${settings.barWeight === (settings.units === 'kg' ? 15 : 35) ? 'bg-primary text-black' : 'text-[#666] hover:text-white'}`}
+                aria-label={`Set bar weight to ${settings.units === 'kg' ? '15kg' : '35lbs'}`}
+                aria-pressed={settings.barWeight === (settings.units === 'kg' ? 15 : 35)}
               >
-                {settings.units === 'kg' ? '15KG' : '35LBS'}
+                {settings.units === 'kg' ? '15KG' : '35LB'}
               </button>
             </div>
           </div>
 
-          {/* Available Plates Section */}
-          <div className="p-5 border-t border-[#222]">
+          {/* Available Plates */}
+          <div className="p-5 border-t border-[#1a1a1a]">
             <div className="flex justify-between items-center mb-3">
-              <span className="font-bold uppercase text-sm">Available Plates</span>
+              <span className="font-black uppercase text-sm text-white tracking-wider">Plate Inventory</span>
               <button
                 onClick={() => setShowPlateConfig(!showPlateConfig)}
-                className="text-[10px] text-primary font-mono uppercase hover:text-white transition-colors"
+                className="text-[10px] text-primary font-mono uppercase hover:text-white transition-colors tracking-wider"
+                aria-label={showPlateConfig ? 'Hide plate configuration' : 'Show plate configuration'}
+                aria-expanded={showPlateConfig}
               >
-                {showPlateConfig ? 'Hide' : 'Configure'}
+                [{showPlateConfig ? 'HIDE' : 'CONFIGURE'}]
               </button>
             </div>
             {showPlateConfig && (
-              <div className="grid grid-cols-3 gap-2 mt-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
                 {(settings.units === 'kg'
                   ? [25, 20, 15, 10, 5, 2.5, 1.25]
                   : [45, 35, 25, 10, 5, 2.5]
@@ -880,8 +692,8 @@ const Profile = () => {
                   return (
                     <label
                       key={plate}
-                      className={`flex items-center gap-2 p-2 border cursor-pointer transition-colors ${
-                        isChecked ? 'border-primary bg-primary/10' : 'border-[#333] bg-black'
+                      className={`flex items-center gap-3 p-3 border cursor-pointer transition-all min-h-[48px] ${
+                        isChecked ? 'border-primary bg-primary/5' : 'border-[#222] bg-[#0a0a0a] hover:border-[#333]'
                       }`}
                     >
                       <input
@@ -894,10 +706,8 @@ const Profile = () => {
 
                           let newPlates: number[];
                           if (currentPlates.length === 0) {
-                            // First time configuring, start with defaults minus this plate
                             newPlates = e.target.checked ? defaultPlates : defaultPlates.filter(p => p !== plate);
                           } else {
-                            // Toggle plate in existing configuration
                             newPlates = e.target.checked
                               ? [...currentPlates, plate].sort((a, b) => b - a)
                               : currentPlates.filter(p => p !== plate);
@@ -910,7 +720,8 @@ const Profile = () => {
                             }
                           });
                         }}
-                        className="w-4 h-4 accent-primary"
+                        className="w-6 h-6 accent-primary"
+                        aria-label={`${plate} ${settings.units} plate`}
                       />
                       <span className="text-sm font-mono text-white">{plate} {settings.units}</span>
                     </label>
@@ -918,127 +729,350 @@ const Profile = () => {
                 })}
               </div>
             )}
-            <p className="text-[10px] text-[#444] font-mono mt-2">
-              Select plates available in your gym. Calculator will only use checked plates.
+            <p className="text-[10px] text-[#666] font-mono mt-2 uppercase tracking-wider">
+              Select available plates for calculator optimization
             </p>
           </div>
 
-          <div className="p-5 flex justify-between items-center">
-             <span className="font-bold uppercase text-sm">Rest Timer (Default)</span>
-             <select
-              value={settings.defaultRestTimer || 90}
-              onChange={(e) => updateSettings({ defaultRestTimer: parseInt(e.target.value) })}
-              className="bg-[#222] text-white font-mono rounded-none px-2 py-1 outline-none text-sm uppercase"
-             >
-               <option value="30">30 Seconds</option>
-               <option value="60">60 Seconds</option>
-               <option value="90">90 Seconds</option>
-               <option value="120">2 Minutes</option>
-               <option value="180">3 Minutes</option>
-               <option value="300">5 Minutes</option>
-             </select>
-          </div>
-          <div className="p-5 flex justify-between items-center">
-             <span className="font-bold uppercase text-sm">Frequency</span>
-             <select
+          {/* Frequency */}
+          <div className="p-5 flex justify-between items-center min-h-[56px]">
+            <span className="font-black uppercase text-sm text-white tracking-wider">Mission Frequency</span>
+            <select
               value={settings.goal.targetPerWeek}
               onChange={(e) => updateSettings({ goal: { ...settings.goal, targetPerWeek: parseInt(e.target.value) } })}
-              className="bg-[#222] text-white font-mono rounded-none px-2 py-1 outline-none text-sm uppercase"
-             >
-               <option value="2">2 Days</option>
-               <option value="3">3 Days</option>
-               <option value="4">4 Days</option>
-               <option value="5">5 Days</option>
-               <option value="6">6 Days</option>
-             </select>
+              className="bg-[#000] text-primary font-mono px-3 py-2 outline-none text-sm uppercase border-2 border-[#222] focus:border-primary min-h-[44px] tracking-wider"
+              aria-label="Weekly workout frequency"
+            >
+              <option value="2">2 DAYS</option>
+              <option value="3">3 DAYS</option>
+              <option value="4">4 DAYS</option>
+              <option value="5">5 DAYS</option>
+              <option value="6">6 DAYS</option>
+            </select>
           </div>
-          <div className="p-5 flex justify-between items-center">
-            <span className="font-bold uppercase text-sm">Bodyweight</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                inputMode="decimal"
-                min="50"
-                max="500"
-                step="0.5"
-                placeholder={settings.units === 'kg' ? '80' : '180'}
-                value={settings.bodyweight || ''}
-                onChange={(e) => updateSettings({ bodyweight: parseFloat(e.target.value) || undefined })}
-                className="bg-[#222] text-white font-mono text-right px-3 py-1 outline-none text-sm uppercase w-20 focus:border focus:border-primary"
-              />
-              <span className="text-xs text-[#666] font-mono">{(settings.units || 'lbs').toUpperCase()}</span>
-            </div>
-          </div>
-          <div className="p-5 flex justify-between items-center">
-            <span className="font-bold uppercase text-sm">Gender</span>
-            <div className="flex bg-[#222] p-1">
+
+          {/* Gender */}
+          <div className="p-5 flex justify-between items-center min-h-[56px]">
+            <span className="font-black uppercase text-sm text-white tracking-wider">Operator Class</span>
+            <div className="flex bg-[#000] p-1 border border-[#222]">
               <button
                 onClick={() => updateSettings({ gender: 'male' })}
-                className={`px-4 py-1 text-xs font-bold uppercase ${settings.gender === 'male' ? 'bg-primary text-black' : 'text-[#666]'}`}
+                className={`px-5 py-2 text-xs font-black italic uppercase tracking-wider transition-all ${settings.gender === 'male' ? 'bg-primary text-black' : 'text-[#666] hover:text-white'}`}
+                aria-label="Set gender to male"
+                aria-pressed={settings.gender === 'male'}
               >
-                Male
+                MALE
               </button>
               <button
                 onClick={() => updateSettings({ gender: 'female' })}
-                className={`px-4 py-1 text-xs font-bold uppercase ${settings.gender === 'female' ? 'bg-primary text-black' : 'text-[#666]'}`}
+                className={`px-5 py-2 text-xs font-black italic uppercase tracking-wider transition-all ${settings.gender === 'female' ? 'bg-primary text-black' : 'text-[#666] hover:text-white'}`}
+                aria-label="Set gender to female"
+                aria-pressed={settings.gender === 'female'}
               >
-                Female
+                FEMALE
               </button>
             </div>
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section>
-          <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Gym Inventory</h3>
-          <div className="bg-[#111] border border-[#222] p-5">
-              <div className="grid grid-cols-2 gap-3">
-                  {EQUIPMENT_TYPES.map(eq => (
-                      <button
-                        key={eq}
-                        onClick={() => toggleEquipment(eq)}
-                        className={`p-3 border text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors ${
-                            settings.availableEquipment.includes(eq)
-                            ? 'border-primary text-white bg-primary/10'
-                            : 'border-[#333] text-[#666] hover:bg-[#1a1a1a]'
-                        }`}
-                      >
-                          {eq}
-                          {settings.availableEquipment.includes(eq) && <Check size={14} className="text-primary" />}
-                      </button>
-                  ))}
-              </div>
+      {/* Auto-Progression Settings */}
+      <CollapsibleSection
+        title="Auto-Escalation"
+        icon={<TrendingUp size={18} className="text-[#666]" />}
+        defaultExpanded={false}
+        summary={settings.autoProgression?.enabled ? 'Armed' : 'Disabled'}
+        tier="low"
+      >
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <div className="text-sm font-black uppercase text-white tracking-wider">Enable Auto-Escalation</div>
+              <p className="text-xs text-[#666] mt-1 font-mono uppercase tracking-wider">Automatic weight progression</p>
+            </div>
+            <MilitaryToggle
+              enabled={settings.autoProgression?.enabled || false}
+              onToggle={() => updateSettings({
+                autoProgression: {
+                  enabled: !settings.autoProgression?.enabled,
+                  upperBodyIncrement: settings.autoProgression?.upperBodyIncrement || (settings.units === 'kg' ? 2.5 : 5),
+                  lowerBodyIncrement: settings.autoProgression?.lowerBodyIncrement || (settings.units === 'kg' ? 5 : 10)
+                }
+              })}
+              label={settings.autoProgression?.enabled ? 'Disable auto-progression' : 'Enable auto-progression'}
+            />
           </div>
-      </section>
+
+          {settings.autoProgression?.enabled && (
+            <div className="space-y-4 border-t border-[#1a1a1a] pt-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-black uppercase text-white tracking-wider">Upper Body</span>
+                <select
+                  value={settings.autoProgression.upperBodyIncrement}
+                  onChange={(e) => updateSettings({
+                    autoProgression: {
+                      ...settings.autoProgression!,
+                      upperBodyIncrement: parseFloat(e.target.value)
+                    }
+                  })}
+                  className="bg-[#000] text-primary font-mono px-2 py-1 outline-none text-xs border border-[#222] focus:border-primary"
+                  aria-label="Upper body weight increment"
+                >
+                  {settings.units === 'kg' ? (
+                    <>
+                      <option value="1.25">1.25 kg</option>
+                      <option value="2.5">2.5 kg</option>
+                      <option value="5">5 kg</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="2.5">2.5 lbs</option>
+                      <option value="5">5 lbs</option>
+                      <option value="10">10 lbs</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-black uppercase text-white tracking-wider">Lower Body</span>
+                <select
+                  value={settings.autoProgression.lowerBodyIncrement}
+                  onChange={(e) => updateSettings({
+                    autoProgression: {
+                      ...settings.autoProgression!,
+                      lowerBodyIncrement: parseFloat(e.target.value)
+                    }
+                  })}
+                  className="bg-[#000] text-primary font-mono px-2 py-1 outline-none text-xs border border-[#222] focus:border-primary"
+                  aria-label="Lower body weight increment"
+                >
+                  {settings.units === 'kg' ? (
+                    <>
+                      <option value="2.5">2.5 kg</option>
+                      <option value="5">5 kg</option>
+                      <option value="10">10 kg</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="5">5 lbs</option>
+                      <option value="10">10 lbs</option>
+                      <option value="15">15 lbs</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      {/* Rest Timer Options */}
+      <CollapsibleSection
+        title="Recovery Systems"
+        icon={<Clock size={18} className="text-[#666]" />}
+        defaultExpanded={false}
+        summary={`${settings.defaultRestTimer}s protocol`}
+        tier="low"
+      >
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-black uppercase text-white tracking-wider">Audio Alert</span>
+            <MilitaryToggle
+              enabled={settings.restTimerOptions?.sound ?? true}
+              onToggle={() => updateSettings({
+                restTimerOptions: {
+                  ...settings.restTimerOptions,
+                  sound: !settings.restTimerOptions?.sound,
+                  vibration: settings.restTimerOptions?.vibration ?? true,
+                  autoStart: settings.restTimerOptions?.autoStart ?? true
+                }
+              })}
+              label={settings.restTimerOptions?.sound ? 'Disable rest timer sound' : 'Enable rest timer sound'}
+            />
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-black uppercase text-white tracking-wider">Haptic Feedback</span>
+            <MilitaryToggle
+              enabled={settings.restTimerOptions?.vibration ?? true}
+              onToggle={() => updateSettings({
+                restTimerOptions: {
+                  ...settings.restTimerOptions,
+                  sound: settings.restTimerOptions?.sound ?? true,
+                  vibration: !settings.restTimerOptions?.vibration,
+                  autoStart: settings.restTimerOptions?.autoStart ?? true
+                }
+              })}
+              label={settings.restTimerOptions?.vibration ? 'Disable rest timer vibration' : 'Enable rest timer vibration'}
+            />
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-black uppercase text-white tracking-wider">Auto-Initialize</span>
+            <MilitaryToggle
+              enabled={settings.restTimerOptions?.autoStart ?? true}
+              onToggle={() => updateSettings({
+                restTimerOptions: {
+                  ...settings.restTimerOptions,
+                  sound: settings.restTimerOptions?.sound ?? true,
+                  vibration: settings.restTimerOptions?.vibration ?? true,
+                  autoStart: !settings.restTimerOptions?.autoStart
+                }
+              })}
+              label={settings.restTimerOptions?.autoStart ? 'Disable rest timer auto-start' : 'Enable rest timer auto-start'}
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Arsenal - Equipment */}
+      <CollapsibleSection
+        title="Armory Inventory"
+        icon={<Target size={18} className="text-[#666]" />}
+        defaultExpanded={false}
+        summary={`${settings.availableEquipment.length} weapon types`}
+        tier="low"
+      >
+        <div className="grid grid-cols-2 gap-3">
+          {EQUIPMENT_TYPES.map(eq => (
+            <button
+              key={eq}
+              onClick={() => toggleEquipment(eq)}
+              className={`p-4 border text-xs font-black italic uppercase tracking-[0.1em] flex items-center justify-between transition-all min-h-[56px] ${
+                settings.availableEquipment.includes(eq)
+                  ? 'border-primary text-white bg-primary/5'
+                  : 'border-[#222] text-[#666] hover:bg-[#0a0a0a] hover:border-[#333]'
+              }`}
+              aria-label={`${settings.availableEquipment.includes(eq) ? 'Remove' : 'Add'} ${eq}`}
+              aria-pressed={settings.availableEquipment.includes(eq)}
+              style={settings.availableEquipment.includes(eq) ? { clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' } : {}}
+            >
+              {eq}
+              {settings.availableEquipment.includes(eq) && <Check size={14} className="text-primary" />}
+            </button>
+          ))}
+        </div>
+      </CollapsibleSection>
+
+      {/* Exercise Vault */}
+      <CollapsibleSection
+        title="Visual Database"
+        icon={<Image size={18} className="text-[#666]" />}
+        defaultExpanded={false}
+        summary={`${progressPercent}% indexed`}
+        badge={`${exercisesWithoutVisuals.length} missing`}
+        tier="low"
+      >
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6">
+          <div className="flex justify-between items-end mb-4">
+            <div>
+              <p className="text-xs text-[#666] font-mono uppercase tracking-wider">
+                {exercisesWithoutVisuals.length} ASSETS MISSING
+              </p>
+            </div>
+            <div className="text-3xl font-black italic text-primary tabular-nums">{progressPercent}%</div>
+          </div>
+
+          <div className="flex justify-end mb-2">
+            <select
+              value={batchSize}
+              onChange={(e) => setBatchSize(e.target.value as any)}
+              className="bg-[#000] text-[10px] text-primary border border-[#222] px-2 py-1 outline-none font-mono uppercase focus:border-primary tracking-wider"
+              disabled={generatingBatch}
+              aria-label="Image resolution"
+            >
+              <option value="1K">1K RES</option>
+              <option value="2K">2K RES</option>
+              <option value="4K">4K RES</option>
+            </select>
+          </div>
+
+          <div className="w-full h-2 bg-[#000] mb-6 overflow-hidden border border-[#1a1a1a]">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${generatingBatch ? generationProgress : progressPercent}%` }}
+            />
+          </div>
+
+          <button
+            onClick={handleBatchGenerate}
+            disabled={generatingBatch || exercisesWithoutVisuals.length === 0}
+            className="w-full py-4 bg-[#0a0a0a] border-2 border-[#222] hover:border-primary text-white font-black italic uppercase tracking-[0.15em] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed transition-all min-h-[48px]"
+            aria-label="Generate missing exercise visuals"
+          >
+            {generatingBatch ? (
+              <>
+                <RefreshCw size={16} className="animate-spin text-primary" />
+                GENERATING... {generationProgress}%
+              </>
+            ) : (
+              <>
+                <Sparkles size={16} className="text-primary" />
+                GENERATE ASSETS
+              </>
+            )}
+          </button>
+          <p className="text-[10px] text-[#666] mt-2 text-center uppercase font-mono tracking-wider">Requires API key for generation</p>
+        </div>
+      </CollapsibleSection>
 
       {/* Notification Settings Section */}
-      <section className="mt-10">
-          <NotificationSettings />
+      <section id="notifications" className="mt-12">
+        <TacticalHeader title="⌜ALERT SYSTEM⌟" statusLabel="MONITORING" statusActive={true} />
+        <NotificationSettings />
       </section>
 
       {/* Data Export Section */}
-      <section className="mt-10">
-          <DataExport />
+      <section className="mt-12">
+        <TacticalHeader title="⌜DATA EXTRACTION⌟" statusLabel="READY" statusActive={false} />
+        <DataExport />
       </section>
 
-      {/* Danger Zone */}
-      <section className="mt-10 mb-10">
-        <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4">Danger Zone</h3>
-        <div className="bg-[#111] border border-red-900/30 p-6">
-          <div className="flex items-start gap-4 mb-4">
-            <AlertTriangle size={24} className="text-red-500 flex-shrink-0 mt-1" />
+      {/* Danger Zone - NUKE ZONE */}
+      <section className="mt-16 mb-10">
+        <div className="relative mb-6">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="absolute -left-2 -top-2 w-3 h-3 border-l-2 border-t-2 border-red-500"></div>
+              <div className="absolute -right-2 -top-2 w-3 h-3 border-r-2 border-t-2 border-red-500"></div>
+              <h3 className="text-xs font-black italic uppercase tracking-[0.2em] text-red-500 px-4 py-2 bg-red-900/10 border border-red-900/30">
+                ⚠ NUKE ZONE ⚠
+              </h3>
+              <div className="absolute -left-2 -bottom-2 w-3 h-3 border-l-2 border-b-2 border-red-500"></div>
+              <div className="absolute -right-2 -bottom-2 w-3 h-3 border-r-2 border-b-2 border-red-500"></div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-mono text-red-500 uppercase tracking-wider">ARMED</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#0a0a0a] border-2 border-red-900/30 p-6 relative overflow-hidden">
+          {/* Danger stripes */}
+          <div className="absolute inset-0 opacity-5 pointer-events-none"
+               style={{
+                 backgroundImage: 'repeating-linear-gradient(45deg, #ef4444 0px, #ef4444 20px, transparent 20px, transparent 40px)'
+               }}>
+          </div>
+
+          <div className="relative flex items-start gap-4 mb-4">
+            <AlertTriangle size={24} className="text-red-500 flex-shrink-0 mt-1 animate-pulse" />
             <div className="flex-1">
-              <h4 className="text-sm font-bold uppercase text-white mb-2">Reset All Data</h4>
-              <p className="text-xs text-[#888] mb-3">
-                Permanently delete all workout history, templates, body metrics, photos, and progress data.
-                This action cannot be undone. Your account and basic settings will be preserved.
+              <h4 className="text-sm font-black uppercase text-white mb-2 tracking-wider">Complete Data Wipe</h4>
+              <p className="text-xs text-[#999] mb-3 font-mono uppercase tracking-wider leading-relaxed">
+                Permanently erase all mission logs, biometric data, templates, and progress records.
+                This is irreversible. Account credentials preserved.
               </p>
               <button
                 onClick={() => setShowResetConfirm(true)}
-                className="px-4 py-2 bg-red-900/20 border border-red-900 text-red-500 font-bold uppercase text-xs hover:bg-red-900/40 transition-colors flex items-center gap-2"
+                className="px-5 py-3 bg-red-900/20 border-2 border-red-900 text-red-400 font-black italic uppercase text-xs hover:bg-red-900/40 transition-all flex items-center gap-3 min-h-[44px] tracking-[0.15em]"
+                aria-label="Reset all data"
+                style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}
               >
                 <Trash2 size={14} />
-                Reset All Data
+                INITIATE WIPE
               </button>
             </div>
           </div>
@@ -1047,61 +1081,67 @@ const Profile = () => {
 
       {/* Reset Confirmation Modal */}
       {showResetConfirm && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6">
-          <div className="bg-[#111] border-2 border-red-900 max-w-md w-full">
-            {/* Header */}
-            <div className="flex items-center gap-3 p-6 border-b border-red-900/30 bg-red-900/10">
-              <AlertTriangle size={32} className="text-red-500" />
+        <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-6 backdrop-blur-sm">
+          <div className="bg-[#0a0a0a] border-4 border-red-900 max-w-md w-full relative">
+            {/* Danger corners */}
+            <div className="absolute -top-2 -left-2 w-6 h-6 border-l-4 border-t-4 border-red-500"></div>
+            <div className="absolute -top-2 -right-2 w-6 h-6 border-r-4 border-t-4 border-red-500"></div>
+            <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-4 border-b-4 border-red-500"></div>
+            <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-4 border-b-4 border-red-500"></div>
+
+            <div className="flex items-center gap-3 p-6 border-b-2 border-red-900/30 bg-red-900/10">
+              <AlertTriangle size={32} className="text-red-500 animate-pulse" />
               <div>
-                <h3 className="text-lg font-black uppercase text-white">CONFIRM RESET</h3>
-                <p className="text-xs text-red-400">This action cannot be undone</p>
+                <h3 className="text-lg font-black uppercase text-white tracking-wider">CONFIRM WIPE</h3>
+                <p className="text-xs text-red-400 font-mono uppercase tracking-wider">Irreversible action</p>
               </div>
             </div>
 
-            {/* Content */}
             <div className="p-6">
-              <p className="text-sm text-white mb-4">
-                Are you absolutely sure you want to reset all data? This will permanently delete:
+              <p className="text-sm text-white mb-4 font-mono uppercase tracking-wider">
+                Confirm complete data erasure. Will delete:
               </p>
-              <ul className="space-y-2 mb-6 text-xs text-[#888]">
+              <ul className="space-y-2 mb-6 text-xs text-[#999] font-mono">
                 <li className="flex items-center gap-2">
-                  <span className="text-red-500">✗</span>
-                  All workout history and logs
+                  <span className="text-red-500">▸</span>
+                  All workout logs and session data
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-red-500">✗</span>
-                  Personal records and strength scores
+                  <span className="text-red-500">▸</span>
+                  Personal records and strength metrics
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-red-500">✗</span>
-                  Body measurements and progress photos
+                  <span className="text-red-500">▸</span>
+                  Body measurements and photos
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-red-500">✗</span>
-                  Custom templates and programs
+                  <span className="text-red-500">▸</span>
+                  Templates and programs
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-red-500">✗</span>
-                  All daily logs and biometric data
+                  <span className="text-red-500">▸</span>
+                  All biometric logs
                 </li>
               </ul>
-              <p className="text-xs text-primary mb-6">
-                Your account, email, and basic settings will be preserved.
+              <p className="text-xs text-primary mb-6 font-mono uppercase tracking-wider">
+                Account and credentials will be preserved.
               </p>
 
-              {/* Action Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowResetConfirm(false)}
-                  className="flex-1 py-3 bg-[#222] text-white font-bold uppercase text-xs border border-[#333] hover:bg-[#333] transition-colors"
+                  className="flex-1 py-3 bg-[#111] text-white font-black italic uppercase text-xs border-2 border-[#333] hover:bg-[#1a1a1a] hover:border-[#444] transition-all min-h-[48px] tracking-[0.15em]"
+                  aria-label="Cancel reset"
                 >
-                  Cancel
+                  ABORT
                 </button>
                 <button
                   onClick={handleResetAllData}
-                  className="flex-1 py-3 bg-red-900 text-white font-bold uppercase text-xs hover:bg-red-800 transition-colors"
+                  className="flex-1 py-3 bg-red-900 text-white font-black italic uppercase text-xs hover:bg-red-800 transition-all min-h-[48px] tracking-[0.15em]"
+                  aria-label="Confirm reset all data"
+                  style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}
                 >
-                  Reset Everything
+                  EXECUTE WIPE
                 </button>
               </div>
             </div>
@@ -1109,9 +1149,17 @@ const Profile = () => {
         </div>
       )}
 
-      <div className="mt-12 text-center">
-        <p className="text-[10px] text-[#333] font-mono uppercase">VoltLift Sys v1.0.4</p>
+      <div className="mt-12 text-center border-t border-[#1a1a1a] pt-8">
+        <p className="text-[10px] text-[#444] font-mono uppercase tracking-[0.2em]">VOLTLIFT SYS v1.0.5 // TACTICAL INTERFACE</p>
       </div>
+
+      {/* Add scanlines animation */}
+      <style>{`
+        @keyframes scanlines {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(100%); }
+        }
+      `}</style>
     </div>
   );
 };
