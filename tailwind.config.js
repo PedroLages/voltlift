@@ -18,6 +18,7 @@ export default {
         primaryDark: '#aadd00',
         text: '#ffffff',
         textMuted: '#9ca3af', // Updated for WCAG AA compliance (4.74:1 contrast ratio on black)
+        textSecondary: '#888888', // WCAG AA compliant secondary text (5.92:1 contrast on black)
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
