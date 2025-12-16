@@ -129,20 +129,20 @@ storage: {
 
 ## Implementation Priority
 
-### Phase 1 (Completed - December 16, 2025)
+### Phase 1 (This Session)
 1. ✅ Fix lastSync time format (add date + 24h for KG users)
 2. ✅ Fix Force Sync animation visibility
 3. ✅ Analyze sync architecture (this document)
-4. ✅ Migrate profile picture to use `backend.storage.uploadImage()`
-5. ✅ Load profile picture from cloud on app start
-6. ✅ Add sync indicator for profile picture upload
-7. ✅ Migrate progress photos to cloud storage with lazy migration
-8. ✅ Add uploading indicator for progress photo upload
 
-### Phase 2 (Future Enhancements)
-9. 🔧 Add settings preference for time format (12h vs 24h)
-10. 🔧 Add relative time display ("2 hours ago")
-11. 🔧 Add batch migration status UI for progress photos
+### Phase 2 (Next)
+4. 🔧 Migrate profile picture to use `backend.storage.uploadImage()`
+5. 🔧 Load profile picture from cloud on app start
+6. 🔧 Add sync indicator for profile picture upload
+
+### Phase 3 (Future)
+7. 🔧 Migrate progress photos to cloud storage
+8. 🔧 Add settings preference for time format (12h vs 24h)
+9. 🔧 Add relative time display ("2 hours ago")
 
 ---
 
