@@ -262,7 +262,7 @@ const Dashboard = () => {
       </header>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {/* Primary Metric - Larger and More Prominent */}
         <div className="col-span-2 bg-[#111] p-6 border border-primary/30 flex flex-col items-center justify-center text-center shadow-[0_0_20px_rgba(204,255,0,0.1)]">
           <div className="mb-3 text-primary"><Flame size={24} /></div>
@@ -271,13 +271,6 @@ const Dashboard = () => {
         </div>
 
         <StatCard icon={<Activity size={18} />} value={history.length} label="TOTAL" color="text-white" />
-        <button
-            onClick={() => navigate('/analytics')}
-            className="bg-[#111] p-2 border border-[#333] flex flex-col items-center justify-center text-center hover:bg-[#222] transition-colors"
-        >
-            <div className="mb-2 text-[#666]"><BarChart2 size={18} /></div>
-            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Analyze Gains</span>
-        </button>
       </div>
 
       {/* Secondary Stats */}

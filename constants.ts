@@ -2922,8 +2922,8 @@ export const INITIAL_PROGRAMS: Program[] = [
     // ========================================
     {
         id: 'prog_periodization_24',
-        name: 'Periodization Protocol (24 Weeks)',
-        description: 'Scientific periodization for intermediates. Phase 1 (Wk 1-12): Hypertrophy-focused PPLUL building muscle mass. Phase 2 (Wk 13-24): Strength-focused Upper/Lower DUP maximizing force output. Includes programmed deloads and RPE-based auto-regulation. 5 days/week (Phase 1) → 4 days/week (Phase 2).',
+        name: 'Dual-Phase Domination',
+        description: 'Intermediate power-building protocol. Phase 1 (Wk 1-12): Hypertrophy-focused PPLUL building muscle mass. Phase 2 (Wk 13-24): Strength-focused Upper/Lower DUP maximizing force output. Includes programmed deloads and RPE-based auto-regulation. 5 days/week (Phase 1) → 4 days/week (Phase 2).',
         weeks: 24,
         goal: 'Power-Building',
         splitType: 'PPL',

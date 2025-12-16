@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 // Add slide-down animation
 const style = document.createElement('style');
@@ -25,6 +26,7 @@ if (!document.querySelector('style[data-sync-toast]')) {
 
 export default function SyncStatusIndicator() {
   const syncStatus = useStore((state) => state.syncStatus);
+  const { isAuthenticated } = useAuthStore();
   const [showSynced, setShowSynced] = useState(false);
   const [showError, setShowError] = useState(false);
   const [showPartial, setShowPartial] = useState(false);
@@ -56,8 +58,9 @@ export default function SyncStatusIndicator() {
     }
   }, [syncStatus]);
 
-  // Don't show anything if idle or if messages have faded
-  if (syncStatus === 'idle' ||
+  // Don't show anything if not authenticated or if idle or if messages have faded
+  if (!isAuthenticated ||
+      syncStatus === 'idle' ||
       (syncStatus === 'synced' && !showSynced) ||
       (syncStatus === 'error' && !showError) ||
       (syncStatus === 'partial' && !showPartial)) {

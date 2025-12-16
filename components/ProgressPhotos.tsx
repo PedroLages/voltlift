@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Camera, Image as ImageIcon, X, Calendar, TrendingUp, GitCompare, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { backend } from '../services/backend';
-import { saveImageToDB, getImageFromDB } from '../services/indexedDBService';
+import { saveImageToDB, getImageFromDB } from '../utils/db';
 
 export const ProgressPhotos: React.FC = () => {
   const { dailyLogs, logDailyBio, settings } = useStore();
