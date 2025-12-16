@@ -31,7 +31,8 @@ export const BodyweightChart: React.FC<BodyweightChartProps> = ({ days = 30 }) =
 
   // Generate SVG points for line chart
   const points = trend.map((entry, index) => {
-    const x = (index / (trend.length - 1)) * 100;
+    // Handle single data point case to avoid NaN (division by zero)
+    const x = trend.length === 1 ? 50 : (index / (trend.length - 1)) * 100;
     const y = ((maxWeight + padding - entry.weight) / (range + 2 * padding)) * 100;
     return `${x},${y}`;
   }).join(' ');
@@ -95,7 +96,8 @@ export const BodyweightChart: React.FC<BodyweightChartProps> = ({ days = 30 }) =
 
           {/* Data points */}
           {trend.map((entry, index) => {
-            const x = (index / (trend.length - 1)) * 100;
+            // Handle single data point case to avoid NaN (division by zero)
+            const x = trend.length === 1 ? 50 : (index / (trend.length - 1)) * 100;
             const y = ((maxWeight + padding - entry.weight) / (range + 2 * padding)) * 100;
             return (
               <circle
