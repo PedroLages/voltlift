@@ -8,6 +8,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178c6?logo=typescript)](https://www.typescriptlang.org/)
 [![Capacitor](https://img.shields.io/badge/Capacitor-8.0-119eff?logo=capacitor)](https://capacitorjs.com/)
 [![Firebase](https://img.shields.io/badge/Firebase-Hosting-ffca28?logo=firebase)](https://firebase.google.com/)
+[![Security Review](https://github.com/PedroLages/voltlift/actions/workflows/security.yml/badge.svg)](https://github.com/PedroLages/voltlift/actions/workflows/security.yml)
+[![Code Review](https://github.com/PedroLages/voltlift/actions/workflows/claude-code-review.yml/badge.svg)](https://github.com/PedroLages/voltlift/actions/workflows/claude-code-review.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Features](#-features) • [Tech Stack](#-tech-stack) • [Installation](#-installation) • [Development](#-development) • [Architecture](#-architecture)
