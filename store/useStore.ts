@@ -1098,7 +1098,6 @@ export const useStore = create<AppState>()(
           } = get();
 
           try {
-
               // Check if nothing to sync
               const nothingToSync = !settingsNeedsSync &&
                   pendingSyncWorkouts.size === 0 &&
