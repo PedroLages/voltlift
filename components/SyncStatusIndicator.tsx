@@ -4,6 +4,8 @@ import { useStore } from '../store/useStore';
 export default function SyncStatusIndicator() {
   const syncStatus = useStore((state) => state.syncStatus);
   const [showSynced, setShowSynced] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [showPartial, setShowPartial] = useState(false);
 
   // Auto-hide "All synced" message after 3 seconds
   useEffect(() => {
@@ -14,8 +16,29 @@ export default function SyncStatusIndicator() {
     }
   }, [syncStatus]);
 
-  // Don't show anything if idle or if synced message has faded
-  if (syncStatus === 'idle' || (syncStatus === 'synced' && !showSynced)) {
+  // Auto-hide "Sync failed" message after 5 seconds (longer for error visibility)
+  useEffect(() => {
+    if (syncStatus === 'error') {
+      setShowError(true);
+      const timer = setTimeout(() => setShowError(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [syncStatus]);
+
+  // Auto-hide "Partial sync" message after 5 seconds
+  useEffect(() => {
+    if (syncStatus === 'partial') {
+      setShowPartial(true);
+      const timer = setTimeout(() => setShowPartial(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [syncStatus]);
+
+  // Don't show anything if idle or if messages have faded
+  if (syncStatus === 'idle' ||
+      (syncStatus === 'synced' && !showSynced) ||
+      (syncStatus === 'error' && !showError) ||
+      (syncStatus === 'partial' && !showPartial)) {
     return null;
   }
 
