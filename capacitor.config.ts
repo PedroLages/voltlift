@@ -5,8 +5,8 @@ const config: CapacitorConfig = {
   appName: 'VoltLift',
   webDir: 'dist',
   server: {
-    // PRODUCTION: Load from Firebase Hosting (auto-updates)
-    url: 'https://voltlift-app.web.app',
+    // PRODUCTION: Load from Vercel (auto-updates, preview URLs on PRs)
+    url: 'https://voltlift.vercel.app',
     cleartext: false,
 
     // DEVELOPMENT: Use Mac's local IP so iPhone can connect

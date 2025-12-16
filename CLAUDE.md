@@ -17,60 +17,57 @@ npm run preview      # Preview production build
 
 ## Deployment & CI/CD
 
-### Automatic Firebase Deployment
+### Automatic Vercel Deployment
 
-VoltLift uses **GitHub Actions** for automatic deployment to Firebase Hosting. Every push to `main` triggers a build and deploy.
+VoltLift uses **Vercel** for automatic deployment. Every push to `main` triggers a production deploy.
 
-**Workflow File:** `.github/workflows/firebase-deploy.yml`
-
+**Live App:** https://voltlift.vercel.app
 
 **How it works:**
-1. Push changes to `main` branch
-2. GitHub Actions automatically triggers
-3. Builds production bundle with Node.js 20
-4. Deploys to Firebase Hosting: `<https://voltlift-app.web.app>`
-5. iOS app loads new version instantly (live updates enabled)
+1. Create a PR from feature branch
+2. Vercel creates preview URL automatically (e.g., `voltlift-xxx.vercel.app`)
+3. Claude Code Review analyzes the PR
+4. Merge PR to `main`
+5. Vercel deploys to production (~30 seconds)
+6. iOS app loads new version instantly
 
-**No manual deployment needed!** Changes go live in ~45 seconds.
+### PR-Based Workflow
 
-### Required GitHub Secrets
-
-The workflow requires these secrets in GitHub repo settings (`Settings` → `Secrets and variables` → `Actions`):
+Branch protection is enabled on `main`:
+- All changes must go through PRs
+- Claude Code Review runs automatically on every PR
+- Preview URLs let you test before merging
 
 ```bash
-# Firebase Configuration (8 secrets required)
-VITE_BACKEND_TYPE=firebase
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=voltlift-app.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=voltlift-app
-VITE_FIREBASE_STORAGE_BUCKET=voltlift-app.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
+# Create feature branch
+git checkout -b feat/my-feature
 
-# Firebase Service Account (JSON file contents)
-FIREBASE_SERVICE_ACCOUNT_VOLTLIFT_APP='{...json...}'
+# Make changes, commit, push
+git add . && git commit -m "feat: Add feature"
+git push -u origin feat/my-feature
+
+# Create PR via GitHub CLI
+gh pr create --title "feat: My feature" --body "Description"
 ```
 
 ### iOS App Configuration
 
 **Capacitor Config:** `capacitor.config.ts`
 
-The iOS app is configured to load from Firebase Hosting for **instant updates without App Store review**:
+The iOS app is configured to load from Vercel for **instant updates without App Store review**:
 
 ```typescript
 server: {
-  url: '<https://voltlift-app.web.app>', // Live updates enabled
+  url: 'https://voltlift.vercel.app', // Live updates enabled
   cleartext: false
 }
 ```
 
-
 **Benefits:**
-- ✅ Push to `main` → Auto-deploy → iOS updates instantly
+- ✅ PR preview URLs for testing before merge
+- ✅ Auto-deploy on merge → iOS updates instantly
 - ✅ No App Store submission for feature updates
-- ✅ Fix bugs immediately without review delays
-- ✅ A/B test features rapidly
-
+- ✅ Claude Code Review on every PR
 
 **When you need App Store submission:**
 - Native iOS code changes
@@ -78,19 +75,11 @@ server: {
 - Bundle ID or permissions changes
 - App icon or name changes
 
-### Manual Deployment (if needed)
+### Monitoring
 
-If you need to deploy manually (e.g., CI/CD is down):
-
-```bash
-npm run ship  # Build + deploy to Firebase Hosting
-```
-
-### Monitoring Deployments
-
-- **GitHub Actions:** <https://github.com/PedroLages/voltlift/actions>
-- **Firebase Console:** <https://console.firebase.google.com/project/voltlift-app>
-- **Live App:** <https://voltlift-app.web.app>
+- **Vercel Dashboard:** https://vercel.com/pedrolages-projects/voltlift
+- **GitHub Actions:** https://github.com/PedroLages/voltlift/actions
+- **Live App:** https://voltlift.vercel.app
 
 ## Environment Setup
 
