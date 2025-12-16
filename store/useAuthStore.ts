@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { backend } from '../services/backend';
 import { useStore } from './useStore';
+import { INITIAL_TEMPLATES, INITIAL_PROGRAMS } from '../constants';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -175,14 +176,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         backend.programs.getAll(),
       ]);
 
-      // Merge with local data (cloud takes precedence for now)
-      // In a real app, you'd want proper conflict resolution
+      // Merge built-in templates/programs with cloud data
+      // Built-in templates (prd_push_a, etc.) must always be available for programs to work
+      const mergedTemplates = [
+        ...INITIAL_TEMPLATES,
+        ...cloudTemplates.filter(ct => !INITIAL_TEMPLATES.some(it => it.id === ct.id))
+      ];
+
+      const mergedPrograms = [
+        ...INITIAL_PROGRAMS,
+        ...cloudPrograms.filter(cp => !INITIAL_PROGRAMS.some(ip => ip.id === cp.id))
+      ];
+
       useStore.setState({
         history: cloudHistory.length > 0 ? cloudHistory : appStore.history,
-        templates: cloudTemplates.length > 0 ? cloudTemplates : appStore.templates,
+        templates: cloudTemplates.length > 0 ? mergedTemplates : appStore.templates,
         settings: cloudSettings ? { ...appStore.settings, ...cloudSettings } : appStore.settings,
         dailyLogs: Object.keys(cloudDailyLogs).length > 0 ? cloudDailyLogs : appStore.dailyLogs,
-        programs: cloudPrograms.length > 0 ? cloudPrograms : appStore.programs,
+        programs: cloudPrograms.length > 0 ? mergedPrograms : appStore.programs,
         syncStatus: 'synced',
       });
 
