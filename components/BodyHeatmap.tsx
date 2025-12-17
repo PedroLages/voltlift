@@ -1,12 +1,9 @@
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 
 type MuscleIntensity = Record<string, number>;
 
 const BodyHeatmap = ({ intensity }: { intensity: MuscleIntensity }) => {
-  const anteriorSvgRef = useRef<HTMLObjectElement>(null);
-  const posteriorSvgRef = useRef<HTMLObjectElement>(null);
-
   // Calculate total sets for each major muscle region
   const chestSets = (intensity['Chest'] || 0);
   const backSets = (intensity['Back'] || 0);
@@ -15,158 +12,70 @@ const BodyHeatmap = ({ intensity }: { intensity: MuscleIntensity }) => {
   const coreSets = (intensity['Core'] || 0);
   const legsSets = (intensity['Legs'] || 0);
 
-  // Get solid color based on set count (for SVG fills)
-  const getSolidColor = (sets: number) => {
-    if (!sets || sets === 0) return '#1a1a1a'; // Inactive
-    if (sets < 3) return '#333333';
-    if (sets < 6) return '#4d5c00';
-    if (sets < 10) return '#667a00';
-    if (sets < 15) return '#99b800';
-    return '#ccff00'; // Peak volt
+  // Get intensity level and color (iOS-compatible approach)
+  const getIntensityStyle = (sets: number) => {
+    if (!sets || sets === 0) return { bg: 'bg-[#1a1a1a]', label: 'Rested' };
+    if (sets < 3) return { bg: 'bg-[#333333]', label: 'Light' };
+    if (sets < 6) return { bg: 'bg-[#4d5c00]', label: 'Moderate' };
+    if (sets < 10) return { bg: 'bg-[#667a00]', label: 'Heavy' };
+    if (sets < 15) return { bg: 'bg-[#99b800]', label: 'Intense' };
+    return { bg: 'bg-[#ccff00]', label: 'Peak' };
   };
 
-  // Apply colors to anterior SVG muscle groups
-  useEffect(() => {
-    const svgObject = anteriorSvgRef.current;
-    if (!svgObject) return;
-
-    const applyColors = () => {
-      try {
-        const svgDoc = svgObject.contentDocument;
-        if (!svgDoc) return;
-
-        // Map muscle groups to intensity data
-        const muscleMap: Record<string, number> = {
-          'CHEST': chestSets,
-          'UPER_CHEST': chestSets, // Note: typo in SVG
-          'DELTOIDS_ANTERIOR': shouldersSets,
-          'DELTOIDS_EXTERIOR': shouldersSets,
-          'TRAPEZIUS_UPPER': shouldersSets,
-          'BICEPS': armsSets,
-          'FOREARMS': armsSets,
-          'ABS_UPPER': coreSets,
-          'ABS_MIDDLE': coreSets,
-          'ABS_LOWER': coreSets,
-          'OBLIQUES': coreSets,
-          'QUADS': legsSets,
-          'CALVES_FRONT': legsSets,
-          'NECK': 0, // Neck not tracked
-        };
-
-        // Apply colors to each muscle group
-        Object.entries(muscleMap).forEach(([muscleId, sets]) => {
-          const element = svgDoc.getElementById(muscleId);
-          if (element) {
-            const color = getSolidColor(sets);
-            // Apply to all paths within the group
-            const paths = element.querySelectorAll('path, polygon, rect, circle, ellipse');
-            paths.forEach((path) => {
-              (path as SVGElement).style.fill = color;
-              (path as SVGElement).style.transition = 'fill 0.5s ease';
-            });
-            // Also try setting fill on the group itself
-            element.style.fill = color;
-          }
-        });
-      } catch (error) {
-        console.error('Error applying colors to anterior SVG:', error);
-      }
-    };
-
-    // Wait for SVG to load
-    svgObject.addEventListener('load', applyColors);
-    applyColors(); // Try immediately in case already loaded
-
-    return () => {
-      svgObject.removeEventListener('load', applyColors);
-    };
-  }, [chestSets, shouldersSets, armsSets, coreSets, legsSets]);
-
-  // Apply colors to posterior SVG muscle groups
-  useEffect(() => {
-    const svgObject = posteriorSvgRef.current;
-    if (!svgObject) return;
-
-    const applyColors = () => {
-      try {
-        const svgDoc = svgObject.contentDocument;
-        if (!svgDoc) return;
-
-        // Map muscle groups to intensity data
-        const muscleMap: Record<string, number> = {
-          'SHOULDERS_BACK': shouldersSets,
-          'TRAPS': backSets,
-          'LATS': backSets,
-          'TRICEPS': armsSets,
-          'LOWER_BACK': coreSets,
-          'GLUTES': legsSets,
-          'HAMSTRINGS': legsSets,
-          'CALVES_BACK': legsSets,
-        };
-
-        // Apply colors to each muscle group
-        Object.entries(muscleMap).forEach(([muscleId, sets]) => {
-          const element = svgDoc.getElementById(muscleId);
-          if (element) {
-            const color = getSolidColor(sets);
-            // Apply to all paths within the group
-            const paths = element.querySelectorAll('path, polygon, rect, circle, ellipse');
-            paths.forEach((path) => {
-              (path as SVGElement).style.fill = color;
-              (path as SVGElement).style.transition = 'fill 0.5s ease';
-            });
-            // Also try setting fill on the group itself
-            element.style.fill = color;
-          }
-        });
-      } catch (error) {
-        console.error('Error applying colors to SVG:', error);
-      }
-    };
-
-    // Wait for SVG to load
-    svgObject.addEventListener('load', applyColors);
-    applyColors(); // Try immediately in case already loaded
-
-    return () => {
-      svgObject.removeEventListener('load', applyColors);
-    };
-  }, [shouldersSets, backSets, armsSets, coreSets, legsSets]);
+  // Define muscle regions with their set counts
+  const muscleRegions = [
+    { name: 'Chest', sets: chestSets, position: 'front' },
+    { name: 'Shoulders', sets: shouldersSets, position: 'both' },
+    { name: 'Arms', sets: armsSets, position: 'both' },
+    { name: 'Core', sets: coreSets, position: 'front' },
+    { name: 'Back', sets: backSets, position: 'back' },
+    { name: 'Legs', sets: legsSets, position: 'both' },
+  ];
 
   return (
-    <div className="w-full bg-[#0a0a0a] border border-[#222] p-4 rounded">
+    <div className="w-full bg-[#0a0a0a] border border-[#222] p-4">
       <div className="flex justify-between items-center mb-4 px-8 border-b border-[#222] pb-2">
         <span className="text-[10px] font-mono text-[#666] uppercase tracking-widest">Anterior</span>
         <span className="text-[10px] font-mono text-[#666] uppercase tracking-widest">Posterior</span>
       </div>
 
       <div className="flex gap-4">
-        {/* FRONT VIEW - Premium Named SVG */}
+        {/* FRONT VIEW - Simple img tag for iOS compatibility */}
         <div className="w-1/2 relative" style={{ aspectRatio: '368/549' }}>
-          <object
-            ref={anteriorSvgRef}
-            data="/anatomy-front.svg"
-            type="image/svg+xml"
-            className="w-full h-full object-contain pointer-events-none"
-            aria-label="Anterior anatomy"
-          >
-            <img src="/anatomy-front.svg" alt="Anterior anatomy fallback" />
-          </object>
+          <img
+            src="/anatomy-front.svg"
+            alt="Anterior anatomy"
+            className="w-full h-full object-contain"
+          />
         </div>
 
-        {/* BACK VIEW - Premium Named SVG */}
+        {/* BACK VIEW - Simple img tag for iOS compatibility */}
         <div className="w-1/2 relative" style={{ aspectRatio: '384/573' }}>
-          {/* Premium vectorized anatomy with named muscle groups */}
-          <object
-            ref={posteriorSvgRef}
-            data="/anatomy-back.svg"
-            type="image/svg+xml"
-            className="w-full h-full object-contain pointer-events-none"
-            aria-label="Posterior anatomy"
-          >
-            <img src="/anatomy-back.svg" alt="Posterior anatomy fallback" />
-          </object>
+          <img
+            src="/anatomy-back.svg"
+            alt="Posterior anatomy"
+            className="w-full h-full object-contain"
+          />
         </div>
+      </div>
+
+      {/* Muscle Intensity List */}
+      <div className="mt-4 space-y-2 border-t border-[#222] pt-4">
+        {muscleRegions.map((region) => {
+          const style = getIntensityStyle(region.sets);
+          return (
+            <div key={region.name} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 ${style.bg} ${region.sets === 0 ? 'border border-[#333]' : ''}`}></div>
+                <span className="text-xs font-bold uppercase text-white">{region.name}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-[#666] font-mono uppercase">{style.label}</span>
+                <span className="text-xs font-black text-primary">{region.sets} sets</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Legend */}

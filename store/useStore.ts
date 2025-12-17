@@ -1072,17 +1072,30 @@ export const useStore = create<AppState>()(
           // Always show syncing status for user feedback (before auth check)
           set({ isSyncing: true, syncStatus: 'syncing' });
 
-          // Check if user is authenticated
-          if (!backend.auth.isLoggedIn) {
+          // Check if user is authenticated (check both backend and auth store)
+          // Wait a bit for auth state to settle if needed
+          let isAuthenticated = backend.auth.isLoggedIn;
+
+          // If backend doesn't think we're logged in, wait a moment and check again
+          // (handles race condition where Firebase auth is still initializing)
+          if (!isAuthenticated) {
+              await new Promise(resolve => setTimeout(resolve, 300));
+              isAuthenticated = backend.auth.isLoggedIn;
+          }
+
+          if (!isAuthenticated) {
               // User not logged in - provide feedback and exit
-              await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay for visual feedback
+              await new Promise(resolve => setTimeout(resolve, 200)); // Brief delay for visual feedback
               set({
                   isSyncing: false,
                   syncStatus: 'error'
               });
               console.log('❌ Sync failed: User not authenticated');
+              console.log('Note: If you just logged in, please wait a moment and try again');
               return;
           }
+
+          console.log('✅ User authenticated, proceeding with sync...');
 
           const {
               settings,
@@ -1098,7 +1111,6 @@ export const useStore = create<AppState>()(
           } = get();
 
           try {
-
               // Check if nothing to sync
               const nothingToSync = !settingsNeedsSync &&
                   pendingSyncWorkouts.size === 0 &&
