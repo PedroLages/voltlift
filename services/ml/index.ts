@@ -12,9 +12,7 @@ export {
   extractDailyFeatures,
   extractFeatureSequence,
   extractBanditContext,
-  featuresToTensor,
-  calculateACWR,
-  calculateRPETrend
+  featuresToTensor
 } from './featureExtraction';
 
 // Thompson Sampling Bandit
