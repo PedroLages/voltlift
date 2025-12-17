@@ -14,6 +14,7 @@ import { checkAllPRs, PRDetection } from '../services/strengthScore';
 import SwipeableRow from '../components/SwipeableRow';
 import Toast from '../components/Toast';
 import { Skeleton } from '../components/Skeleton';
+import KeyboardToolbar from '../components/KeyboardToolbar';
 
 // Lazy load heavy components
 const PRCelebration = lazy(() => import('../components/PRCelebration'));
@@ -81,6 +82,9 @@ const WorkoutLogger = () => {
 
   // Timer Visibility Toggle State
   const [timerMinimized, setTimerMinimized] = useState(false);
+
+  // Keyboard Toolbar State (iOS-style navigation)
+  const [focusedInput, setFocusedInput] = useState<HTMLInputElement | null>(null);
 
   // Audio Oscillator for Beep
   const playTimerSound = () => {
@@ -434,6 +438,60 @@ const WorkoutLogger = () => {
     const exercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
     return exercise?.equipment === 'Bodyweight';
   }, []);
+
+  // Keyboard Toolbar Navigation Functions
+  const getAllInputs = useCallback((): HTMLInputElement[] => {
+    // Get all weight and reps inputs in order (excluding RPE selects)
+    const inputs = Array.from(
+      document.querySelectorAll<HTMLInputElement>('input[type="number"]')
+    ).filter(input => !input.disabled);
+    return inputs;
+  }, []);
+
+  const handleKeyboardPrevious = useCallback(() => {
+    const inputs = getAllInputs();
+    if (!focusedInput) return;
+
+    const currentIndex = inputs.indexOf(focusedInput);
+    if (currentIndex > 0) {
+      const previousInput = inputs[currentIndex - 1];
+      previousInput.focus();
+      setFocusedInput(previousInput);
+    }
+  }, [focusedInput, getAllInputs]);
+
+  const handleKeyboardNext = useCallback(() => {
+    const inputs = getAllInputs();
+    if (!focusedInput) return;
+
+    const currentIndex = inputs.indexOf(focusedInput);
+    if (currentIndex < inputs.length - 1) {
+      const nextInput = inputs[currentIndex + 1];
+      nextInput.focus();
+      setFocusedInput(nextInput);
+    }
+  }, [focusedInput, getAllInputs]);
+
+  const handleKeyboardDone = useCallback(() => {
+    if (focusedInput) {
+      focusedInput.blur();
+      setFocusedInput(null);
+    }
+  }, [focusedInput]);
+
+  const checkHasPrevious = useCallback((): boolean => {
+    const inputs = getAllInputs();
+    if (!focusedInput) return false;
+    const currentIndex = inputs.indexOf(focusedInput);
+    return currentIndex > 0;
+  }, [focusedInput, getAllInputs]);
+
+  const checkHasNext = useCallback((): boolean => {
+    const inputs = getAllInputs();
+    if (!focusedInput) return false;
+    const currentIndex = inputs.indexOf(focusedInput);
+    return currentIndex < inputs.length - 1;
+  }, [focusedInput, getAllInputs]);
 
   return (
     <div className="pb-8 bg-background min-h-screen" onClick={() => setActiveMenuId(null)}>
@@ -858,6 +916,9 @@ const WorkoutLogger = () => {
                               }
                             }}
                             onFocus={(e) => {
+                              // Track focused input for keyboard toolbar
+                              setFocusedInput(e.currentTarget);
+
                               setTimeout(() => {
                                 e.currentTarget.scrollIntoView({
                                   behavior: 'smooth',
@@ -906,6 +967,9 @@ const WorkoutLogger = () => {
                               }
                             }}
                             onFocus={(e) => {
+                              // Track focused input for keyboard toolbar
+                              setFocusedInput(e.currentTarget);
+
                               // Scroll input into view when keyboard opens (with delay for keyboard animation)
                               setTimeout(() => {
                                 e.currentTarget.scrollIntoView({
@@ -970,6 +1034,9 @@ const WorkoutLogger = () => {
                           }
                         }}
                         onFocus={(e) => {
+                          // Track focused input for keyboard toolbar
+                          setFocusedInput(e.currentTarget);
+
                           // Scroll input into view when keyboard opens (with delay for keyboard animation)
                           setTimeout(() => {
                             e.currentTarget.scrollIntoView({
@@ -1264,6 +1331,16 @@ const WorkoutLogger = () => {
           duration={5000}
         />
       )}
+
+      {/* iOS-style Keyboard Toolbar */}
+      <KeyboardToolbar
+        currentInput={focusedInput}
+        onPrevious={handleKeyboardPrevious}
+        onNext={handleKeyboardNext}
+        onDone={handleKeyboardDone}
+        hasPrevious={checkHasPrevious()}
+        hasNext={checkHasNext()}
+      />
     </div>
   );
 };

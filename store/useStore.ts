@@ -1396,7 +1396,7 @@ export const useStore = create<AppState>()(
     },
     {
       name: 'voltlift-storage',
-      version: 3, // Increment when schema changes
+      version: 4, // Increment when schema changes
       partialize: (state) => {
           const {
               customExerciseVisuals,
@@ -1434,6 +1434,15 @@ export const useStore = create<AppState>()(
           return {
             ...persistedState,
             programs: INITIAL_PROGRAMS, // Reset to get new program structure with frequency variants
+          };
+        }
+
+        // Version 4: Update program names (e.g., "Periodization Protocol" → "Dual-Phase Domination")
+        if (version < 4) {
+          console.log('[Migration v4] Updating program names to latest definitions');
+          return {
+            ...persistedState,
+            programs: INITIAL_PROGRAMS, // Refresh programs to pick up updated names
           };
         }
 
