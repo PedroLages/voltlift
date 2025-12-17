@@ -162,19 +162,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   syncFromCloud: async () => {
-    if (!backend.auth.isLoggedIn) return;
+    if (!backend.auth.isLoggedIn) {
+      console.log('⏭️ syncFromCloud skipped: user not logged in');
+      return;
+    }
 
     const appStore = useStore.getState();
 
+    // Show syncing status immediately
+    useStore.setState({ syncStatus: 'syncing' });
+    console.log('☁️ Starting cloud sync...');
+
     try {
-      // Fetch all data from backend
-      const [cloudHistory, cloudTemplates, cloudSettings, cloudDailyLogs, cloudPrograms] = await Promise.all([
+      // Fetch all data from backend with individual error handling
+      const results = await Promise.allSettled([
         backend.workouts.getHistory(),
         backend.workouts.getTemplates(),
         backend.settings.get(),
         backend.dailyLogs.getAll(),
         backend.programs.getAll(),
       ]);
+
+      // Log any individual failures
+      const labels = ['history', 'templates', 'settings', 'dailyLogs', 'programs'];
+      results.forEach((result, i) => {
+        if (result.status === 'rejected') {
+          console.error(`❌ Failed to fetch ${labels[i]}:`, result.reason);
+        }
+      });
+
+      // Extract successful results (use empty defaults for failures)
+      const cloudHistory = results[0].status === 'fulfilled' ? results[0].value : [];
+      const cloudTemplates = results[1].status === 'fulfilled' ? results[1].value : [];
+      const cloudSettings = results[2].status === 'fulfilled' ? results[2].value : null;
+      const cloudDailyLogs = results[3].status === 'fulfilled' ? results[3].value : {};
+      const cloudPrograms = results[4].status === 'fulfilled' ? results[4].value : [];
+
+      // Check if ALL requests failed
+      const allFailed = results.every(r => r.status === 'rejected');
+      if (allFailed) {
+        throw new Error('All cloud fetch requests failed');
+      }
+
+      // Check if some requests failed (partial sync)
+      const someFailed = results.some(r => r.status === 'rejected');
+      console.log(`☁️ Cloud fetch complete: ${someFailed ? 'partial success' : 'all succeeded'}`);
 
       // Merge built-in templates/programs with cloud data
       // Built-in templates (prd_push_a, etc.) must always be available for programs to work
@@ -194,20 +226,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         settings: cloudSettings ? { ...appStore.settings, ...cloudSettings } : appStore.settings,
         dailyLogs: Object.keys(cloudDailyLogs).length > 0 ? cloudDailyLogs : appStore.dailyLogs,
         programs: cloudPrograms.length > 0 ? mergedPrograms : appStore.programs,
-        syncStatus: 'synced',
+        // Use 'partial' status if some requests failed, 'synced' if all succeeded
+        syncStatus: someFailed ? 'partial' : 'synced',
       });
 
-      // Sync images
+      console.log(`✅ Cloud sync complete (${someFailed ? 'partial' : 'full'})`);
+
+      // Sync images (non-critical, don't fail entire sync)
       try {
         const cloudImages = await backend.storage.getAllImages();
         if (Object.keys(cloudImages).length > 0) {
           useStore.setState({ customExerciseVisuals: cloudImages });
+          console.log(`📷 Synced ${Object.keys(cloudImages).length} images`);
         }
       } catch (err) {
-        console.error('Failed to sync images:', err);
+        console.error('⚠️ Failed to sync images (non-critical):', err);
+        // Don't change syncStatus - images are non-critical
       }
-    } catch (err) {
-      console.error('Sync from cloud failed:', err);
+    } catch (err: any) {
+      console.error('❌ Sync from cloud failed:', err?.message || err);
+      console.error('Error details:', {
+        name: err?.name,
+        code: err?.code,
+        stack: err?.stack?.split('\n').slice(0, 3).join('\n'),
+      });
       useStore.setState({ syncStatus: 'error' });
     }
   },

@@ -1073,14 +1073,38 @@ export const useStore = create<AppState>()(
           set({ isSyncing: true, syncStatus: 'syncing' });
 
           // Check if user is authenticated (check both backend and auth store)
-          // Wait a bit for auth state to settle if needed
+          // Import auth store to check its state
+          const { useAuthStore } = await import('./useAuthStore');
+          const authStoreState = useAuthStore.getState();
           let isAuthenticated = backend.auth.isLoggedIn;
 
-          // If backend doesn't think we're logged in, wait a moment and check again
-          // (handles race condition where Firebase auth is still initializing)
-          if (!isAuthenticated) {
+          console.log('🔐 Auth check:', {
+              backendLoggedIn: isAuthenticated,
+              authStoreAuthenticated: authStoreState.isAuthenticated,
+              authStoreLoading: authStoreState.isAuthLoading,
+              user: authStoreState.user?.email || 'none',
+          });
+
+          // If backend doesn't think we're logged in, wait for auth to initialize
+          // This handles the race condition where Firebase auth is still initializing
+          if (!isAuthenticated && authStoreState.isAuthLoading) {
+              console.log('⏳ Waiting for auth to initialize (500ms)...');
+              await new Promise(resolve => setTimeout(resolve, 500));
+              isAuthenticated = backend.auth.isLoggedIn;
+              console.log('🔐 Auth re-check after wait:', { backendLoggedIn: isAuthenticated });
+          } else if (!isAuthenticated) {
+              // Short wait even if not loading, in case of race condition
               await new Promise(resolve => setTimeout(resolve, 300));
               isAuthenticated = backend.auth.isLoggedIn;
+          }
+
+          // Also check auth store as a fallback
+          if (!isAuthenticated) {
+              const refreshedAuthStore = useAuthStore.getState();
+              isAuthenticated = refreshedAuthStore.isAuthenticated && !refreshedAuthStore.isAuthLoading;
+              if (isAuthenticated) {
+                  console.log('✅ Auth confirmed via auth store (fallback)');
+              }
           }
 
           if (!isAuthenticated) {
@@ -1091,7 +1115,7 @@ export const useStore = create<AppState>()(
                   syncStatus: 'error'
               });
               console.log('❌ Sync failed: User not authenticated');
-              console.log('Note: If you just logged in, please wait a moment and try again');
+              console.log('💡 Tip: If you just logged in, try Force Sync in Profile settings');
               return;
           }
 
