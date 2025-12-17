@@ -2,7 +2,8 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+    types: [opened, synchronize]
+    # Only run on PR creation and new commits (not draft→ready or reopens)
 
 jobs:
   claude-review:

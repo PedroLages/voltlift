@@ -247,10 +247,23 @@ const Dashboard = () => {
         </div>
         
         <div className="flex flex-col items-end gap-2">
-            <div className="w-12 h-12 bg-[#222] flex items-center justify-center text-primary font-black text-xl italic border border-[#333]">
-            {settings.name.charAt(0)}
+            {/* User Avatar - Click to open profile */}
+            <div
+                onClick={() => navigate('/profile')}
+                className="w-12 h-12 bg-[#222] flex items-center justify-center text-primary font-black text-xl italic border border-[#333] cursor-pointer hover:border-primary hover:scale-105 transition-all overflow-hidden"
+                aria-label="Open profile"
+            >
+                {settings.profilePictureUrl ? (
+                    <img
+                        src={settings.profilePictureUrl}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    settings.name.charAt(0)
+                )}
             </div>
-            
+
             {/* IronCloud Status */}
             {settings.ironCloud?.enabled && (
                 <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest">
@@ -262,9 +275,9 @@ const Dashboard = () => {
       </header>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-3 gap-2">
-        {/* Primary Metric - Larger and More Prominent */}
-        <div className="col-span-2 bg-[#111] p-6 border border-primary/30 flex flex-col items-center justify-center text-center shadow-[0_0_20px_rgba(204,255,0,0.1)]">
+      <div className="grid grid-cols-2 gap-2">
+        {/* Primary Metric - Sessions This Week */}
+        <div className="bg-[#111] p-6 border border-primary/30 flex flex-col items-center justify-center text-center shadow-[0_0_20px_rgba(204,255,0,0.1)]">
           <div className="mb-3 text-primary"><Flame size={24} /></div>
           <span className="text-5xl font-black italic text-primary leading-none">{workoutsThisWeek}</span>
           <span className="text-xs font-bold text-white uppercase mt-2 tracking-widest">SESSIONS THIS WEEK</span>

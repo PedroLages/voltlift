@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import {
   Settings,
   User,
@@ -173,7 +174,63 @@ const Profile = () => {
     loadProfilePicture();
   }, [settings.profilePictureUrl]);
 
-  // Handle profile picture upload (cloud-first with local fallback)
+  // Handle profile picture upload using Capacitor Camera (iOS/Android native support)
+  const handleProfilePictureCapture = async () => {
+    setUploadingPicture(true);
+
+    try {
+      // Use Capacitor Camera API for native iOS/Android camera/photo library access
+      const photo = await CapacitorCamera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Prompt, // Prompts user to choose between Camera or Photos
+        quality: 90,
+        allowEditing: true,
+        width: 500,
+        height: 500,
+      });
+
+      const base64 = photo.dataUrl!;
+
+      try {
+        // Try to upload to cloud storage
+        const cloudUrl = await backend.storage.uploadImage('profile-picture', base64);
+
+        // Save cloud URL to settings (will trigger sync)
+        updateSettings({ profilePictureUrl: cloudUrl });
+
+        // Cache locally for offline access
+        await saveImageToDB('profile-picture', base64);
+
+        // Update local state
+        setProfilePicture(cloudUrl);
+
+        console.log('✅ Profile picture uploaded to cloud:', cloudUrl);
+      } catch (cloudError) {
+        console.warn('⚠️ Cloud upload failed, saving locally only:', cloudError);
+
+        // Fallback: Save to IndexedDB only
+        await saveImageToDB('profile-picture', base64);
+        setProfilePicture(base64);
+
+        alert('Profile picture saved locally. Enable cloud sync to access across devices.');
+      }
+
+      setUploadingPicture(false);
+    } catch (error: any) {
+      console.error('Error capturing profile picture:', error);
+
+      // User cancelled camera - don't show error
+      if (error.message && error.message.includes('User cancelled')) {
+        setUploadingPicture(false);
+        return;
+      }
+
+      alert('Failed to capture profile picture. Please check camera permissions in Settings.');
+      setUploadingPicture(false);
+    }
+  };
+
+  // Fallback for web: HTML file input
   const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -360,24 +417,45 @@ const Profile = () => {
               </div>
             )}
 
-            <label
-              htmlFor="profile-picture-upload"
-              className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-              aria-label="Upload profile picture"
-            >
-              {uploadingPicture ? (
-                <RefreshCw size={24} className="text-primary animate-spin" />
-              ) : (
-                <Camera size={24} className="text-primary" />
-              )}
-            </label>
-            <input
-              id="profile-picture-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleProfilePictureUpload}
-              className="hidden"
-            />
+            {/* Use Capacitor Camera for native apps, file input for web */}
+            {(window as any).Capacitor ? (
+              // Native iOS/Android: Use Capacitor Camera API
+              <button
+                onClick={handleProfilePictureCapture}
+                className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Capture profile picture"
+                disabled={uploadingPicture}
+              >
+                {uploadingPicture ? (
+                  <RefreshCw size={24} className="text-primary animate-spin" />
+                ) : (
+                  <Camera size={24} className="text-primary" />
+                )}
+              </button>
+            ) : (
+              // Web: Use standard file input
+              <>
+                <label
+                  htmlFor="profile-picture-upload"
+                  className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  aria-label="Upload profile picture"
+                >
+                  {uploadingPicture ? (
+                    <RefreshCw size={24} className="text-primary animate-spin" />
+                  ) : (
+                    <Camera size={24} className="text-primary" />
+                  )}
+                </label>
+                <input
+                  id="profile-picture-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureUpload}
+                  className="sr-only"
+                  style={{ position: 'absolute', left: '-9999px' }}
+                />
+              </>
+            )}
 
             {/* Corner brackets */}
             <div className="absolute -top-1 -left-1 w-3 h-3 border-l border-t border-primary pointer-events-none"></div>

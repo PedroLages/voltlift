@@ -194,8 +194,11 @@ export class FirebaseBackend implements BackendService {
    */
   auth = {
     get isLoggedIn(): boolean {
+      // Check both this.currentUser (set by onAuthStateChanged) and authInstance.currentUser
+      // this.currentUser is more reliable as it's set by the auth state listener
+      const currentUser = (this as any).currentUser;
       const instance = (this as any).authInstance;
-      return !!(instance && instance.currentUser);
+      return !!(currentUser || (instance && instance.currentUser));
     },
 
     get user(): BackendUser | null {
