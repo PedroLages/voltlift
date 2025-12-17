@@ -15,6 +15,8 @@ import { getQuickRecoveryStatus } from '../services/adaptiveRecovery';
 import { getTopWeakPoint } from '../services/workoutIntelligence';
 import SmartInsightsPanel from '../components/SmartInsightsPanel';
 import DeloadAlert from '../components/DeloadAlert';
+import { RecoveryScoreCard } from '../components/RecoveryScoreCard';
+import { DailyWellnessCheckin } from '../components/DailyWellnessCheckin';
 
 const Dashboard = () => {
   const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, resumeWorkout, syncStatus, logDailyBio, dailyLogs, getVolumeWarning } = useStore();
@@ -23,6 +25,7 @@ const Dashboard = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const [showDesktopBanner, setShowDesktopBanner] = useState(false);
+  const [showWellnessCheckin, setShowWellnessCheckin] = useState(false);
 
   // Check if user is on desktop and hasn't dismissed the banner
   useEffect(() => {
@@ -63,6 +66,21 @@ const Dashboard = () => {
   // Daily Log Logic
   const today = new Date().toISOString().split('T')[0];
   const todayLog = dailyLogs[today] || { date: today };
+
+  // Check if user needs to complete daily wellness check-in
+  const todayLogForCheckin = dailyLogs.find(log => log.date === today);
+  const needsWellnessCheckin = !todayLogForCheckin?.perceivedRecovery;
+
+  // Show wellness check-in prompt on first load if needed and user has history
+  useEffect(() => {
+    if (needsWellnessCheckin && history.length >= 3 && !activeWorkout) {
+      // Delay showing to not interrupt immediately
+      const timer = setTimeout(() => {
+        setShowWellnessCheckin(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [needsWellnessCheckin, history.length, activeWorkout]);
 
   // Calculate Recovery Score from daily log
   const getRecoveryScore = () => {
@@ -329,6 +347,13 @@ const Dashboard = () => {
               )}
           </div>
       </div>
+
+      {/* ML-Powered Recovery Score Card */}
+      {history.length >= 3 && (
+        <RecoveryScoreCard
+          onOpenWellnessCheckin={() => setShowWellnessCheckin(true)}
+        />
+      )}
 
       {/* P2: Smart Insights Panel - Fatigue, Goals, Streak */}
       <SmartInsightsPanel />
@@ -646,6 +671,13 @@ const Dashboard = () => {
               </div>
           )}
       </section>
+
+      {/* Daily Wellness Check-in Modal */}
+      <DailyWellnessCheckin
+        isOpen={showWellnessCheckin}
+        onClose={() => setShowWellnessCheckin(false)}
+        onComplete={() => setShowWellnessCheckin(false)}
+      />
 
     </div>
   );
