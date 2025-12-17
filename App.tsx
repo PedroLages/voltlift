@@ -201,8 +201,9 @@ const AppContent = () => {
         {/* Sync status indicator */}
         <SyncStatusIndicator />
 
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
+        <main>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/welcome" element={<Landing4 />} />
             <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
@@ -227,8 +228,9 @@ const AppContent = () => {
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </Suspense>
+            </Routes>
+          </Suspense>
+        </main>
         <BottomNav />
       </div>
   );

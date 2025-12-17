@@ -154,12 +154,23 @@ export interface BodyMeasurements {
 export interface DailyLog {
     date: string; // YYYY-MM-DD
     sleepHours?: number;
+    sleepQuality?: number; // 1-5 scale (subjective sleep quality)
     proteinGrams?: number;
     waterLitres?: number;
-    stressLevel?: number;
+    stressLevel?: number; // 1-5 scale (life stress)
     bodyweight?: number; // Bodyweight in lbs or kg
     measurements?: BodyMeasurements; // Body measurements in inches/cm
     progressPhoto?: string; // Base64 encoded image or URL
+
+    // ML Wellness Features (for fatigue prediction)
+    muscleSoreness?: number;      // 1-5 scale (1 = none, 5 = extreme)
+    perceivedRecovery?: number;   // 1-5 scale (1 = exhausted, 5 = fully recovered)
+    perceivedEnergy?: number;     // 1-5 scale (1 = drained, 5 = energized)
+
+    // Post-workout feedback (for RL bandit)
+    workoutDifficulty?: number;   // 1-5 scale (how hard was today's workout)
+    workoutSatisfaction?: number; // 1-5 scale (did you perform well)
+    hadPainOrDiscomfort?: boolean; // Any pain/injury during workout
 }
 
 export interface NotificationSettings {
@@ -321,4 +332,153 @@ export interface PercentageProgram extends Program {
   tmMultiplier?: number;                            // TM = 1RM × multiplier (default 0.90)
   deloadWeek?: number;                              // Which week is deload? (e.g., week 4)
   testingWeek?: number;                             // Which week is testing? (e.g., week 4)
+}
+
+// =============================================================================
+// ML TYPES - Fatigue Prediction & Volume Optimization
+// =============================================================================
+
+/**
+ * Volume adjustment actions for the RL bandit
+ */
+export enum VolumeAction {
+  INCREASE_AGGRESSIVE = 0,  // +20% volume
+  INCREASE_MODERATE = 1,    // +10% volume
+  MAINTAIN = 2,             // No change
+  DECREASE_MODERATE = 3,    // -10% volume
+  DELOAD = 4                // -40% volume (full deload)
+}
+
+/**
+ * Context features for the contextual bandit
+ */
+export interface BanditContext {
+  // Volume State (per muscle group)
+  currentVolume: Record<MuscleGroup, number>;  // Sets/week for each muscle
+  volumeVsMAV: Record<MuscleGroup, number>;    // Current / MAV ratio
+  weeksAtCurrentVolume: number;
+
+  // Recovery State
+  avgSoreness7d: number;        // 1-5 scale
+  avgFatigue7d: number;         // 1-5 scale
+  sleepQuality7d: number;       // 1-5 scale
+
+  // Performance State
+  recentPRCount: number;        // PRs in last 2 weeks
+  stalledExercises: number;     // Exercises with no progress (4+ weeks)
+  avgRPETrend: number;          // Rising/falling RPE (-1 to 1)
+
+  // Training Context
+  weeksSinceDeload: number;
+  experienceLevel: number;      // 0=beginner, 1=intermediate, 2=advanced
+  trainingFrequency: number;    // Sessions per week
+
+  // Historical Response (learned)
+  responseToVolumeIncrease: number;  // -1 to 1 (negative = bad response)
+  responseToVolumeDecrease: number;
+}
+
+/**
+ * Output from the fatigue prediction model
+ */
+export interface FatiguePrediction {
+  fatigueScore: number;        // 0-100 (100 = maximum fatigue)
+  deloadProbability: number;   // 0-1 (probability needing deload in next 7 days)
+  daysUntilDeload: number;     // 1-14 (predicted days until deload needed)
+  confidence: number;          // 0-1 (model confidence based on data quality)
+  riskLevel: 'low' | 'moderate' | 'high' | 'critical';
+  recommendation: string;
+  factors: {
+    acwr: number;              // Acute:Chronic Workload Ratio
+    rpeTrend: number;          // RPE progression over time
+    sleepDebt: number;         // Accumulated sleep deficit
+    sorenessScore: number;     // Recent muscle soreness
+    recoveryScore: number;     // Perceived recovery
+  };
+}
+
+/**
+ * Output from the volume bandit
+ */
+export interface VolumeRecommendation {
+  action: VolumeAction;
+  confidence: number;          // 0-1 (based on learning progress)
+  muscleGroup: MuscleGroup;
+  currentVolume: number;
+  recommendedVolume: number;
+  reasoning: string;
+  expectedOutcome: {
+    performanceGain: number;   // Expected % improvement
+    fatigueRisk: number;       // 0-1 risk of overtraining
+  };
+}
+
+/**
+ * Daily features extracted for ML models
+ */
+export interface DailyMLFeatures {
+  date: string;
+
+  // Training Load Features
+  volumeTotal: number;           // Total sets performed
+  volumePerMuscle: Record<MuscleGroup, number>;
+
+  // Intensity Features
+  avgRPE: number;                // Average RPE (0-10)
+  maxRPE: number;                // Max RPE in session
+  avgIntensity: number;          // Avg % of 1RM
+
+  // Recovery Features
+  sleepHours: number;
+  sleepQuality: number;
+  stressLevel: number;
+  sorenessLevel: number;
+  perceivedRecovery: number;
+  perceivedEnergy: number;
+
+  // Derived Features
+  acwr: number;                  // Acute:Chronic Workload Ratio
+  daysSinceRest: number;
+  daysSinceDeload: number;
+  weeklyVolumeChange: number;    // % change from previous week
+  rpeTrend: number;              // 7-day RPE slope
+
+  // Context
+  dayOfWeek: number;             // 0-6
+  isRestDay: boolean;
+  trainingPhase: 'accumulation' | 'intensification' | 'deload' | 'unknown';
+}
+
+/**
+ * Training record for ML model learning (stored for retraining)
+ */
+export interface MLTrainingRecord {
+  id: string;
+  userId: string;
+  timestamp: number;
+
+  // Context at time of recommendation
+  context: BanditContext;
+
+  // Action taken
+  action: VolumeAction;
+
+  // Outcome (collected 1-2 weeks later)
+  reward: number;
+  performanceChange: number;
+  adherence: number;
+  avgSoreness: number;
+  avgFatigue: number;
+  hadInjury: boolean;
+}
+
+/**
+ * Bandit model state (Beta distribution parameters)
+ */
+export interface BanditState {
+  // Beta distribution params: alpha = successes + 1, beta = failures + 1
+  alpha: Record<string, number[]>;  // cluster -> [action params]
+  beta: Record<string, number[]>;
+  lastUpdated: number;
+  totalObservations: number;
 }

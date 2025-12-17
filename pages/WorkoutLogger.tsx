@@ -22,6 +22,7 @@ const SetTypeSelector = lazy(() => import('../components/SetTypeSelector'));
 const WorkoutCompletionModal = lazy(() => import('../components/WorkoutCompletionModal'));
 const AMAPCompletionModal = lazy(() => import('../components/AMAPCompletionModal'));
 const CycleCompletionModal = lazy(() => import('../components/CycleCompletionModal'));
+const PostWorkoutFeedback = lazy(() => import('../components/PostWorkoutFeedback'));
 
 const WorkoutLogger = () => {
   const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning, undoStack, restoreLastDeleted, clearUndoStack, toggleFavoriteExercise } = useStore();
@@ -30,6 +31,8 @@ const WorkoutLogger = () => {
   const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
   const [swapTargetLogId, setSwapTargetLogId] = useState<string | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showPostWorkoutFeedback, setShowPostWorkoutFeedback] = useState(false);
+  const [completedWorkoutRef, setCompletedWorkoutRef] = useState<typeof activeWorkout>(null);
 
   // Phase 5: AMAP Modal State
   const [amapModalData, setAmapModalData] = useState<{
@@ -208,12 +211,24 @@ const WorkoutLogger = () => {
   };
 
   const handleCompleteWorkout = () => {
+    // Save reference to workout before finishing (for feedback modal)
+    if (activeWorkout) {
+      setCompletedWorkoutRef({ ...activeWorkout });
+    }
+
     finishWorkout();
     setShowCompletionModal(false);
 
     // Phase 5: Check if this was a Greg Nuckols program cycle completion
     // TODO: Add cycle tracking logic here
 
+    // Show post-workout feedback modal instead of navigating immediately
+    setShowPostWorkoutFeedback(true);
+  };
+
+  const handleFeedbackComplete = () => {
+    setShowPostWorkoutFeedback(false);
+    setCompletedWorkoutRef(null);
     navigate('/history');
   };
 
@@ -1314,6 +1329,18 @@ const WorkoutLogger = () => {
             programName={cycleModalData.programName}
             recentSessions={history.slice(0, 12)}
             tmUpdates={cycleModalData.tmUpdates}
+          />
+        </Suspense>
+      )}
+
+      {/* ML: Post-Workout Feedback Modal */}
+      {showPostWorkoutFeedback && completedWorkoutRef && (
+        <Suspense fallback={<div />}>
+          <PostWorkoutFeedback
+            workout={completedWorkoutRef}
+            isOpen={true}
+            onClose={handleFeedbackComplete}
+            onComplete={handleFeedbackComplete}
           />
         </Suspense>
       )}
