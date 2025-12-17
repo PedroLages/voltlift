@@ -34,15 +34,33 @@ const DEFAULT_MAV: Record<string, Record<MuscleGroup, number>> = {
 
 /**
  * Extract daily ML features for a specific date
+ *
+ * @param date - Date to extract features for (accepts string or number timestamp)
+ * @param history - Workout history
+ * @param dailyLogs - Daily wellness logs (accepts array or Record)
+ * @param settings - Optional user settings (uses defaults if not provided)
  */
 export function extractDailyFeatures(
-  date: string,
+  date: string | number,
   history: WorkoutSession[],
-  dailyLogs: Record<string, DailyLog>,
-  settings: UserSettings
+  dailyLogs: DailyLog[] | Record<string, DailyLog>,
+  settings?: UserSettings
 ): DailyMLFeatures {
-  const dayLog = dailyLogs[date];
-  const dayWorkouts = getWorkoutsForDate(date, history);
+  // Convert dailyLogs array to Record if needed
+  const logsRecord: Record<string, DailyLog> = Array.isArray(dailyLogs)
+    ? dailyLogs.reduce((acc, log) => ({ ...acc, [log.date]: log }), {})
+    : dailyLogs;
+
+  // Convert date to string format
+  const dateStr = typeof date === 'number'
+    ? new Date(date).toISOString().split('T')[0]
+    : date;
+
+  // Use default settings if not provided
+  const userSettings = settings || createDefaultSettings();
+
+  const dayLog = logsRecord[dateStr];
+  const dayWorkouts = getWorkoutsForDate(dateStr, history);
 
   // Calculate volume per muscle group for this day
   const volumePerMuscle = calculateDailyVolumePerMuscle(dayWorkouts);
@@ -52,23 +70,23 @@ export function extractDailyFeatures(
   const { avgRPE, maxRPE } = calculateRPEMetrics(dayWorkouts);
 
   // Calculate ACWR (Acute:Chronic Workload Ratio)
-  const acwr = calculateACWR(date, history);
+  const acwr = calculateACWR(dateStr, history);
 
   // Calculate days since rest/deload
-  const daysSinceRest = calculateDaysSinceRest(date, history);
-  const daysSinceDeload = calculateDaysSinceDeload(date, history, settings);
+  const daysSinceRest = calculateDaysSinceRest(dateStr, history);
+  const daysSinceDeload = calculateDaysSinceDeload(dateStr, history, userSettings);
 
   // Calculate weekly volume change
-  const weeklyVolumeChange = calculateWeeklyVolumeChange(date, history);
+  const weeklyVolumeChange = calculateWeeklyVolumeChange(dateStr, history);
 
   // Calculate RPE trend (7-day slope)
-  const rpeTrend = calculateRPETrend(date, history);
+  const rpeTrend = calculateRPETrend(dateStr, history);
 
   // Determine training phase
-  const trainingPhase = determineTrainingPhase(date, history, settings);
+  const trainingPhase = determineTrainingPhase(dateStr, history, userSettings);
 
   return {
-    date,
+    date: dateStr,
 
     // Training Load
     volumeTotal,
@@ -77,7 +95,7 @@ export function extractDailyFeatures(
     // Intensity
     avgRPE: avgRPE || 0,
     maxRPE: maxRPE || 0,
-    avgIntensity: calculateAverageIntensity(dayWorkouts, settings),
+    avgIntensity: calculateAverageIntensity(dayWorkouts, userSettings),
 
     // Recovery (from daily log, with defaults)
     sleepHours: dayLog?.sleepHours ?? 7,
@@ -95,7 +113,7 @@ export function extractDailyFeatures(
     rpeTrend,
 
     // Context
-    dayOfWeek: new Date(date).getDay(),
+    dayOfWeek: new Date(dateStr).getDay(),
     isRestDay: dayWorkouts.length === 0,
     trainingPhase,
   };
@@ -103,23 +121,41 @@ export function extractDailyFeatures(
 
 /**
  * Extract features for the last N days (for time-series input to GRU)
+ *
+ * @param history - Workout history
+ * @param dailyLogs - Daily wellness logs (accepts array or Record)
+ * @param endDate - End date (accepts number timestamp or string)
+ * @param days - Number of days to extract
+ * @param settings - User settings (optional, uses defaults if not provided)
  */
 export function extractFeatureSequence(
-  endDate: string,
-  days: number,
   history: WorkoutSession[],
-  dailyLogs: Record<string, DailyLog>,
-  settings: UserSettings
+  dailyLogs: DailyLog[] | Record<string, DailyLog>,
+  endDate: number | string,
+  days: number,
+  settings?: UserSettings
 ): DailyMLFeatures[] {
   const features: DailyMLFeatures[] = [];
-  const end = new Date(endDate);
+
+  // Convert dailyLogs array to Record if needed
+  const logsRecord: Record<string, DailyLog> = Array.isArray(dailyLogs)
+    ? dailyLogs.reduce((acc, log) => ({ ...acc, [log.date]: log }), {})
+    : dailyLogs;
+
+  // Convert endDate to Date object
+  const end = typeof endDate === 'number'
+    ? new Date(endDate)
+    : new Date(endDate);
+
+  // Use default settings if not provided
+  const userSettings = settings || createDefaultSettings();
 
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(end);
     date.setDate(date.getDate() - i);
     const dateStr = date.toISOString().split('T')[0];
 
-    features.push(extractDailyFeatures(dateStr, history, dailyLogs, settings));
+    features.push(extractDailyFeatures(dateStr, history, logsRecord, userSettings));
   }
 
   return features;
@@ -127,14 +163,32 @@ export function extractFeatureSequence(
 
 /**
  * Extract context features for the volume bandit
+ *
+ * @param history - Workout history
+ * @param dailyLogs - Daily wellness logs (accepts array or Record)
+ * @param endDate - Optional end date (number timestamp or string, defaults to today)
+ * @param settings - Optional user settings (uses defaults if not provided)
  */
 export function extractBanditContext(
   history: WorkoutSession[],
-  dailyLogs: Record<string, DailyLog>,
-  settings: UserSettings
+  dailyLogs: DailyLog[] | Record<string, DailyLog>,
+  endDate?: number | string,
+  settings?: UserSettings
 ): BanditContext {
-  const today = new Date().toISOString().split('T')[0];
-  const last7Days = getLast7DaysLogs(today, dailyLogs);
+  // Convert dailyLogs array to Record if needed
+  const logsRecord: Record<string, DailyLog> = Array.isArray(dailyLogs)
+    ? dailyLogs.reduce((acc, log) => ({ ...acc, [log.date]: log }), {})
+    : dailyLogs;
+
+  // Calculate today based on endDate or current date
+  const end = endDate
+    ? (typeof endDate === 'number' ? new Date(endDate) : new Date(endDate))
+    : new Date();
+  const today = end.toISOString().split('T')[0];
+
+  // Use default settings if not provided
+  const userSettings = settings || createDefaultSettings();
+  const last7Days = getLast7DaysLogs(today, logsRecord);
   const last14Days = getWorkoutsInRange(today, 14, history);
   const last28Days = getWorkoutsInRange(today, 28, history);
 
@@ -144,7 +198,7 @@ export function extractBanditContext(
   ).flat());
 
   // Calculate volume vs MAV ratio
-  const mav = DEFAULT_MAV[settings.experienceLevel] || DEFAULT_MAV.Intermediate;
+  const mav = DEFAULT_MAV[userSettings.experienceLevel] || DEFAULT_MAV.Intermediate;
   const volumeVsMAV: Record<MuscleGroup, number> = {} as Record<MuscleGroup, number>;
   for (const muscle of MUSCLE_GROUPS) {
     volumeVsMAV[muscle] = mav[muscle] > 0 ? currentVolume[muscle] / mav[muscle] : 0;
@@ -159,14 +213,14 @@ export function extractBanditContext(
   const sleepQuality7d = average(last7Days.map(d => d.sleepQuality ?? 3));
 
   // Performance metrics
-  const recentPRCount = countRecentPRs(last14Days, settings);
-  const stalledExercises = countStalledExercises(history, settings);
+  const recentPRCount = countRecentPRs(last14Days, userSettings);
+  const stalledExercises = countStalledExercises(history, userSettings);
   const avgRPETrend = calculateRPETrend(today, history);
 
   // Training context
-  const weeksSinceDeload = Math.floor(calculateDaysSinceDeload(today, history, settings) / 7);
-  const experienceLevel = settings.experienceLevel === 'Beginner' ? 0 :
-                          settings.experienceLevel === 'Intermediate' ? 1 : 2;
+  const weeksSinceDeload = Math.floor(calculateDaysSinceDeload(today, history, userSettings) / 7);
+  const experienceLevel = userSettings.experienceLevel === 'Beginner' ? 0 :
+                          userSettings.experienceLevel === 'Intermediate' ? 1 : 2;
   const trainingFrequency = calculateTrainingFrequency(last28Days);
 
   // Historical response (placeholder - will be learned)
@@ -560,4 +614,23 @@ function estimateWeeksAtCurrentVolume(history: WorkoutSession[]): number {
 function average(arr: number[]): number {
   if (arr.length === 0) return 0;
   return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+/**
+ * Create default UserSettings for when settings are not available
+ * This allows feature extraction to work without full user context
+ */
+function createDefaultSettings(): UserSettings {
+  return {
+    onboardingCompleted: true,
+    experienceLevel: 'Intermediate',
+    personalRecords: {},
+    preferredUnits: 'kg',
+    restTimerEnabled: true,
+    defaultRestTime: 90,
+    soundEnabled: true,
+    notificationsEnabled: false,
+    theme: 'dark',
+    activeProgram: null,
+  };
 }
