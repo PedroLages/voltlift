@@ -596,7 +596,7 @@ function calculateActualFatigue(
     const dateStr = date.toISOString().split('T')[0];
 
     // Check daily log for actual reported fatigue/recovery
-    const dailyLog = dailyLogs.find(log => log.date === dateStr);
+    const dailyLog = dailyLogs[dateStr];
 
     if (dailyLog && dailyLog.perceivedRecovery !== undefined) {
       // Use inverse of perceived recovery (5 = low fatigue, 1 = high fatigue)

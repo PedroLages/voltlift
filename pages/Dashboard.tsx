@@ -68,8 +68,7 @@ const Dashboard = () => {
   const todayLog = dailyLogs[today] || { date: today };
 
   // Check if user needs to complete daily wellness check-in
-  const todayLogForCheckin = dailyLogs.find(log => log.date === today);
-  const needsWellnessCheckin = !todayLogForCheckin?.perceivedRecovery;
+  const needsWellnessCheckin = !todayLog?.perceivedRecovery;
 
   // Show wellness check-in prompt on first load if needed and user has history
   useEffect(() => {

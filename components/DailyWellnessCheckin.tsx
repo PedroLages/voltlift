@@ -91,7 +91,7 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
 
   // Get today's date string
   const today = new Date().toISOString().split('T')[0];
-  const existingLog = dailyLogs.find(log => log.date === today);
+  const existingLog = dailyLogs[today];
 
   // Pre-fill if existing data
   useEffect(() => {

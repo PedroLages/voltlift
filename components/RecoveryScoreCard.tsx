@@ -93,7 +93,7 @@ export function RecoveryScoreCard({ onOpenWellnessCheckin, compact = false }: Re
     }
 
     // Data quality based on wellness check-ins
-    const recentLogs = dailyLogs.filter(log => {
+    const recentLogs = Object.values(dailyLogs).filter(log => {
       const logDate = new Date(log.date).getTime();
       return today - logDate < 7 * 24 * 60 * 60 * 1000;
     });
@@ -143,9 +143,7 @@ export function RecoveryScoreCard({ onOpenWellnessCheckin, compact = false }: Re
 
   // Check if wellness checkin is needed today
   const today = new Date().toISOString().split('T')[0];
-  const hasCheckedInToday = dailyLogs.some(
-    log => log.date === today && log.perceivedRecovery !== undefined
-  );
+  const hasCheckedInToday = dailyLogs[today]?.perceivedRecovery !== undefined;
 
   if (compact) {
     // Compact version for dashboard

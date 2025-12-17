@@ -79,7 +79,7 @@ export function PostWorkoutFeedback({ workout, isOpen, onClose, onComplete }: Po
     };
 
     // Update or create daily log with feedback
-    const existingLog = dailyLogs.find(log => log.date === today);
+    const existingLog = dailyLogs[today];
     if (existingLog) {
       updateDailyLog(today, feedbackData);
     } else {
