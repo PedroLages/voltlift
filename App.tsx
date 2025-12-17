@@ -11,6 +11,7 @@ import WorkoutRecoveryPrompt from './components/WorkoutRecoveryPrompt';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import { initializeNotificationListeners } from './services/notificationService';
 import DesktopLayout from './components/desktop/DesktopLayout';
+import { preloadMLModules } from './services/ml';
 
 // Lazy load pages for better performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -260,6 +261,9 @@ const App = () => {
 
     // Initialize notification listeners
     initializeNotificationListeners();
+
+    // Preload lightweight ML modules in background (TensorFlow.js loads on-demand)
+    preloadMLModules();
 
     // Register service worker for PWA (only in web, not native)
     if ('serviceWorker' in navigator && !window.matchMedia('(display-mode: standalone)').matches) {
