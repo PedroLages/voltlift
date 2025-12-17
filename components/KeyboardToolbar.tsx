@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 interface KeyboardToolbarProps {
@@ -19,7 +19,7 @@ interface KeyboardToolbarProps {
 /**
  * iOS-style keyboard toolbar for form navigation
  * Displays Previous/Next arrows and Done button above the keyboard
- * Mimics native iOS form navigation behavior
+ * Uses visualViewport API to position above iOS keyboard
  */
 export default function KeyboardToolbar({
   currentInput,
@@ -30,26 +30,73 @@ export default function KeyboardToolbar({
   hasNext = true,
 }: KeyboardToolbarProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // Calculate keyboard height using visualViewport API
+  const updateKeyboardHeight = useCallback(() => {
+    if (window.visualViewport) {
+      const viewportHeight = window.visualViewport.height;
+      const windowHeight = window.innerHeight;
+      const calculatedKeyboardHeight = windowHeight - viewportHeight;
+
+      // Only update if keyboard is actually visible (height > 100px to avoid false positives)
+      if (calculatedKeyboardHeight > 100) {
+        setKeyboardHeight(calculatedKeyboardHeight);
+      } else {
+        setKeyboardHeight(0);
+      }
+    }
+  }, []);
+
+  // Listen to visualViewport changes (keyboard open/close)
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const handleResize = () => {
+      updateKeyboardHeight();
+    };
+
+    const handleScroll = () => {
+      updateKeyboardHeight();
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    viewport.addEventListener('scroll', handleScroll);
+
+    // Initial check
+    updateKeyboardHeight();
+
+    return () => {
+      viewport.removeEventListener('resize', handleResize);
+      viewport.removeEventListener('scroll', handleScroll);
+    };
+  }, [updateKeyboardHeight]);
 
   useEffect(() => {
     // Show toolbar when input is focused
     if (currentInput) {
       setIsVisible(true);
+      // Recalculate keyboard height when input changes
+      setTimeout(updateKeyboardHeight, 100);
     } else {
       setIsVisible(false);
+      setKeyboardHeight(0);
     }
-  }, [currentInput]);
+  }, [currentInput, updateKeyboardHeight]);
 
   // Auto-hide when keyboard is dismissed
   useEffect(() => {
     const handleBlur = () => {
       // Delay to check if another input was focused
       setTimeout(() => {
-        if (document.activeElement?.tagName !== 'INPUT') {
+        if (document.activeElement?.tagName !== 'INPUT' &&
+            document.activeElement?.tagName !== 'TEXTAREA') {
           setIsVisible(false);
+          setKeyboardHeight(0);
         }
-      }, 100);
+      }, 150);
     };
 
     if (currentInput) {
@@ -58,56 +105,65 @@ export default function KeyboardToolbar({
     }
   }, [currentInput]);
 
+  // Don't render if not visible or no keyboard detected
   if (!isVisible) return null;
 
   return (
     <div
       ref={toolbarRef}
-      className="fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a] border-t border-[#333] safe-area-bottom"
+      className="fixed left-0 right-0 z-[9999] bg-[#1a1a1a] border-t border-[#444]"
       style={{
-        // Position above keyboard (iOS Safe Area handles keyboard height)
-        paddingBottom: 'env(safe-area-inset-bottom)',
+        // Position above the keyboard
+        bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : '0px',
+        // Add shadow for visibility
+        boxShadow: '0 -2px 10px rgba(0,0,0,0.5)',
       }}
     >
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-between px-3 py-2">
         {/* Previous/Next Navigation */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onPrevious?.();
             }}
+            onTouchStart={(e) => e.stopPropagation()}
             disabled={!hasPrevious}
-            className={`w-10 h-10 flex items-center justify-center border transition-colors ${
+            className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors touch-manipulation ${
               hasPrevious
-                ? 'border-[#333] text-white hover:border-primary hover:text-primary'
-                : 'border-[#222] text-[#444] cursor-not-allowed'
+                ? 'bg-[#333] text-white active:bg-primary active:text-black'
+                : 'bg-[#222] text-[#555] cursor-not-allowed'
             }`}
             aria-label="Previous field"
+            type="button"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={24} />
           </button>
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onNext?.();
             }}
+            onTouchStart={(e) => e.stopPropagation()}
             disabled={!hasNext}
-            className={`w-10 h-10 flex items-center justify-center border transition-colors ${
+            className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors touch-manipulation ${
               hasNext
-                ? 'border-[#333] text-white hover:border-primary hover:text-primary'
-                : 'border-[#222] text-[#444] cursor-not-allowed'
+                ? 'bg-[#333] text-white active:bg-primary active:text-black'
+                : 'bg-[#222] text-[#555] cursor-not-allowed'
             }`}
             aria-label="Next field"
+            type="button"
           >
-            <ChevronRight size={20} />
+            <ChevronRight size={24} />
           </button>
         </div>
 
-        {/* Field Label */}
-        <div className="flex-1 text-center">
-          <span className="text-xs font-mono text-[#666] uppercase tracking-wider">
-            {currentInput?.getAttribute('aria-label') || 'Input'}
+        {/* Field Label - truncated for long labels */}
+        <div className="flex-1 text-center px-2 overflow-hidden">
+          <span className="text-[11px] font-mono text-[#888] uppercase tracking-wider truncate block">
+            {currentInput?.getAttribute('aria-label')?.split(' for ')[0] || 'Input'}
           </span>
         </div>
 
@@ -115,11 +171,14 @@ export default function KeyboardToolbar({
         <button
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             onDone?.();
             currentInput?.blur(); // Dismiss keyboard
           }}
-          className="px-6 py-2 bg-primary text-black font-black italic uppercase tracking-wider text-sm hover:bg-white transition-colors"
+          onTouchStart={(e) => e.stopPropagation()}
+          className="px-5 py-2.5 bg-primary text-black font-bold uppercase text-sm rounded-lg active:bg-white transition-colors touch-manipulation min-h-[44px]"
           aria-label="Done"
+          type="button"
         >
           Done
         </button>
