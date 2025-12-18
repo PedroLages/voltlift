@@ -28,7 +28,8 @@ import {
   Shield,
   Radio,
   Crosshair,
-  Brain
+  Brain,
+  Heart
 } from 'lucide-react';
 import { saveImageToDB, getImageFromDB } from '../utils/db';
 import { EXERCISE_LIBRARY } from '../constants';
@@ -46,6 +47,8 @@ import YearInReview from '../components/YearInReview';
 import CollapsibleSection from '../components/CollapsibleSection';
 import QuickSettings from '../components/QuickSettings';
 import WeeklyGoalTracker from '../components/WeeklyGoalTracker';
+import { DailyWellnessCheckin } from '../components/DailyWellnessCheckin';
+import { isHealthKitAvailable, requestHealthPermissions } from '../services/healthKitService';
 
 // Tactical Section Header Component
 const TacticalHeader = ({ title, statusLabel, statusActive }: { title: string; statusLabel: string; statusActive: boolean }) => (
@@ -110,15 +113,15 @@ const TacticalStatCard = ({ icon, value, label, trend }: { icon: React.ReactNode
 const MilitaryToggle = ({ enabled, onToggle, label }: { enabled: boolean; onToggle: () => void; label: string }) => (
   <button
     onClick={onToggle}
-    className={`relative w-14 h-7 rounded-full border-2 transition-all duration-300 ${
+    className={`relative w-16 h-11 rounded-full border-2 transition-all duration-300 min-h-[44px] ${
       enabled ? 'bg-primary/20 border-primary' : 'bg-[#111] border-[#333]'
     }`}
     aria-label={label}
     aria-pressed={enabled}
   >
     <span
-      className={`absolute left-0.5 top-0.5 w-5 h-5 rounded-full transition-all duration-300 ease-in-out ${
-        enabled ? 'translate-x-7 bg-primary' : 'translate-x-0 bg-[#666]'
+      className={`absolute left-1 top-1.5 w-7 h-7 rounded-full transition-all duration-300 ease-in-out ${
+        enabled ? 'translate-x-6 bg-primary' : 'translate-x-0 bg-[#666]'
       }`}
     />
   </button>
@@ -140,6 +143,8 @@ const Profile = () => {
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const [showYearInReview, setShowYearInReview] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showWellnessCheckin, setShowWellnessCheckin] = useState(false);
+  const [healthKitAvailable, setHealthKitAvailable] = useState(false);
 
   // Validate image URL
   const isValidImageUrl = (url: string | null): url is string => {
@@ -174,6 +179,27 @@ const Profile = () => {
 
     loadProfilePicture();
   }, [settings.profilePictureUrl]);
+
+  // Check HealthKit availability on mount
+  useEffect(() => {
+    const checkHealthKit = async () => {
+      const available = await isHealthKitAvailable();
+      setHealthKitAvailable(available);
+    };
+    checkHealthKit();
+  }, []);
+
+  // Handle HealthKit toggle
+  const handleHealthKitToggle = async () => {
+    if (!settings.healthKitEnabled) {
+      const granted = await requestHealthPermissions();
+      if (granted) {
+        updateSettings({ healthKitEnabled: true });
+      }
+    } else {
+      updateSettings({ healthKitEnabled: false });
+    }
+  };
 
   // Handle profile picture upload using Capacitor Camera (iOS/Android native support)
   const handleProfilePictureCapture = async () => {
@@ -668,9 +694,9 @@ const Profile = () => {
       ═══════════════════════════════════════════════════════════════════════════════ */}
       <div className="mt-10 mb-4">
         <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">Biometrics & Recovery</span>
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+          <h2 className="text-[10px] font-black italic uppercase tracking-[0.3em] text-primary/80">⌜ Biometrics & Recovery ⌟</h2>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
         </div>
       </div>
 
@@ -714,15 +740,84 @@ const Profile = () => {
         </div>
       </CollapsibleSection>
 
+      {/* Health Data (HealthKit/Health Connect Integration) */}
+      <CollapsibleSection
+        title="Health Data"
+        icon={<Heart size={18} className={settings.healthKitEnabled ? 'text-primary' : 'text-[#666]'} />}
+        defaultExpanded={false}
+        summary={settings.healthKitEnabled ? (healthKitAvailable ? 'Active' : 'Unavailable') : 'Disabled'}
+        tier="medium"
+      >
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6">
+          {healthKitAvailable ? (
+            <>
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <div className="text-sm font-black italic uppercase text-white tracking-wider">
+                    {settings.healthKitEnabled ? 'CONNECTED' : 'OFFLINE'}
+                  </div>
+                  <p className="text-xs text-[#666] mt-1 uppercase font-mono tracking-wider">
+                    {settings.healthKitEnabled ? 'Auto-importing health data' : 'Manual entry only'}
+                  </p>
+                </div>
+                <MilitaryToggle
+                  enabled={settings.healthKitEnabled || false}
+                  onToggle={handleHealthKitToggle}
+                  label={settings.healthKitEnabled ? 'Disable HealthKit' : 'Enable HealthKit'}
+                />
+              </div>
+
+              {settings.healthKitEnabled && (
+                <>
+                  {/* Sleep & HRV data display grid */}
+                  <div className="border-t border-[#1a1a1a] pt-4 mb-4">
+                    <div className="text-xs font-mono uppercase text-[#666] mb-3 tracking-wider">Recent Data</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-[#000] border border-[#1a1a1a] p-3">
+                        <div className="text-[10px] text-[#666] uppercase font-mono mb-1">Sleep</div>
+                        <div className="text-lg font-black text-primary">
+                          {dailyLogs[new Date().toISOString().split('T')[0]]?.sleepHours?.toFixed(1) || '--'}h
+                        </div>
+                      </div>
+                      <div className="bg-[#000] border border-[#1a1a1a] p-3">
+                        <div className="text-[10px] text-[#666] uppercase font-mono mb-1">HRV</div>
+                        <div className="text-lg font-black text-primary">
+                          {dailyLogs[new Date().toISOString().split('T')[0]]?.hrv || '--'}ms
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manual check-in button */}
+                  <button
+                    onClick={() => setShowWellnessCheckin(true)}
+                    className="w-full py-3 border-2 border-primary bg-primary/10 hover:bg-primary hover:text-black text-xs font-black italic uppercase tracking-[0.15em] text-primary transition-all flex items-center justify-center gap-2 min-h-[48px]"
+                  >
+                    <Activity size={14} />
+                    COMPLETE DAILY CHECK-IN
+                  </button>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-6">
+              <AlertCircle size={32} className="text-[#666] mx-auto mb-3" />
+              <div className="text-sm font-black italic uppercase text-[#666] mb-2">NOT AVAILABLE</div>
+              <p className="text-xs text-[#666]">HealthKit is only available on iOS devices</p>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
       {/* ═══════════════════════════════════════════════════════════════════════════════
           SECTION GROUP: COMMUNICATIONS
           Cloud sync, notifications, and data transfer
       ═══════════════════════════════════════════════════════════════════════════════ */}
       <div className="mt-10 mb-4">
         <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">Communications</span>
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+          <h2 className="text-[10px] font-black italic uppercase tracking-[0.3em] text-primary/80">⌜ Communications ⌟</h2>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
         </div>
       </div>
 
@@ -796,9 +891,9 @@ const Profile = () => {
       ═══════════════════════════════════════════════════════════════════════════════ */}
       <div className="mt-10 mb-4">
         <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">Hardware & Calibration</span>
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+          <h2 className="text-[10px] font-black italic uppercase tracking-[0.3em] text-primary/80">⌜ Hardware & Calibration ⌟</h2>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
         </div>
       </div>
 
@@ -1138,9 +1233,9 @@ const Profile = () => {
       ═══════════════════════════════════════════════════════════════════════════════ */}
       <div className="mt-10 mb-4">
         <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">Intelligence Systems</span>
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+          <h2 className="text-[10px] font-black italic uppercase tracking-[0.3em] text-primary/80">⌜ Intelligence Systems ⌟</h2>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
         </div>
       </div>
 
@@ -1415,6 +1510,13 @@ const Profile = () => {
           </div>
         </div>
       </section>
+
+      {/* Daily Wellness Check-in Modal */}
+      <DailyWellnessCheckin
+        isOpen={showWellnessCheckin}
+        onClose={() => setShowWellnessCheckin(false)}
+        onComplete={() => setShowWellnessCheckin(false)}
+      />
 
       {/* Reset Confirmation Modal */}
       {showResetConfirm && (
