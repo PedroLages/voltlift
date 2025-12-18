@@ -119,7 +119,8 @@ const WorkoutLogger = () => {
       const heightDiff = previousViewportHeight.current - currentHeight;
 
       // Keyboard appeared (viewport shrunk significantly)
-      if (heightDiff > 100 && focusedInputRef.current) {
+      const KEYBOARD_HEIGHT_THRESHOLD = 100; // Minimum height change to detect keyboard appearance
+      if (heightDiff > KEYBOARD_HEIGHT_THRESHOLD && focusedInputRef.current) {
         // Delay slightly to let keyboard animation complete
         setTimeout(() => {
           if (focusedInputRef.current && document.activeElement === focusedInputRef.current) {
@@ -142,7 +143,10 @@ const WorkoutLogger = () => {
     };
 
     viewport.addEventListener('resize', handleViewportResize);
-    return () => viewport.removeEventListener('resize', handleViewportResize);
+    return () => {
+      viewport.removeEventListener('resize', handleViewportResize);
+      focusedInputRef.current = null; // Clear ref to prevent memory retention
+    };
   }, []);
 
   // Audio Oscillator for Beep

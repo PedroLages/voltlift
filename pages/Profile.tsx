@@ -58,9 +58,9 @@ const TacticalHeader = ({ title, statusLabel, statusActive }: { title: string; s
         {/* Corner brackets */}
         <div className="absolute -left-2 -top-2 w-3 h-3 border-l-2 border-t-2 border-primary"></div>
         <div className="absolute -right-2 -top-2 w-3 h-3 border-r-2 border-t-2 border-primary"></div>
-        <h3 className="text-xs font-black italic uppercase tracking-[0.2em] text-white px-4 py-2 bg-[#0a0a0a]">
+        <h2 className="text-xs font-black italic uppercase tracking-[0.2em] text-white px-4 py-2 bg-[#0a0a0a]">
           {title}
-        </h3>
+        </h2>
         <div className="absolute -left-2 -bottom-2 w-3 h-3 border-l-2 border-b-2 border-primary"></div>
         <div className="absolute -right-2 -bottom-2 w-3 h-3 border-r-2 border-b-2 border-primary"></div>
       </div>
