@@ -473,12 +473,22 @@ export interface MLTrainingRecord {
 }
 
 /**
- * Bandit model state (Beta distribution parameters)
+ * Bandit model state (Thompson Sampling with per-muscle-group Beta distributions)
  */
 export interface BanditState {
-  // Beta distribution params: alpha = successes + 1, beta = failures + 1
-  alpha: Record<string, number[]>;  // cluster -> [action params]
-  beta: Record<string, number[]>;
-  lastUpdated: number;
-  totalObservations: number;
+  // Per-muscle-group action states (each action has alpha/beta params)
+  muscleGroupStates: Record<MuscleGroup, {
+    decrease: { alpha: number; beta: number };
+    maintain: { alpha: number; beta: number };
+    increase: { alpha: number; beta: number };
+  }>;
+  totalUpdates: number;
+  lastUpdate: number;
+  history: Array<{
+    timestamp: number;
+    muscleGroup: MuscleGroup;
+    action: VolumeAction;
+    reward: number;
+    context: BanditContext;
+  }>;
 }
