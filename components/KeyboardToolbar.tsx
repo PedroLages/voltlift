@@ -16,10 +16,22 @@ interface KeyboardToolbarProps {
   hasNext?: boolean;
 }
 
+// Check if running in Capacitor native environment
+const isCapacitorNative = (): boolean => {
+  return typeof (window as any).Capacitor !== 'undefined' &&
+         (window as any).Capacitor.isNativePlatform?.() === true;
+};
+
 /**
  * iOS-style keyboard toolbar for form navigation
  * Displays Previous/Next arrows and Done button above the keyboard
- * Uses visualViewport API to position above iOS keyboard
+ *
+ * Uses two different strategies:
+ * - Native iOS (Capacitor): Uses @capacitor/keyboard plugin events
+ * - Web: Uses visualViewport API
+ *
+ * Note: These approaches are mutually exclusive because Capacitor's
+ * keyboard plugin prevents WebView resizing, which breaks visualViewport.
  */
 export default function KeyboardToolbar({
   currentInput,
@@ -33,8 +45,11 @@ export default function KeyboardToolbar({
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
-  // Calculate keyboard height using visualViewport API
+  // Calculate keyboard height using visualViewport API (web only)
   const updateKeyboardHeight = useCallback(() => {
+    // Skip visualViewport on native - we use Capacitor Keyboard events instead
+    if (isCapacitorNative()) return;
+
     if (window.visualViewport) {
       const viewportHeight = window.visualViewport.height;
       const windowHeight = window.innerHeight;
@@ -49,8 +64,49 @@ export default function KeyboardToolbar({
     }
   }, []);
 
-  // Listen to visualViewport changes (keyboard open/close)
+  // Capacitor Keyboard Plugin Integration (native iOS)
   useEffect(() => {
+    if (!isCapacitorNative()) return;
+
+    let keyboardShowListener: any = null;
+    let keyboardHideListener: any = null;
+
+    const setupCapacitorKeyboard = async () => {
+      try {
+        const { Keyboard } = await import('@capacitor/keyboard');
+
+        // Listen for keyboard show events
+        keyboardShowListener = await Keyboard.addListener('keyboardWillShow', (info) => {
+          console.log('[KeyboardToolbar] Capacitor keyboard will show, height:', info.keyboardHeight);
+          setKeyboardHeight(info.keyboardHeight);
+        });
+
+        // Listen for keyboard hide events
+        keyboardHideListener = await Keyboard.addListener('keyboardWillHide', () => {
+          console.log('[KeyboardToolbar] Capacitor keyboard will hide');
+          setKeyboardHeight(0);
+        });
+
+        console.log('[KeyboardToolbar] Capacitor Keyboard listeners registered');
+      } catch (error) {
+        console.warn('[KeyboardToolbar] Failed to setup Capacitor Keyboard:', error);
+      }
+    };
+
+    setupCapacitorKeyboard();
+
+    return () => {
+      // Cleanup listeners
+      keyboardShowListener?.remove?.();
+      keyboardHideListener?.remove?.();
+    };
+  }, []);
+
+  // Listen to visualViewport changes (web only - keyboard open/close)
+  useEffect(() => {
+    // Skip on native - Capacitor handles keyboard events
+    if (isCapacitorNative()) return;
+
     const viewport = window.visualViewport;
     if (!viewport) return;
 
@@ -78,8 +134,10 @@ export default function KeyboardToolbar({
     // Show toolbar when input is focused
     if (currentInput) {
       setIsVisible(true);
-      // Recalculate keyboard height when input changes
-      setTimeout(updateKeyboardHeight, 100);
+      // Recalculate keyboard height when input changes (web only)
+      if (!isCapacitorNative()) {
+        setTimeout(updateKeyboardHeight, 100);
+      }
     } else {
       setIsVisible(false);
       setKeyboardHeight(0);

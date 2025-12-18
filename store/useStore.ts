@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserSettings, WorkoutSession, ExerciseLog, SetLog, Goal, Program, DailyLog, BiometricPoint, PRType, PersonalRecord } from '../types';
+import { UserSettings, WorkoutSession, ExerciseLog, SetLog, Goal, Program, DailyLog, BiometricPoint, PRType, PersonalRecord, Exercise } from '../types';
 import { MOCK_HISTORY, INITIAL_TEMPLATES, EXERCISE_LIBRARY, INITIAL_PROGRAMS } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { backend } from '../services/backend';
@@ -24,6 +24,7 @@ interface AppState {
   templates: WorkoutSession[];
   programs: Program[];
   activeWorkout: WorkoutSession | null;
+  customExercises: Exercise[];
   customExerciseVisuals: Record<string, string>;
 
   // Phase 4: Bio-Feedback & Cloud
@@ -60,11 +61,14 @@ interface AppState {
   restoreLastDeleted: () => void;
   clearUndoStack: () => void;
   toggleFavoriteExercise: (exerciseId: string) => void;
+  createCustomExercise: (exercise: Omit<Exercise, 'id'>) => string;
+  deleteCustomExercise: (exerciseId: string) => void;
+  getAllExercises: () => Exercise[];
   updateSettings: (settings: Partial<UserSettings>) => void;
   completeOnboarding: (name: string, goal: Goal, experience: 'Beginner' | 'Intermediate' | 'Advanced', equipment: string[]) => void;
   saveExerciseVisual: (exerciseId: string, url: string) => void;
   loadVisuals: () => Promise<void>;
-  swapExercise: (logId: string, newExerciseId: string) => void;
+  swapExercise: (logId: string, newExerciseId: string, persistent?: boolean) => void;
   saveTemplate: (name: string, exerciseIds: string[]) => void;
   updateTemplate: (id: string, name: string, exerciseIds: string[]) => void;
   duplicateTemplate: (id: string) => void;
@@ -131,6 +135,7 @@ export const useStore = create<AppState>()(
       templates: INITIAL_TEMPLATES,
       programs: INITIAL_PROGRAMS,
       activeWorkout: null,
+      customExercises: [],
       customExerciseVisuals: {},
       
       dailyLogs: {},
@@ -542,6 +547,31 @@ export const useStore = create<AppState>()(
         });
       },
 
+      createCustomExercise: (exercise) => {
+        const id = `custom-${uuidv4()}`;
+        const newExercise: Exercise = {
+          ...exercise,
+          id,
+        };
+
+        set((state) => ({
+          customExercises: [...state.customExercises, newExercise],
+        }));
+
+        return id;
+      },
+
+      deleteCustomExercise: (exerciseId) => {
+        set((state) => ({
+          customExercises: state.customExercises.filter(ex => ex.id !== exerciseId),
+        }));
+      },
+
+      getAllExercises: () => {
+        const state = get();
+        return [...EXERCISE_LIBRARY, ...state.customExercises];
+      },
+
       completeOnboarding: (name, goal, experience, equipment) => {
         set((state) => ({
           settings: {
@@ -592,15 +622,19 @@ export const useStore = create<AppState>()(
         // Otherwise, visuals will be loaded from localStorage via persist middleware
       },
 
-      swapExercise: (logId, newExerciseId) => {
-        const { activeWorkout } = get();
+      swapExercise: (logId, newExerciseId, persistent = false) => {
+        const { activeWorkout, templates } = get();
         if (!activeWorkout) return;
+
+        // Find the old exercise ID before swapping
+        const oldLog = activeWorkout.logs.find(log => log.id === logId);
+        const oldExerciseId = oldLog?.exerciseId;
 
         const newLogs = activeWorkout.logs.map(log => {
             if (log.id === logId) {
-                return { 
-                  ...log, 
-                  exerciseId: newExerciseId, 
+                return {
+                  ...log,
+                  exerciseId: newExerciseId,
                   sets: [{ id: uuidv4(), reps: 0, weight: 0, completed: false, type: 'N' }],
                   notes: ''
                 };
@@ -609,6 +643,39 @@ export const useStore = create<AppState>()(
         });
 
         set({ activeWorkout: { ...activeWorkout, logs: newLogs }});
+
+        // If persistent swap is requested and we have a source template, update the template too
+        if (persistent && activeWorkout.sourceTemplateId && oldExerciseId) {
+          const template = templates.find(t => t.id === activeWorkout.sourceTemplateId);
+          if (template) {
+            // Update the template by replacing the old exercise with the new one
+            const newTemplateExerciseIds = template.logs.map(log =>
+              log.exerciseId === oldExerciseId ? newExerciseId : log.exerciseId
+            );
+
+            // Mark template as pending sync
+            const newPendingTemplates = new Set(get().pendingSyncTemplates);
+            newPendingTemplates.add(template.id);
+
+            set(state => ({
+              templates: state.templates.map(t =>
+                t.id === activeWorkout.sourceTemplateId
+                  ? {
+                      ...t,
+                      logs: t.logs.map(log =>
+                        log.exerciseId === oldExerciseId
+                          ? { ...log, exerciseId: newExerciseId }
+                          : log
+                      )
+                    }
+                  : t
+              ),
+              pendingSyncTemplates: newPendingTemplates
+            }));
+
+            get().syncData();
+          }
+        }
       },
       
       suggestNextSet: (exerciseIndex, setIndex) => {
