@@ -11,7 +11,7 @@
  * - Resting heart rate (optional, for recovery tracking)
  */
 
-import { HealthConnect } from 'capacitor-health';
+import { Health } from 'capacitor-health';
 import { Capacitor } from '@capacitor/core';
 
 export interface HealthData {
@@ -30,7 +30,7 @@ export async function isHealthKitAvailable(): Promise<boolean> {
   }
 
   try {
-    const result = await HealthConnect.isAvailable();
+    const result = await Health.isAvailable();
     return result.available;
   } catch (error) {
     console.error('HealthKit availability check failed:', error);
@@ -44,7 +44,7 @@ export async function isHealthKitAvailable(): Promise<boolean> {
  */
 export async function requestHealthPermissions(): Promise<boolean> {
   try {
-    await HealthConnect.requestPermission({
+    await Health.requestPermission({
       read: ['sleep', 'heart_rate_variability_sdnn', 'resting_heart_rate'],
       write: [] // We only read, never write
     });
@@ -63,7 +63,7 @@ export async function requestHealthPermissions(): Promise<boolean> {
  */
 export async function getSleepData(date: string): Promise<number> {
   try {
-    const result = await HealthConnect.queryData({
+    const result = await Health.queryData({
       type: 'sleep',
       startDate: `${date}T00:00:00.000Z`,
       endDate: `${date}T23:59:59.999Z`
@@ -97,7 +97,7 @@ export async function getSleepData(date: string): Promise<number> {
  */
 export async function getHRVData(date: string): Promise<number | undefined> {
   try {
-    const result = await HealthConnect.queryData({
+    const result = await Health.queryData({
       type: 'heart_rate_variability_sdnn',
       startDate: `${date}T00:00:00.000Z`,
       endDate: `${date}T23:59:59.999Z`
@@ -128,7 +128,7 @@ export async function getHRVData(date: string): Promise<number | undefined> {
  */
 export async function getRestingHRData(date: string): Promise<number | undefined> {
   try {
-    const result = await HealthConnect.queryData({
+    const result = await Health.queryData({
       type: 'resting_heart_rate',
       startDate: `${date}T00:00:00.000Z`,
       endDate: `${date}T23:59:59.999Z`
