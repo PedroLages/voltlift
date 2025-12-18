@@ -171,6 +171,10 @@ export interface DailyLog {
     workoutDifficulty?: number;   // 1-5 scale (how hard was today's workout)
     workoutSatisfaction?: number; // 1-5 scale (did you perform well)
     hadPainOrDiscomfort?: boolean; // Any pain/injury during workout
+
+    // HealthKit-imported biometrics (Phase 2)
+    hrv?: number; // Heart Rate Variability in ms (gold standard for recovery tracking)
+    restingHR?: number; // Resting Heart Rate in bpm (fitness/recovery indicator)
 }
 
 export interface NotificationSettings {

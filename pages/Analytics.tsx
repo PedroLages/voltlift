@@ -11,6 +11,7 @@ import MuscleGroupVolumeChart from '../components/MuscleGroupVolumeChart';
 import VolumeBreakdownTable from '../components/VolumeBreakdownTable';
 import DetailedInsights from '../components/DetailedInsights';
 import RPETrendsChart from '../components/RPETrendsChart';
+import WeeklyPlateauAnalysis from '../components/WeeklyPlateauAnalysis';
 import {
   getExerciseProgression,
   getVolumeProgression,
@@ -224,6 +225,14 @@ const Analytics = () => {
           })()}
         </div>
       )}
+
+      {/* Weekly Plateau Analysis Section */}
+      <div className="mb-10">
+        <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4 flex items-center gap-2">
+          <TrendingUp size={14} /> Weekly Progress Analysis
+        </h3>
+        <WeeklyPlateauAnalysis />
+      </div>
 
       {/* Muscle Heatmap Section */}
       <div className="mb-10">

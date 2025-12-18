@@ -2,12 +2,12 @@
 import { Exercise, WorkoutSession, Program } from './types';
 
 export const EXERCISE_LIBRARY: Exercise[] = [
-  { 
-    id: 'e1', 
-    name: 'Barbell Bench Press', 
-    muscleGroup: 'Chest', 
+  {
+    id: 'e1',
+    name: 'Barbell Bench Press',
+    muscleGroup: 'Chest',
     secondaryMuscles: ['Shoulders', 'Arms'],
-    equipment: 'Barbell', 
+    equipment: 'Barbell',
     category: 'Compound',
     difficulty: 'Intermediate',
     formGuide: [
@@ -26,14 +26,15 @@ export const EXERCISE_LIBRARY: Exercise[] = [
       "Retract your shoulder blades to create a stable base.",
       "Imagine pushing yourself away from the bar."
     ],
-    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=BENCH+PRESS"
+    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=BENCH+PRESS",
+    videoUrl: "https://www.youtube.com/watch?v=BYKScL2sgCs" // Jeff Nippard - How To Bench Press (Perfect Form)
   },
-  { 
-    id: 'e2', 
-    name: 'Incline Dumbbell Press', 
-    muscleGroup: 'Chest', 
+  {
+    id: 'e2',
+    name: 'Incline Dumbbell Press',
+    muscleGroup: 'Chest',
     secondaryMuscles: ['Shoulders', 'Arms'],
-    equipment: 'Dumbbell', 
+    equipment: 'Dumbbell',
     category: 'Compound',
     difficulty: 'Beginner',
     formGuide: [
@@ -51,14 +52,15 @@ export const EXERCISE_LIBRARY: Exercise[] = [
       "Control the eccentric (lowering) phase.",
       "Keep wrists straight, not bent back."
     ],
-    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=INCLINE+DB+PRESS"
+    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=INCLINE+DB+PRESS",
+    videoUrl: "https://www.youtube.com/watch?v=8iPEnn-ltC8" // Jeff Nippard - Incline Dumbbell Press Form
   },
-  { 
-    id: 'e3', 
-    name: 'Pull Up', 
-    muscleGroup: 'Back', 
+  {
+    id: 'e3',
+    name: 'Pull Up',
+    muscleGroup: 'Back',
     secondaryMuscles: ['Arms'],
-    equipment: 'Bodyweight', 
+    equipment: 'Bodyweight',
     category: 'Compound',
     difficulty: 'Intermediate',
     formGuide: [
@@ -68,7 +70,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
       "Lower yourself back down with control."
     ],
     commonMistakes: [
-      "Kicking legs for momentum (kipping).",
+      "Kipping for momentum (strict pull-ups are best for strength).",
       "Not going through full range of motion.",
       "Rounding shoulders forward."
     ],
@@ -76,14 +78,15 @@ export const EXERCISE_LIBRARY: Exercise[] = [
       "Initiate the movement by driving elbows down.",
       "Squeeze your glutes to keep your body stable."
     ],
-    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=PULL+UP"
+    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=PULL+UP",
+    videoUrl: "https://www.youtube.com/watch?v=eGo4IYlbE5g" // AthleanX - Perfect Pull-Up Form
   },
-  { 
-    id: 'e4', 
-    name: 'Barbell Squat', 
-    muscleGroup: 'Legs', 
+  {
+    id: 'e4',
+    name: 'Barbell Squat',
+    muscleGroup: 'Legs',
     secondaryMuscles: ['Core', 'Back'],
-    equipment: 'Barbell', 
+    equipment: 'Barbell',
     category: 'Compound',
     difficulty: 'Advanced',
     formGuide: [
@@ -102,14 +105,15 @@ export const EXERCISE_LIBRARY: Exercise[] = [
       "Take a deep breath and brace your core before descending.",
       "Look straight ahead or slightly down, not up."
     ],
-    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=BARBELL+SQUAT"
+    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=BARBELL+SQUAT",
+    videoUrl: "https://www.youtube.com/watch?v=ultWZbUMPL8" // Alan Thrall - How To Squat Properly
   },
-  { 
-    id: 'e5', 
-    name: 'Deadlift', 
-    muscleGroup: 'Back', 
+  {
+    id: 'e5',
+    name: 'Deadlift',
+    muscleGroup: 'Back',
     secondaryMuscles: ['Legs', 'Core'],
-    equipment: 'Barbell', 
+    equipment: 'Barbell',
     category: 'Compound',
     difficulty: 'Advanced',
     formGuide: [
@@ -120,7 +124,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
       "Drive floor away to stand up tall."
     ],
     commonMistakes: [
-      "Rounding the back like a scared cat.",
+      "Rounding the back.",
       "Jerking the bar off the floor.",
       "Hyperextending the back at the top."
     ],
@@ -128,14 +132,15 @@ export const EXERCISE_LIBRARY: Exercise[] = [
       "Think about pushing the floor away, not pulling the bar up.",
       "Keep the bar close to your body throughout the lift."
     ],
-    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=DEADLIFT"
+    gifUrl: "https://placehold.co/600x400/000000/ccff00?text=DEADLIFT",
+    videoUrl: "https://www.youtube.com/watch?v=op9kVnSso6Q" // Jeff Nippard - Deadlift Tutorial (Science-Based)
   },
-  { 
-    id: 'e6', 
-    name: 'Dumbbell Shoulder Press', 
-    muscleGroup: 'Shoulders', 
+  {
+    id: 'e6',
+    name: 'Dumbbell Shoulder Press',
+    muscleGroup: 'Shoulders',
     secondaryMuscles: ['Arms'],
-    equipment: 'Dumbbell', 
+    equipment: 'Dumbbell',
     category: 'Compound',
     difficulty: 'Beginner',
     formGuide: [

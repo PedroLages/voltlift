@@ -158,16 +158,47 @@ export function getProgressionRate(
 
 /**
  * Calculate recovery score based on biomarkers
- * Primary factor: Sleep (validated by research to impact strength 7-11%)
- * Secondary: Subjective fatigue, days since last workout
+ *
+ * Research-Backed Priority:
+ * 1. HRV (Heart Rate Variability) - Gold standard for recovery (WHOOP, Oura Ring standard)
+ * 2. Sleep - Validated to impact strength 7-11%
+ * 3. Subjective stress/fatigue
+ * 4. Recovery time between workouts
+ *
+ * Note: HRV requires user baseline calculation (7-day rolling average)
  */
 export function calculateRecoveryScore(
   dailyLog: DailyLog | undefined,
-  daysSinceLastWorkout: number
+  daysSinceLastWorkout: number,
+  userHRVBaseline?: number // User's 7-day rolling average HRV in ms
 ): number {
   let score = 7; // Neutral baseline
 
-  // Factor 1: Sleep Quality (Most Important - Research-Backed)
+  // Factor 1: HRV (Heart Rate Variability) - GOLD STANDARD FOR RECOVERY
+  // Higher HRV = Better recovery, Lower HRV = Fatigue/overtraining
+  if (dailyLog?.hrv && userHRVBaseline) {
+    const hrvDeviation = (dailyLog.hrv - userHRVBaseline) / userHRVBaseline;
+
+    // Research: >10% above baseline = excellent recovery
+    // Research: >5% above baseline = good recovery
+    // Research: <-10% below baseline = poor recovery/overtraining
+    // Research: <-20% below baseline = significant fatigue (deload recommended)
+    if (hrvDeviation > 0.1) {
+      score += 3; // Exceptional recovery (HRV 10%+ above baseline)
+    } else if (hrvDeviation > 0.05) {
+      score += 2; // Good recovery (HRV 5-10% above baseline)
+    } else if (hrvDeviation > -0.05) {
+      score += 0; // Normal (HRV within 5% of baseline)
+    } else if (hrvDeviation > -0.1) {
+      score -= 1; // Slightly fatigued (HRV 5-10% below baseline)
+    } else if (hrvDeviation > -0.2) {
+      score -= 3; // Poor recovery (HRV 10-20% below baseline)
+    } else {
+      score -= 5; // Significant fatigue (HRV 20%+ below baseline - DELOAD!)
+    }
+  }
+
+  // Factor 2: Sleep Quality (Most Important if no HRV - Research-Backed)
   if (dailyLog?.sleepHours) {
     if (dailyLog.sleepHours >= 8) score += 2; // Well rested
     else if (dailyLog.sleepHours >= 7) score += 1; // Adequate
@@ -175,13 +206,13 @@ export function calculateRecoveryScore(
     else score -= 3; // Sleep deprived (7-11% strength reduction)
   }
 
-  // Factor 2: Subjective Stress/Fatigue
+  // Factor 3: Subjective Stress/Fatigue
   if (dailyLog?.stressLevel) {
     if (dailyLog.stressLevel >= 8) score -= 2; // High stress
     else if (dailyLog.stressLevel >= 6) score -= 1; // Moderate stress
   }
 
-  // Factor 3: Recovery Time (Muscle protein synthesis peaks 24-48h)
+  // Factor 4: Recovery Time (Muscle protein synthesis peaks 24-48h)
   if (daysSinceLastWorkout >= 3) score += 1; // Extra recovery
   else if (daysSinceLastWorkout === 1) score -= 1; // Minimal recovery
 

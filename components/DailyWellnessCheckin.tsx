@@ -27,7 +27,8 @@ import { useStore } from '../store/useStore';
 import {
   isHealthKitAvailable,
   requestHealthPermissions,
-  getSleepData
+  getHealthDataForDate,
+  importHistoricalHealthData
 } from '../services/healthKitService';
 
 interface DailyWellnessCheckinProps {
@@ -132,9 +133,9 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
     }
   }, [existingLog]);
 
-  // Auto-fetch sleep data from HealthKit when user reaches sleep step
+  // Auto-fetch health data (sleep + HRV + resting HR) from HealthKit when user reaches sleep step
   useEffect(() => {
-    const fetchSleepData = async () => {
+    const fetchHealthData = async () => {
       if (step === 'sleep' && healthKitEnabled && !isLoadingHealthData) {
         setIsLoadingHealthData(true);
 
@@ -143,18 +144,38 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
         yesterday.setDate(yesterday.getDate() - 1);
         const dateStr = yesterday.toISOString().split('T')[0];
 
-        const hours = await getSleepData(dateStr);
+        const healthData = await getHealthDataForDate(dateStr);
 
-        if (hours > 0) {
-          setSleepHours(hours);
+        if (healthData.sleepHours > 0) {
+          setSleepHours(healthData.sleepHours);
           setSleepDataSource('healthkit');
+
+          // Store HRV and Resting HR in daily log for recovery score calculation
+          // (Will be saved when user completes check-in)
+          if (healthData.hrv || healthData.restingHR) {
+            // Pre-populate these values so they get saved with the daily log
+            if (!existingLog) {
+              addDailyLog({
+                date: today,
+                sleepHours: healthData.sleepHours,
+                hrv: healthData.hrv,
+                restingHR: healthData.restingHR
+              });
+            } else {
+              updateDailyLog(today, {
+                sleepHours: healthData.sleepHours,
+                hrv: healthData.hrv,
+                restingHR: healthData.restingHR
+              });
+            }
+          }
         }
 
         setIsLoadingHealthData(false);
       }
     };
 
-    fetchSleepData();
+    fetchHealthData();
   }, [step, healthKitEnabled]);
 
   if (!isOpen) return null;
@@ -166,18 +187,38 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
       setHealthKitEnabled(true);
       updateSettings({ healthKitEnabled: true });
 
-      // Immediately fetch sleep data
+      setIsLoadingHealthData(true);
+
+      // Immediately fetch today's data
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const dateStr = yesterday.toISOString().split('T')[0];
 
-      setIsLoadingHealthData(true);
-      const hours = await getSleepData(dateStr);
+      const healthData = await getHealthDataForDate(dateStr);
 
-      if (hours > 0) {
-        setSleepHours(hours);
+      if (healthData.sleepHours > 0) {
+        setSleepHours(healthData.sleepHours);
         setSleepDataSource('healthkit');
       }
+
+      // Import last 30 days of historical data in background
+      importHistoricalHealthData(30).then(historicalData => {
+        // Backfill daily logs with historical health data
+        historicalData.forEach(data => {
+          if (data.sleepHours > 0 && !dailyLogs[data.date]) {
+            addDailyLog({
+              date: data.date,
+              sleepHours: data.sleepHours,
+              hrv: data.hrv,
+              restingHR: data.restingHR
+            });
+          }
+        });
+
+        console.log(`[HealthKit] Imported ${historicalData.length} days of historical data`);
+      }).catch(err => {
+        console.error('[HealthKit] Failed to import historical data:', err);
+      });
 
       setIsLoadingHealthData(false);
     }
