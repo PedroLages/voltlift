@@ -255,6 +255,14 @@ export interface UserSettings {
       cardio: number; // Cardio/conditioning
     };
   };
+
+  // AI Coach Settings
+  aiCoach?: {
+    enabled: boolean; // Master toggle for AI coaching features
+    showReasoning: boolean; // Show detailed reasoning in recommendations
+    aggressiveness: 'conservative' | 'moderate' | 'aggressive'; // How aggressive progression suggestions should be
+    autoApplyTM: boolean; // Auto-apply Training Max suggestions (vs manual confirmation)
+  };
 }
 
 // Body Metrics Goals
