@@ -11,7 +11,7 @@
  * - Resting heart rate (optional, for recovery tracking)
  */
 
-import { Health } from 'capacitor-health';
+import { Health } from '@capgo/capacitor-health';
 import { Capacitor } from '@capacitor/core';
 
 export interface HealthData {

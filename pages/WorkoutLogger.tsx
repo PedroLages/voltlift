@@ -15,6 +15,8 @@ import SwipeableRow from '../components/SwipeableRow';
 import Toast from '../components/Toast';
 import { Skeleton } from '../components/Skeleton';
 import KeyboardToolbar from '../components/KeyboardToolbar';
+import { Keyboard } from '@capacitor/keyboard';
+import { Capacitor } from '@capacitor/core';
 
 // Lazy load heavy components
 const PRCelebration = lazy(() => import('../components/PRCelebration'));
@@ -90,37 +92,54 @@ const WorkoutLogger = () => {
 
   // Keyboard Toolbar State (iOS-style navigation)
   const [focusedInput, setFocusedInput] = useState<HTMLInputElement | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Capacitor Keyboard event listeners for iOS
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const keyboardShowListener = Keyboard.addListener('keyboardWillShow', (info) => {
+      setKeyboardHeight(info.keyboardHeight);
+    });
+
+    const keyboardHideListener = Keyboard.addListener('keyboardWillHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      keyboardShowListener.remove();
+      keyboardHideListener.remove();
+    };
+  }, []);
 
   // Helper function to scroll input into view above keyboard
   const scrollInputIntoView = useCallback((input: HTMLInputElement) => {
-    // Wait for keyboard animation to complete
+    if (!Capacitor.isNativePlatform()) return;
+
+    // Wait for keyboard animation to start
     setTimeout(() => {
       const rect = input.getBoundingClientRect();
-      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const viewportHeight = window.innerHeight;
       const keyboardToolbarHeight = 56; // Height of KeyboardToolbar component
 
-      // Calculate if input is covered by keyboard
-      const inputBottom = rect.bottom;
-      const visibleAreaBottom = viewportHeight - keyboardToolbarHeight;
+      // On iOS, use actual keyboard height from Capacitor
+      const effectiveKeyboardHeight = keyboardHeight || 300; // Fallback to 300px
+      const totalKeyboardSpace = effectiveKeyboardHeight + keyboardToolbarHeight;
 
-      // If input is below the visible area (covered by keyboard)
-      if (inputBottom > visibleAreaBottom) {
-        // Scroll to bring input into view with padding
-        const scrollOffset = inputBottom - visibleAreaBottom + 100; // 100px padding
+      // Calculate visible area (viewport minus keyboard)
+      const visibleAreaBottom = viewportHeight - totalKeyboardSpace;
+      const inputBottom = rect.bottom;
+
+      // If input is covered by keyboard, scroll it into view
+      if (inputBottom > visibleAreaBottom - 20) { // 20px safety margin
+        const scrollOffset = inputBottom - visibleAreaBottom + 120; // 120px padding above keyboard
         window.scrollBy({
           top: scrollOffset,
           behavior: 'smooth'
         });
       }
-      // If input is near the top, center it better
-      else if (rect.top < 100) {
-        input.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-      }
-    }, 350); // Slightly longer delay for iOS keyboard animation
-  }, []);
+    }, 100); // Reduced delay for faster response
+  }, [keyboardHeight]);
 
   // Audio Oscillator for Beep
   const playTimerSound = () => {
