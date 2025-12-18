@@ -31,6 +31,7 @@ const WorkoutLogger = () => {
   const [showCreateExercise, setShowCreateExercise] = useState(false);
   const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
   const [swapTargetLogId, setSwapTargetLogId] = useState<string | null>(null);
+  const [pendingSwap, setPendingSwap] = useState<{ logId: string; exerciseId: string; exerciseName: string } | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [showPostWorkoutFeedback, setShowPostWorkoutFeedback] = useState(false);
   const [completedWorkoutRef, setCompletedWorkoutRef] = useState<typeof activeWorkout>(null);
@@ -1254,7 +1255,13 @@ const WorkoutLogger = () => {
                       <button
                         onClick={() => {
                           if (swapTargetLogId) {
-                            swapExercise(swapTargetLogId, ex.id);
+                            // If workout came from a template, show options modal
+                            if (activeWorkout?.sourceTemplateId) {
+                              setPendingSwap({ logId: swapTargetLogId, exerciseId: ex.id, exerciseName: ex.name });
+                            } else {
+                              // No template, just swap for this session
+                              swapExercise(swapTargetLogId, ex.id);
+                            }
                           } else {
                             addExerciseToActive(ex.id);
                           }
@@ -1307,7 +1314,12 @@ const WorkoutLogger = () => {
           onCreate={(exercise) => {
             const newId = createCustomExercise(exercise);
             if (swapTargetLogId) {
-              swapExercise(swapTargetLogId, newId);
+              // If workout came from a template, show options modal
+              if (activeWorkout?.sourceTemplateId) {
+                setPendingSwap({ logId: swapTargetLogId, exerciseId: newId, exerciseName: exercise.name });
+              } else {
+                swapExercise(swapTargetLogId, newId);
+              }
               setSwapTargetLogId(null);
             } else {
               addExerciseToActive(newId);
@@ -1373,6 +1385,22 @@ const WorkoutLogger = () => {
             onComplete={handleFeedbackComplete}
           />
         </Suspense>
+      )}
+
+      {/* Swap Options Modal - Session vs Persistent */}
+      {pendingSwap && (
+        <SwapOptionsModal
+          exerciseName={pendingSwap.exerciseName}
+          onSessionOnly={() => {
+            swapExercise(pendingSwap.logId, pendingSwap.exerciseId, false);
+            setPendingSwap(null);
+          }}
+          onPersistent={() => {
+            swapExercise(pendingSwap.logId, pendingSwap.exerciseId, true);
+            setPendingSwap(null);
+          }}
+          onCancel={() => setPendingSwap(null)}
+        />
       )}
 
       {/* Undo Toast */}
@@ -1569,6 +1597,83 @@ const CreateExerciseModal = ({ onClose, onCreate, defaultName = '' }: CreateExer
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// Swap Options Modal Component - Session vs Persistent
+interface SwapOptionsModalProps {
+  exerciseName: string;
+  onSessionOnly: () => void;
+  onPersistent: () => void;
+  onCancel: () => void;
+}
+
+const SwapOptionsModal = ({ exerciseName, onSessionOnly, onPersistent, onCancel }: SwapOptionsModalProps) => {
+  return (
+    <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center animate-fade-in backdrop-blur-sm">
+      <div className="bg-[#111] w-full max-w-sm mx-4 border border-[#333]">
+        {/* Header */}
+        <div className="p-4 border-b border-[#333] text-center">
+          <h2 className="volt-header text-lg text-white">SWAP EXERCISE</h2>
+          <p className="text-[10px] text-[#666] font-mono uppercase mt-1">
+            Replacing with {exerciseName}
+          </p>
+        </div>
+
+        {/* Options */}
+        <div className="p-4 space-y-3">
+          {/* Session Only Option */}
+          <button
+            onClick={onSessionOnly}
+            className="w-full py-4 px-4 bg-[#1a1a1a] border border-[#333] hover:border-primary hover:bg-[#222] transition-colors group text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#222] group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                <RefreshCw size={18} className="text-[#666] group-hover:text-primary" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-sm group-hover:text-primary transition-colors">
+                  This Session Only
+                </h4>
+                <p className="text-[10px] text-[#666] font-mono">
+                  Swap just for this workout
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* Persistent Option */}
+          <button
+            onClick={onPersistent}
+            className="w-full py-4 px-4 bg-[#1a1a1a] border border-[#333] hover:border-primary hover:bg-[#222] transition-colors group text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#222] group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                <LinkIcon size={18} className="text-[#666] group-hover:text-primary" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-sm group-hover:text-primary transition-colors">
+                  Update Template
+                </h4>
+                <p className="text-[10px] text-[#666] font-mono">
+                  Also update for all future workouts
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* Cancel */}
+        <div className="p-4 border-t border-[#333]">
+          <button
+            onClick={onCancel}
+            className="w-full py-3 text-[#666] hover:text-white font-bold uppercase text-xs transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -68,7 +68,7 @@ interface AppState {
   completeOnboarding: (name: string, goal: Goal, experience: 'Beginner' | 'Intermediate' | 'Advanced', equipment: string[]) => void;
   saveExerciseVisual: (exerciseId: string, url: string) => void;
   loadVisuals: () => Promise<void>;
-  swapExercise: (logId: string, newExerciseId: string) => void;
+  swapExercise: (logId: string, newExerciseId: string, persistent?: boolean) => void;
   saveTemplate: (name: string, exerciseIds: string[]) => void;
   updateTemplate: (id: string, name: string, exerciseIds: string[]) => void;
   duplicateTemplate: (id: string) => void;
@@ -622,15 +622,19 @@ export const useStore = create<AppState>()(
         // Otherwise, visuals will be loaded from localStorage via persist middleware
       },
 
-      swapExercise: (logId, newExerciseId) => {
-        const { activeWorkout } = get();
+      swapExercise: (logId, newExerciseId, persistent = false) => {
+        const { activeWorkout, templates } = get();
         if (!activeWorkout) return;
+
+        // Find the old exercise ID before swapping
+        const oldLog = activeWorkout.logs.find(log => log.id === logId);
+        const oldExerciseId = oldLog?.exerciseId;
 
         const newLogs = activeWorkout.logs.map(log => {
             if (log.id === logId) {
-                return { 
-                  ...log, 
-                  exerciseId: newExerciseId, 
+                return {
+                  ...log,
+                  exerciseId: newExerciseId,
                   sets: [{ id: uuidv4(), reps: 0, weight: 0, completed: false, type: 'N' }],
                   notes: ''
                 };
@@ -639,6 +643,39 @@ export const useStore = create<AppState>()(
         });
 
         set({ activeWorkout: { ...activeWorkout, logs: newLogs }});
+
+        // If persistent swap is requested and we have a source template, update the template too
+        if (persistent && activeWorkout.sourceTemplateId && oldExerciseId) {
+          const template = templates.find(t => t.id === activeWorkout.sourceTemplateId);
+          if (template) {
+            // Update the template by replacing the old exercise with the new one
+            const newTemplateExerciseIds = template.logs.map(log =>
+              log.exerciseId === oldExerciseId ? newExerciseId : log.exerciseId
+            );
+
+            // Mark template as pending sync
+            const newPendingTemplates = new Set(get().pendingSyncTemplates);
+            newPendingTemplates.add(template.id);
+
+            set(state => ({
+              templates: state.templates.map(t =>
+                t.id === activeWorkout.sourceTemplateId
+                  ? {
+                      ...t,
+                      logs: t.logs.map(log =>
+                        log.exerciseId === oldExerciseId
+                          ? { ...log, exerciseId: newExerciseId }
+                          : log
+                      )
+                    }
+                  : t
+              ),
+              pendingSyncTemplates: newPendingTemplates
+            }));
+
+            get().syncData();
+          }
+        }
       },
       
       suggestNextSet: (exerciseIndex, setIndex) => {
