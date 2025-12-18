@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspens
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
 import { EXERCISE_LIBRARY } from '../constants';
-import { Check, Plus, MoreHorizontal, Timer, Sparkles, X, AlertTriangle, RefreshCw, Trash2, StickyNote, Trophy, ArrowRight, Calculator, ChevronDown, ChevronUp, Link as LinkIcon, Unlink, Heart, Copy } from 'lucide-react';
+import { Check, Plus, MoreHorizontal, Timer, Sparkles, X, AlertTriangle, RefreshCw, Trash2, StickyNote, Trophy, ArrowRight, Calculator, ChevronDown, ChevronUp, Link as LinkIcon, Unlink, Heart, Copy, Play } from 'lucide-react';
 import { getProgressiveOverloadTip } from '../services/geminiService';
 import { sendRestTimerAlert, sendPRCelebration } from '../services/notificationService';
 import { SetType } from '../types';
@@ -770,6 +770,18 @@ const WorkoutLogger = () => {
                             <VolumeWarningBadge warning={exerciseData[log.exerciseId].volumeWarning} />
                         )}
                     </div>
+                    {/* Form Video Link */}
+                    {exerciseDef?.videoUrl && (
+                        <a
+                            href={exerciseDef.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] text-primary font-bold uppercase border border-primary/50 px-2 py-1 bg-primary/10 hover:bg-primary hover:text-black transition-colors mt-1"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <Play size={10} /> Watch Form Video
+                        </a>
+                    )}
                     {prevBestSet && (
                         <p className="text-[10px] text-[#666] font-mono mt-1 uppercase">
                             Prev Best: {prevBestSet.weight}lbs x {prevBestSet.reps}
