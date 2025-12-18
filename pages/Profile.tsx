@@ -27,7 +27,8 @@ import {
   TrendingUp,
   Shield,
   Radio,
-  Crosshair
+  Crosshair,
+  Brain
 } from 'lucide-react';
 import { saveImageToDB, getImageFromDB } from '../utils/db';
 import { EXERCISE_LIBRARY } from '../constants';
@@ -1154,6 +1155,154 @@ const Profile = () => {
             )}
           </button>
           <p className="text-[10px] text-[#666] mt-2 text-center uppercase font-mono tracking-wider">Requires API key for generation</p>
+        </div>
+      </CollapsibleSection>
+
+      {/* AI Coach Settings */}
+      <CollapsibleSection
+        title="AI Coach"
+        icon={<Brain size={18} className={settings.aiCoach?.enabled ? 'text-primary' : 'text-[#666]'} />}
+        defaultExpanded={false}
+        summary={settings.aiCoach?.enabled ? 'Active' : 'Disabled'}
+        tier="medium"
+      >
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6">
+          {/* API Status */}
+          <div className="flex items-center gap-2 mb-6 p-3 bg-[#000] border border-[#1a1a1a]">
+            <div className={`w-2 h-2 rounded-full ${import.meta.env.VITE_GEMINI_API_KEY ? 'bg-primary animate-pulse' : 'bg-red-500'}`}></div>
+            <span className="text-xs font-mono uppercase tracking-wider text-[#666]">
+              API Status: <span className={import.meta.env.VITE_GEMINI_API_KEY ? 'text-primary' : 'text-red-500'}>
+                {import.meta.env.VITE_GEMINI_API_KEY ? 'CONNECTED' : 'NOT CONFIGURED'}
+              </span>
+            </span>
+          </div>
+
+          {/* Master Toggle */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <div className="text-sm font-black italic uppercase text-white tracking-wider">
+                {settings.aiCoach?.enabled ? 'ONLINE' : 'OFFLINE'}
+              </div>
+              <p className="text-xs text-[#666] mt-1 uppercase font-mono tracking-wider">
+                {settings.aiCoach?.enabled ? 'AI-powered recommendations' : 'Standard algorithms only'}
+              </p>
+            </div>
+            <MilitaryToggle
+              enabled={settings.aiCoach?.enabled || false}
+              onToggle={() => updateSettings({
+                aiCoach: {
+                  enabled: !settings.aiCoach?.enabled,
+                  showReasoning: settings.aiCoach?.showReasoning ?? true,
+                  aggressiveness: settings.aiCoach?.aggressiveness ?? 'moderate',
+                  autoApplyTM: settings.aiCoach?.autoApplyTM ?? false
+                }
+              })}
+              label={settings.aiCoach?.enabled ? 'Disable AI Coach' : 'Enable AI Coach'}
+            />
+          </div>
+
+          {settings.aiCoach?.enabled && (
+            <div className="space-y-6 border-t border-[#1a1a1a] pt-6">
+              {/* AI Features Description */}
+              <div className="grid grid-cols-1 gap-3 text-xs">
+                <div className="flex items-start gap-3 p-3 bg-[#000] border border-[#1a1a1a]">
+                  <Zap size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="font-bold text-white uppercase">Smart Progression</span>
+                    <p className="text-[#666] mt-0.5">AI adjusts Training Max based on your recovery and performance</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-[#000] border border-[#1a1a1a]">
+                  <Activity size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="font-bold text-white uppercase">Deload Detection</span>
+                    <p className="text-[#666] mt-0.5">Recommends deload weeks based on fatigue signals</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-[#000] border border-[#1a1a1a]">
+                  <TrendingUp size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="font-bold text-white uppercase">Trend Analysis</span>
+                    <p className="text-[#666] mt-0.5">Identifies plateaus and suggests exercise variations</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Show Reasoning Toggle */}
+              <div className="flex justify-between items-center p-4 bg-[#000] border border-[#1a1a1a]">
+                <div>
+                  <span className="text-xs font-bold text-white uppercase">Show Reasoning</span>
+                  <p className="text-[10px] text-[#666] mt-1">Display why AI made each recommendation</p>
+                </div>
+                <MilitaryToggle
+                  enabled={settings.aiCoach?.showReasoning ?? true}
+                  onToggle={() => updateSettings({
+                    aiCoach: {
+                      ...settings.aiCoach!,
+                      showReasoning: !settings.aiCoach?.showReasoning
+                    }
+                  })}
+                  label="Toggle reasoning display"
+                />
+              </div>
+
+              {/* Aggressiveness Setting */}
+              <div className="p-4 bg-[#000] border border-[#1a1a1a]">
+                <span className="text-xs font-bold text-white uppercase block mb-3">Progression Style</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['conservative', 'moderate', 'aggressive'] as const).map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => updateSettings({
+                        aiCoach: {
+                          ...settings.aiCoach!,
+                          aggressiveness: level
+                        }
+                      })}
+                      className={`py-3 px-2 text-[10px] font-black italic uppercase tracking-wider transition-all min-h-[48px] ${
+                        settings.aiCoach?.aggressiveness === level
+                          ? 'bg-primary text-black'
+                          : 'bg-transparent text-[#666] border border-[#222] hover:border-primary/50 hover:text-white'
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-[#666] mt-3 text-center">
+                  {settings.aiCoach?.aggressiveness === 'conservative' && 'Slower progress, prioritizes recovery'}
+                  {settings.aiCoach?.aggressiveness === 'moderate' && 'Balanced progression (recommended)'}
+                  {settings.aiCoach?.aggressiveness === 'aggressive' && 'Faster progress, requires good recovery'}
+                </p>
+              </div>
+
+              {/* Auto-Apply TM Toggle */}
+              <div className="flex justify-between items-center p-4 bg-[#000] border border-[#1a1a1a]">
+                <div>
+                  <span className="text-xs font-bold text-white uppercase">Auto-Apply TM</span>
+                  <p className="text-[10px] text-[#666] mt-1">Automatically update Training Max after workouts</p>
+                </div>
+                <MilitaryToggle
+                  enabled={settings.aiCoach?.autoApplyTM ?? false}
+                  onToggle={() => updateSettings({
+                    aiCoach: {
+                      ...settings.aiCoach!,
+                      autoApplyTM: !settings.aiCoach?.autoApplyTM
+                    }
+                  })}
+                  label="Toggle auto-apply"
+                />
+              </div>
+            </div>
+          )}
+
+          {!import.meta.env.VITE_GEMINI_API_KEY && (
+            <div className="mt-4 p-3 bg-red-900/20 border border-red-900/30">
+              <p className="text-[10px] text-red-400 font-mono uppercase tracking-wider">
+                ⚠ Add VITE_GEMINI_API_KEY to .env.local to enable AI features
+              </p>
+            </div>
+          )}
         </div>
       </CollapsibleSection>
 
