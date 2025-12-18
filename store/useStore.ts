@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserSettings, WorkoutSession, ExerciseLog, SetLog, Goal, Program, DailyLog, BiometricPoint, PRType, PersonalRecord } from '../types';
+import { UserSettings, WorkoutSession, ExerciseLog, SetLog, Goal, Program, DailyLog, BiometricPoint, PRType, PersonalRecord, Exercise } from '../types';
 import { MOCK_HISTORY, INITIAL_TEMPLATES, EXERCISE_LIBRARY, INITIAL_PROGRAMS } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { backend } from '../services/backend';
@@ -24,6 +24,7 @@ interface AppState {
   templates: WorkoutSession[];
   programs: Program[];
   activeWorkout: WorkoutSession | null;
+  customExercises: Exercise[];
   customExerciseVisuals: Record<string, string>;
 
   // Phase 4: Bio-Feedback & Cloud
@@ -60,6 +61,9 @@ interface AppState {
   restoreLastDeleted: () => void;
   clearUndoStack: () => void;
   toggleFavoriteExercise: (exerciseId: string) => void;
+  createCustomExercise: (exercise: Omit<Exercise, 'id'>) => string;
+  deleteCustomExercise: (exerciseId: string) => void;
+  getAllExercises: () => Exercise[];
   updateSettings: (settings: Partial<UserSettings>) => void;
   completeOnboarding: (name: string, goal: Goal, experience: 'Beginner' | 'Intermediate' | 'Advanced', equipment: string[]) => void;
   saveExerciseVisual: (exerciseId: string, url: string) => void;
@@ -131,6 +135,7 @@ export const useStore = create<AppState>()(
       templates: INITIAL_TEMPLATES,
       programs: INITIAL_PROGRAMS,
       activeWorkout: null,
+      customExercises: [],
       customExerciseVisuals: {},
       
       dailyLogs: {},
@@ -540,6 +545,31 @@ export const useStore = create<AppState>()(
             },
           };
         });
+      },
+
+      createCustomExercise: (exercise) => {
+        const id = `custom-${uuidv4()}`;
+        const newExercise: Exercise = {
+          ...exercise,
+          id,
+        };
+
+        set((state) => ({
+          customExercises: [...state.customExercises, newExercise],
+        }));
+
+        return id;
+      },
+
+      deleteCustomExercise: (exerciseId) => {
+        set((state) => ({
+          customExercises: state.customExercises.filter(ex => ex.id !== exerciseId),
+        }));
+      },
+
+      getAllExercises: () => {
+        const state = get();
+        return [...EXERCISE_LIBRARY, ...state.customExercises];
       },
 
       completeOnboarding: (name, goal, experience, equipment) => {

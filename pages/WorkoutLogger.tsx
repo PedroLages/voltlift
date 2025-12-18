@@ -25,9 +25,10 @@ const CycleCompletionModal = lazy(() => import('../components/CycleCompletionMod
 const PostWorkoutFeedback = lazy(() => import('../components/PostWorkoutFeedback'));
 
 const WorkoutLogger = () => {
-  const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning, undoStack, restoreLastDeleted, clearUndoStack, toggleFavoriteExercise } = useStore();
+  const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning, undoStack, restoreLastDeleted, clearUndoStack, toggleFavoriteExercise, getAllExercises, createCustomExercise, customExercises } = useStore();
   const navigate = useNavigate();
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
+  const [showCreateExercise, setShowCreateExercise] = useState(false);
   const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
   const [swapTargetLogId, setSwapTargetLogId] = useState<string | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -1198,7 +1199,7 @@ const WorkoutLogger = () => {
               />
               {exerciseSearchQuery && (
                 <div className="text-[10px] text-[#666] mt-2 font-mono">
-                  {[...EXERCISE_LIBRARY].filter(ex =>
+                  {getAllExercises().filter(ex =>
                     ex.name.toLowerCase().includes(exerciseSearchQuery.toLowerCase()) ||
                     ex.muscleGroup.toLowerCase().includes(exerciseSearchQuery.toLowerCase()) ||
                     ex.equipment.toLowerCase().includes(exerciseSearchQuery.toLowerCase())
@@ -1209,7 +1210,7 @@ const WorkoutLogger = () => {
 
             {/* Exercise List */}
             <div className="flex-1 overflow-y-auto p-2">
-              {[...EXERCISE_LIBRARY]
+              {getAllExercises()
                 .filter(ex => {
                   // Filter by search query
                   if (!exerciseSearchQuery) return true;
@@ -1285,9 +1286,38 @@ const WorkoutLogger = () => {
                     </div>
                   );
                 })}
+
+              {/* Create New Exercise Button */}
+              <button
+                onClick={() => setShowCreateExercise(true)}
+                className="w-full py-4 mt-2 border border-dashed border-[#444] text-[#666] hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus size={18} />
+                <span className="font-bold uppercase text-sm">Create New Exercise</span>
+              </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Create Exercise Modal */}
+      {showCreateExercise && (
+        <CreateExerciseModal
+          onClose={() => setShowCreateExercise(false)}
+          onCreate={(exercise) => {
+            const newId = createCustomExercise(exercise);
+            if (swapTargetLogId) {
+              swapExercise(swapTargetLogId, newId);
+              setSwapTargetLogId(null);
+            } else {
+              addExerciseToActive(newId);
+            }
+            setShowCreateExercise(false);
+            setShowExerciseSelector(false);
+            setExerciseSearchQuery('');
+          }}
+          defaultName={exerciseSearchQuery}
+        />
       )}
 
       {/* Workout Completion Modal */}
@@ -1368,6 +1398,178 @@ const WorkoutLogger = () => {
         hasPrevious={checkHasPrevious()}
         hasNext={checkHasNext()}
       />
+    </div>
+  );
+};
+
+// Create Exercise Modal Component
+interface CreateExerciseModalProps {
+  onClose: () => void;
+  onCreate: (exercise: Omit<import('../types').Exercise, 'id'>) => void;
+  defaultName?: string;
+}
+
+const MUSCLE_GROUPS = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'] as const;
+const EQUIPMENT_OPTIONS = ['Barbell', 'Dumbbell', 'Cable', 'Machine', 'Bodyweight', 'Kettlebell', 'Band', 'Other'] as const;
+const CATEGORIES = ['Compound', 'Isolation', 'Cardio', 'Machine', 'Bodyweight', 'Plyometric'] as const;
+const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'] as const;
+
+const CreateExerciseModal = ({ onClose, onCreate, defaultName = '' }: CreateExerciseModalProps) => {
+  const [name, setName] = useState(defaultName);
+  const [muscleGroup, setMuscleGroup] = useState<typeof MUSCLE_GROUPS[number]>('Chest');
+  const [equipment, setEquipment] = useState<typeof EQUIPMENT_OPTIONS[number]>('Barbell');
+  const [category, setCategory] = useState<typeof CATEGORIES[number]>('Compound');
+  const [difficulty, setDifficulty] = useState<typeof DIFFICULTIES[number]>('Intermediate');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    onCreate({
+      name: name.trim(),
+      muscleGroup: muscleGroup as import('../types').MuscleGroup,
+      equipment,
+      category,
+      difficulty,
+      formGuide: [],
+      commonMistakes: [],
+      tips: [],
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center animate-fade-in backdrop-blur-sm">
+      <div className="bg-[#111] w-full max-w-md mx-4 border border-[#333] max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="p-4 border-b border-[#333] flex justify-between items-center sticky top-0 bg-[#111]">
+          <h2 className="volt-header text-xl text-white">CREATE EXERCISE</h2>
+          <button onClick={onClose} className="text-white hover:text-primary transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Name */}
+          <div>
+            <label className="block text-[10px] text-[#666] font-mono uppercase mb-2">
+              Exercise Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Bulgarian Split Squat"
+              className="w-full bg-[#0a0a0a] border border-[#333] text-white px-4 py-3 font-mono text-sm focus:border-primary focus:outline-none placeholder-[#444]"
+              autoFocus
+              required
+            />
+          </div>
+
+          {/* Muscle Group */}
+          <div>
+            <label className="block text-[10px] text-[#666] font-mono uppercase mb-2">
+              Primary Muscle Group *
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {MUSCLE_GROUPS.map(mg => (
+                <button
+                  key={mg}
+                  type="button"
+                  onClick={() => setMuscleGroup(mg)}
+                  className={`py-2 px-3 text-xs font-bold uppercase transition-colors ${
+                    muscleGroup === mg
+                      ? 'bg-primary text-black'
+                      : 'bg-[#1a1a1a] text-[#666] hover:bg-[#222] hover:text-white'
+                  }`}
+                >
+                  {mg}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Equipment */}
+          <div>
+            <label className="block text-[10px] text-[#666] font-mono uppercase mb-2">
+              Equipment *
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {EQUIPMENT_OPTIONS.map(eq => (
+                <button
+                  key={eq}
+                  type="button"
+                  onClick={() => setEquipment(eq)}
+                  className={`py-2 px-2 text-[10px] font-bold uppercase transition-colors ${
+                    equipment === eq
+                      ? 'bg-primary text-black'
+                      : 'bg-[#1a1a1a] text-[#666] hover:bg-[#222] hover:text-white'
+                  }`}
+                >
+                  {eq}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-[10px] text-[#666] font-mono uppercase mb-2">
+              Category
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  className={`py-2 px-2 text-[10px] font-bold uppercase transition-colors ${
+                    category === cat
+                      ? 'bg-primary text-black'
+                      : 'bg-[#1a1a1a] text-[#666] hover:bg-[#222] hover:text-white'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Difficulty */}
+          <div>
+            <label className="block text-[10px] text-[#666] font-mono uppercase mb-2">
+              Difficulty
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {DIFFICULTIES.map(diff => (
+                <button
+                  key={diff}
+                  type="button"
+                  onClick={() => setDifficulty(diff)}
+                  className={`py-2 px-3 text-xs font-bold uppercase transition-colors ${
+                    difficulty === diff
+                      ? 'bg-primary text-black'
+                      : 'bg-[#1a1a1a] text-[#666] hover:bg-[#222] hover:text-white'
+                  }`}
+                >
+                  {diff}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Submit */}
+          <div className="pt-4 border-t border-[#333]">
+            <button
+              type="submit"
+              disabled={!name.trim()}
+              className="w-full py-4 bg-primary text-black font-black uppercase tracking-widest italic text-sm hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Create & Add to Workout
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
