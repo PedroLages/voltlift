@@ -358,6 +358,41 @@ This document outlines all planned features and improvements for IronPath, organ
   - Larger text options
   - Keyboard navigation (web)
 
+### Native iOS Features (Blocked - Awaiting Capacitor 8 Support)
+
+- [ ] ❌ **iOS Live Activities** (BLOCKED - Dec 18, 2024)
+  - Show current exercise on Lock Screen
+  - Display set/rep progress in Dynamic Island (iPhone 14 Pro+)
+  - Real-time rest timer countdown on Lock Screen
+  - Quick actions from Lock Screen (skip exercise, end workout)
+  - **Blocker:** `capacitor-live-activity` v7.x only supports Capacitor 7.x
+  - **Status:** Monitoring <https://github.com/Cap-go/capacitor-live-activity> for v8.x release
+  - **Impact:** Would match Apple Fitness+ UX for seamless workout tracking
+  - **Alternatives:** None - Live Activities require native iOS API
+
+- [ ] ❌ **Apple Sign In** (BLOCKED - Dec 18, 2024)
+  - OAuth authentication via Apple ID
+  - One-tap sign in for new users
+  - Privacy-focused (hide email option)
+  - Seamless iCloud Keychain integration
+  - **Blocker:** `@capacitor-community/apple-sign-in` v7.1.0 requires Capacitor 7.x
+  - **Status:** Monitoring <https://github.com/capacitor-community/apple-sign-in> for v8.x
+  - **Impact:** Improved onboarding conversion rate
+  - **Alternatives:** Email/password or Google Sign In (already supported)
+
+- [ ] ❌ **Apple Watch Companion App** (BLOCKED - Dec 18, 2024)
+  - Workout tracking from wrist
+  - Heart rate monitoring during sets
+  - Automatic rep counting via accelerometer
+  - Haptic feedback for rest timer
+  - Sync workout data back to iPhone app
+  - **Blocker:** `@capacitor/watch` v0.1.12 requires Capacitor 5.x
+  - **Status:** Monitoring <https://github.com/ionic-team/capacitor-plugins> for v8.x
+  - **Impact:** Premium feature differentiation, improved Apple ecosystem integration
+  - **Alternatives:** None - watchOS requires native Swift development or Capacitor plugin
+
+**Note:** All three features are production-ready in code design but blocked by plugin compatibility. Will revisit when Capacitor 8-compatible versions are released. Priority will be re-evaluated based on user demand and plugin availability.
+
 ### Social Features (Basic)
 - [ ] ⬜ **Workout sharing**
   - Share completed workouts
