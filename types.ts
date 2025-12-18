@@ -214,6 +214,9 @@ export interface UserSettings {
   notifications?: NotificationSettings;
   favoriteExercises?: string[]; // Array of exerciseIds that user has starred
 
+  // Health Integrations
+  healthKitEnabled?: boolean; // Whether HealthKit/Health Connect auto-import is enabled
+
   // Phase 2 AI: Personalized learning from user behavior
   suggestionBias?: Record<string, number>; // exerciseId -> bias multiplier (1.0 = neutral, >1.0 = user lifts heavier, <1.0 = lighter)
   suggestionHistory?: SuggestionFeedback[]; // Store recent suggestion feedback for learning (last 50 per exercise)

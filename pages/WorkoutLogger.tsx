@@ -91,6 +91,37 @@ const WorkoutLogger = () => {
   // Keyboard Toolbar State (iOS-style navigation)
   const [focusedInput, setFocusedInput] = useState<HTMLInputElement | null>(null);
 
+  // Helper function to scroll input into view above keyboard
+  const scrollInputIntoView = useCallback((input: HTMLInputElement) => {
+    // Wait for keyboard animation to complete
+    setTimeout(() => {
+      const rect = input.getBoundingClientRect();
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const keyboardToolbarHeight = 56; // Height of KeyboardToolbar component
+
+      // Calculate if input is covered by keyboard
+      const inputBottom = rect.bottom;
+      const visibleAreaBottom = viewportHeight - keyboardToolbarHeight;
+
+      // If input is below the visible area (covered by keyboard)
+      if (inputBottom > visibleAreaBottom) {
+        // Scroll to bring input into view with padding
+        const scrollOffset = inputBottom - visibleAreaBottom + 100; // 100px padding
+        window.scrollBy({
+          top: scrollOffset,
+          behavior: 'smooth'
+        });
+      }
+      // If input is near the top, center it better
+      else if (rect.top < 100) {
+        input.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }, 350); // Slightly longer delay for iOS keyboard animation
+  }, []);
+
   // Audio Oscillator for Beep
   const playTimerSound = () => {
     try {
@@ -935,14 +966,8 @@ const WorkoutLogger = () => {
                             onFocus={(e) => {
                               // Track focused input for keyboard toolbar
                               setFocusedInput(e.currentTarget);
-
-                              setTimeout(() => {
-                                e.currentTarget.scrollIntoView({
-                                  behavior: 'smooth',
-                                  block: 'center',
-                                  inline: 'nearest'
-                                });
-                              }, 300);
+                              // Scroll input into view above keyboard
+                              scrollInputIntoView(e.currentTarget);
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
@@ -986,15 +1011,8 @@ const WorkoutLogger = () => {
                             onFocus={(e) => {
                               // Track focused input for keyboard toolbar
                               setFocusedInput(e.currentTarget);
-
-                              // Scroll input into view when keyboard opens (with delay for keyboard animation)
-                              setTimeout(() => {
-                                e.currentTarget.scrollIntoView({
-                                  behavior: 'smooth',
-                                  block: 'center',
-                                  inline: 'nearest'
-                                });
-                              }, 300);
+                              // Scroll input into view above keyboard
+                              scrollInputIntoView(e.currentTarget);
                             }}
                             onKeyDown={(e) => {
                               // Enter key: move to reps input and dismiss keyboard
@@ -1053,15 +1071,8 @@ const WorkoutLogger = () => {
                         onFocus={(e) => {
                           // Track focused input for keyboard toolbar
                           setFocusedInput(e.currentTarget);
-
-                          // Scroll input into view when keyboard opens (with delay for keyboard animation)
-                          setTimeout(() => {
-                            e.currentTarget.scrollIntoView({
-                              behavior: 'smooth',
-                              block: 'center',
-                              inline: 'nearest'
-                            });
-                          }, 300);
+                          // Scroll input into view above keyboard
+                          scrollInputIntoView(e.currentTarget);
                         }}
                         onKeyDown={(e) => {
                           // Enter key: complete the set (if weight and reps are valid) and dismiss keyboard

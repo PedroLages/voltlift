@@ -20,9 +20,15 @@ import {
   Brain,
   Activity,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Smartphone
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import {
+  isHealthKitAvailable,
+  requestHealthPermissions,
+  getSleepData
+} from '../services/healthKitService';
 
 interface DailyWellnessCheckinProps {
   isOpen: boolean;
@@ -87,11 +93,32 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
   const [sleepQuality, setSleepQuality] = useState<number | null>(null);
   const [stressLevel, setStressLevel] = useState<number | null>(null);
 
-  const { dailyLogs, addDailyLog, updateDailyLog } = useStore();
+  // HealthKit integration state
+  const [healthKitAvailable, setHealthKitAvailable] = useState<boolean>(false);
+  const [healthKitEnabled, setHealthKitEnabled] = useState<boolean>(false);
+  const [sleepDataSource, setSleepDataSource] = useState<'manual' | 'healthkit'>('manual');
+  const [isLoadingHealthData, setIsLoadingHealthData] = useState<boolean>(false);
+
+  const { dailyLogs, addDailyLog, updateDailyLog, settings, updateSettings } = useStore();
 
   // Get today's date string
   const today = new Date().toISOString().split('T')[0];
   const existingLog = dailyLogs[today];
+
+  // Check HealthKit availability on mount
+  useEffect(() => {
+    const checkHealthKit = async () => {
+      const available = await isHealthKitAvailable();
+      setHealthKitAvailable(available);
+
+      // Load HealthKit enabled preference from settings
+      if (settings.healthKitEnabled !== undefined) {
+        setHealthKitEnabled(settings.healthKitEnabled);
+      }
+    };
+
+    checkHealthKit();
+  }, [settings.healthKitEnabled]);
 
   // Pre-fill if existing data
   useEffect(() => {
@@ -105,7 +132,56 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
     }
   }, [existingLog]);
 
+  // Auto-fetch sleep data from HealthKit when user reaches sleep step
+  useEffect(() => {
+    const fetchSleepData = async () => {
+      if (step === 'sleep' && healthKitEnabled && !isLoadingHealthData) {
+        setIsLoadingHealthData(true);
+
+        // Get yesterday's date (sleep data is for the previous night)
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const dateStr = yesterday.toISOString().split('T')[0];
+
+        const hours = await getSleepData(dateStr);
+
+        if (hours > 0) {
+          setSleepHours(hours);
+          setSleepDataSource('healthkit');
+        }
+
+        setIsLoadingHealthData(false);
+      }
+    };
+
+    fetchSleepData();
+  }, [step, healthKitEnabled]);
+
   if (!isOpen) return null;
+
+  const handleEnableHealthKit = async () => {
+    const granted = await requestHealthPermissions();
+
+    if (granted) {
+      setHealthKitEnabled(true);
+      updateSettings({ healthKitEnabled: true });
+
+      // Immediately fetch sleep data
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const dateStr = yesterday.toISOString().split('T')[0];
+
+      setIsLoadingHealthData(true);
+      const hours = await getSleepData(dateStr);
+
+      if (hours > 0) {
+        setSleepHours(hours);
+        setSleepDataSource('healthkit');
+      }
+
+      setIsLoadingHealthData(false);
+    }
+  };
 
   const handleSave = () => {
     const wellnessData = {
@@ -187,11 +263,53 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
 
   const renderSleepStep = () => (
     <div className="space-y-6">
+      {/* HealthKit Integration Banner */}
+      {healthKitAvailable && !healthKitEnabled && (
+        <div className="bg-[#ccff00]/10 border border-[#ccff00]/20 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#ccff00]/20 flex items-center justify-center flex-shrink-0">
+              <Smartphone className="w-5 h-5 text-[#ccff00]" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-white mb-1">Auto-import Sleep Data</h4>
+              <p className="text-xs text-gray-400 mb-3">
+                Connect Apple Health to automatically track your sleep. No more manual entry!
+              </p>
+              <button
+                onClick={handleEnableHealthKit}
+                className="w-full py-2 px-4 bg-[#ccff00] text-black rounded-lg font-bold text-sm hover:bg-[#b8e600] transition-colors"
+              >
+                Enable HealthKit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sleep Data Source Indicator */}
+      {healthKitEnabled && sleepDataSource === 'healthkit' && (
+        <div className="flex items-center justify-center gap-2 text-xs text-[#ccff00] bg-[#ccff00]/10 py-2 px-3 rounded-lg">
+          <Smartphone className="w-4 h-4" />
+          <span>Imported from Apple Health</span>
+        </div>
+      )}
+
+      {/* Loading Indicator */}
+      {isLoadingHealthData && (
+        <div className="flex items-center justify-center gap-2 text-xs text-gray-400 py-2">
+          <div className="w-4 h-4 border-2 border-gray-400 border-t-[#ccff00] rounded-full animate-spin" />
+          <span>Loading sleep data...</span>
+        </div>
+      )}
+
       <div>
         <label className="block text-sm text-gray-400 mb-3">How many hours did you sleep?</label>
         <div className="flex items-center justify-center gap-4">
           <button
-            onClick={() => setSleepHours(Math.max(0, sleepHours - 0.5))}
+            onClick={() => {
+              setSleepHours(Math.max(0, sleepHours - 0.5));
+              setSleepDataSource('manual'); // Mark as manually edited
+            }}
             className="w-12 h-12 rounded-full bg-zinc-800 text-white text-2xl hover:bg-zinc-700"
           >
             -
@@ -201,7 +319,10 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
             <span className="text-xl text-gray-400 ml-1">hrs</span>
           </div>
           <button
-            onClick={() => setSleepHours(Math.min(12, sleepHours + 0.5))}
+            onClick={() => {
+              setSleepHours(Math.min(12, sleepHours + 0.5));
+              setSleepDataSource('manual'); // Mark as manually edited
+            }}
             className="w-12 h-12 rounded-full bg-zinc-800 text-white text-2xl hover:bg-zinc-700"
           >
             +

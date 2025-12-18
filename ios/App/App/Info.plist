@@ -70,5 +70,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>IronPath uses your sleep data to calculate optimal recovery scores and provide personalized workout recommendations. Your health data never leaves your device.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>IronPath does not write to your health data. This permission is required by iOS but will not be used.</string>
 </dict>
 </plist>
