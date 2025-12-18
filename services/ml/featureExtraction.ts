@@ -28,6 +28,55 @@ const DEFAULT_MAV: Record<string, Record<MuscleGroup, number>> = {
   Advanced: { chest: 20, back: 22, legs: 22, shoulders: 16, arms: 14, core: 16 },
 };
 
+// Default values for UserSettings (extracted for clarity)
+const DEFAULT_EXPERIENCE_LEVEL = 'Intermediate';
+const DEFAULT_REST_TIME_SECONDS = 90;
+const DEFAULT_PREFERRED_UNITS = 'kg';
+const DEFAULT_THEME = 'dark';
+
+// Default values for daily log fallbacks
+const DEFAULT_SLEEP_HOURS = 7;
+const DEFAULT_SLEEP_QUALITY = 3;
+const DEFAULT_STRESS_LEVEL = 3;
+const DEFAULT_SORENESS_LEVEL = 2;
+const DEFAULT_PERCEIVED_RECOVERY = 3;
+const DEFAULT_PERCEIVED_ENERGY = 3;
+const DEFAULT_INTENSITY_PERCENTAGE = 70;
+
+// =============================================================================
+// Type Guards
+// =============================================================================
+
+/**
+ * Type guard to check if dailyLogs is an array
+ */
+function isDailyLogArray(logs: DailyLog[] | Record<string, DailyLog>): logs is DailyLog[] {
+  return Array.isArray(logs);
+}
+
+// =============================================================================
+// Utility Functions
+// =============================================================================
+
+/**
+ * Normalize date to YYYY-MM-DD string format
+ * Accepts either a timestamp number or a date string
+ */
+function normalizeDate(date: string | number): string {
+  return typeof date === 'number'
+    ? new Date(date).toISOString().split('T')[0]
+    : date;
+}
+
+/**
+ * Convert dailyLogs to Record format if needed
+ */
+function normalizeDailyLogs(dailyLogs: DailyLog[] | Record<string, DailyLog>): Record<string, DailyLog> {
+  return isDailyLogArray(dailyLogs)
+    ? dailyLogs.reduce((acc, log) => ({ ...acc, [log.date]: log }), {} as Record<string, DailyLog>)
+    : dailyLogs;
+}
+
 // =============================================================================
 // Main Feature Extraction Functions
 // =============================================================================
@@ -46,15 +95,9 @@ export function extractDailyFeatures(
   dailyLogs: DailyLog[] | Record<string, DailyLog>,
   settings?: UserSettings
 ): DailyMLFeatures {
-  // Convert dailyLogs array to Record if needed
-  const logsRecord: Record<string, DailyLog> = Array.isArray(dailyLogs)
-    ? dailyLogs.reduce((acc, log) => ({ ...acc, [log.date]: log }), {})
-    : dailyLogs;
-
-  // Convert date to string format
-  const dateStr = typeof date === 'number'
-    ? new Date(date).toISOString().split('T')[0]
-    : date;
+  // Normalize inputs using utility functions
+  const logsRecord = normalizeDailyLogs(dailyLogs);
+  const dateStr = normalizeDate(date);
 
   // Use default settings if not provided
   const userSettings = settings || createDefaultSettings();
@@ -98,12 +141,12 @@ export function extractDailyFeatures(
     avgIntensity: calculateAverageIntensity(dayWorkouts, userSettings),
 
     // Recovery (from daily log, with defaults)
-    sleepHours: dayLog?.sleepHours ?? 7,
-    sleepQuality: dayLog?.sleepQuality ?? 3,
-    stressLevel: dayLog?.stressLevel ?? 3,
-    sorenessLevel: dayLog?.muscleSoreness ?? 2,
-    perceivedRecovery: dayLog?.perceivedRecovery ?? 3,
-    perceivedEnergy: dayLog?.perceivedEnergy ?? 3,
+    sleepHours: dayLog?.sleepHours ?? DEFAULT_SLEEP_HOURS,
+    sleepQuality: dayLog?.sleepQuality ?? DEFAULT_SLEEP_QUALITY,
+    stressLevel: dayLog?.stressLevel ?? DEFAULT_STRESS_LEVEL,
+    sorenessLevel: dayLog?.muscleSoreness ?? DEFAULT_SORENESS_LEVEL,
+    perceivedRecovery: dayLog?.perceivedRecovery ?? DEFAULT_PERCEIVED_RECOVERY,
+    perceivedEnergy: dayLog?.perceivedEnergy ?? DEFAULT_PERCEIVED_ENERGY,
 
     // Derived
     acwr,
@@ -137,15 +180,9 @@ export function extractFeatureSequence(
 ): DailyMLFeatures[] {
   const features: DailyMLFeatures[] = [];
 
-  // Convert dailyLogs array to Record if needed
-  const logsRecord: Record<string, DailyLog> = Array.isArray(dailyLogs)
-    ? dailyLogs.reduce((acc, log) => ({ ...acc, [log.date]: log }), {})
-    : dailyLogs;
-
-  // Convert endDate to Date object
-  const end = typeof endDate === 'number'
-    ? new Date(endDate)
-    : new Date(endDate);
+  // Normalize inputs using utility functions
+  const logsRecord = normalizeDailyLogs(dailyLogs);
+  const end = new Date(normalizeDate(endDate));
 
   // Use default settings if not provided
   const userSettings = settings || createDefaultSettings();
@@ -175,16 +212,13 @@ export function extractBanditContext(
   endDate?: number | string,
   settings?: UserSettings
 ): BanditContext {
-  // Convert dailyLogs array to Record if needed
-  const logsRecord: Record<string, DailyLog> = Array.isArray(dailyLogs)
-    ? dailyLogs.reduce((acc, log) => ({ ...acc, [log.date]: log }), {})
-    : dailyLogs;
+  // Normalize inputs using utility functions
+  const logsRecord = normalizeDailyLogs(dailyLogs);
 
   // Calculate today based on endDate or current date
-  const end = endDate
-    ? (typeof endDate === 'number' ? new Date(endDate) : new Date(endDate))
-    : new Date();
-  const today = end.toISOString().split('T')[0];
+  const today = endDate
+    ? normalizeDate(endDate)
+    : new Date().toISOString().split('T')[0];
 
   // Use default settings if not provided
   const userSettings = settings || createDefaultSettings();
@@ -492,7 +526,7 @@ function calculateAverageIntensity(workouts: WorkoutSession[], settings: UserSet
     }
   }
 
-  return intensities.length > 0 ? average(intensities) : 70; // Default 70%
+  return intensities.length > 0 ? average(intensities) : DEFAULT_INTENSITY_PERCENTAGE;
 }
 
 function determineTrainingPhase(
@@ -623,14 +657,14 @@ function average(arr: number[]): number {
 function createDefaultSettings(): UserSettings {
   return {
     onboardingCompleted: true,
-    experienceLevel: 'Intermediate',
+    experienceLevel: DEFAULT_EXPERIENCE_LEVEL,
     personalRecords: {},
-    preferredUnits: 'kg',
+    preferredUnits: DEFAULT_PREFERRED_UNITS,
     restTimerEnabled: true,
-    defaultRestTime: 90,
+    defaultRestTime: DEFAULT_REST_TIME_SECONDS,
     soundEnabled: true,
     notificationsEnabled: false,
-    theme: 'dark',
+    theme: DEFAULT_THEME,
     activeProgram: null,
   };
 }

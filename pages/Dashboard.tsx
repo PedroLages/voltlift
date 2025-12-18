@@ -294,10 +294,10 @@ const Dashboard = () => {
       {/* Stats Overview */}
       <div className="grid grid-cols-2 gap-2">
         {/* Primary Metric - Sessions This Week */}
-        <div className="bg-[#111] p-6 border border-primary/30 flex flex-col items-center justify-center text-center shadow-[0_0_20px_rgba(204,255,0,0.1)]">
-          <div className="mb-3 text-primary"><Flame size={24} /></div>
-          <span className="text-5xl font-black italic text-primary leading-none">{workoutsThisWeek}</span>
-          <span className="text-xs font-bold text-white uppercase mt-2 tracking-widest">SESSIONS THIS WEEK</span>
+        <div className="bg-[#111] p-4 border border-primary/30 flex flex-col items-center justify-center text-center shadow-[0_0_20px_rgba(204,255,0,0.1)]">
+          <div className="mb-3 text-primary"><Flame size={18} /></div>
+          <span className="text-3xl font-black italic text-primary leading-none">{workoutsThisWeek}</span>
+          <span className="text-[10px] font-bold text-white uppercase mt-1 tracking-widest">SESSIONS THIS WEEK</span>
         </div>
 
         <StatCard icon={<Activity size={18} />} value={history.length} label="TOTAL" color="text-white" />
