@@ -662,6 +662,18 @@ const Profile = () => {
         <YearInReview year={new Date().getFullYear()} onClose={() => setShowYearInReview(false)} />
       )}
 
+      {/* ═══════════════════════════════════════════════════════════════════════════════
+          SECTION GROUP: BIOMETRICS & RECOVERY
+          Body tracking, health data, and recovery monitoring
+      ═══════════════════════════════════════════════════════════════════════════════ */}
+      <div className="mt-10 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">Biometrics & Recovery</span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+        </div>
+      </div>
+
       {/* Body Tracking - renamed to "BIOMETRICS" */}
       <CollapsibleSection
         title="Biometric Scanner"
@@ -701,6 +713,18 @@ const Profile = () => {
           {bodyMetricsTab === 'correlation' && <BodyLiftCorrelation />}
         </div>
       </CollapsibleSection>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════════
+          SECTION GROUP: COMMUNICATIONS
+          Cloud sync, notifications, and data transfer
+      ═══════════════════════════════════════════════════════════════════════════════ */}
+      <div className="mt-10 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">Communications</span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+        </div>
+      </div>
 
       {/* Cloud Armor */}
       <CollapsibleSection
@@ -765,6 +789,18 @@ const Profile = () => {
           )}
         </div>
       </CollapsibleSection>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════════
+          SECTION GROUP: HARDWARE & CALIBRATION
+          Training equipment settings, progression rules, and gym setup
+      ═══════════════════════════════════════════════════════════════════════════════ */}
+      <div className="mt-10 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">Hardware & Calibration</span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+        </div>
+      </div>
 
       {/* Rig Setup */}
       <CollapsibleSection
@@ -1095,6 +1131,18 @@ const Profile = () => {
           ))}
         </div>
       </CollapsibleSection>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════════
+          SECTION GROUP: INTELLIGENCE SYSTEMS
+          AI coaching, visual generation, and smart features
+      ═══════════════════════════════════════════════════════════════════════════════ */}
+      <div className="mt-10 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">Intelligence Systems</span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+        </div>
+      </div>
 
       {/* Exercise Vault */}
       <CollapsibleSection
