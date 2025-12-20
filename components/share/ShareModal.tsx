@@ -1,12 +1,12 @@
 /**
  * ShareModal Component
  *
- * Modal for previewing and sharing workout cards.
- * Provides options for different card styles and share methods.
+ * Industrial modal for previewing and sharing workout cards.
+ * Features: cut corners, corner brackets, neon glow accents
  */
 
 import React, { useRef, useState } from 'react';
-import { X, Share2, Download, Copy, Check, Sparkles } from 'lucide-react';
+import { X, Share2, Download, Copy, Check, Zap } from 'lucide-react';
 import { WorkoutSession } from '../../types';
 import { WorkoutXPResult } from '../../services/gamification';
 import ShareableWorkoutCard from './ShareableWorkoutCard';
@@ -72,37 +72,64 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   if (!isOpen) return null;
 
   const variants: { id: CardVariant; name: string; color: string }[] = [
-    { id: 'neon', name: 'Neon', color: 'bg-[#ccff00]' },
-    { id: 'dark', name: 'Dark', color: 'bg-zinc-700' },
-    { id: 'minimal', name: 'Minimal', color: 'bg-blue-500' },
+    { id: 'neon', name: 'NEON', color: '#ccff00' },
+    { id: 'dark', name: 'DARK', color: '#71717a' },
+    { id: 'minimal', name: 'MINIMAL', color: '#60a5fa' },
   ];
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="bg-zinc-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-black border-2 border-zinc-700 max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col relative"
+        style={{
+          clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Corner Brackets */}
+        <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-primary pointer-events-none" />
+        <div className="absolute top-0 right-4 w-4 h-4 border-r-2 border-t-2 border-primary pointer-events-none" />
+        <div className="absolute bottom-4 left-0 w-4 h-4 border-l-2 border-b-2 border-primary pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-primary pointer-events-none" />
+
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/50">
           <div className="flex items-center gap-2">
-            <Sparkles size={20} className="text-[#ccff00]" />
-            <h2 className="font-bold text-white">Share Your Workout</h2>
+            <div
+              className="w-8 h-8 bg-primary flex items-center justify-center"
+              style={{
+                clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+              }}
+            >
+              <Zap size={16} className="text-black" fill="currentColor" />
+            </div>
+            <h2 className="font-black italic uppercase text-white tracking-wide">Share Workout</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-zinc-400 hover:text-white transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            style={{
+              clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+            }}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Card Preview */}
-        <div className="flex-1 overflow-auto p-4 flex justify-center">
-          <div className="transform scale-[0.7] origin-top">
+        <div className="flex-1 overflow-auto p-4 flex justify-center bg-zinc-950">
+          {/* Subtle grid pattern */}
+          <div
+            className="absolute inset-0 opacity-5 pointer-events-none"
+            style={{
+              backgroundImage: 'linear-gradient(to right, #ccff00 1px, transparent 1px), linear-gradient(to bottom, #ccff00 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+            }}
+          />
+          <div className="transform scale-[0.7] origin-top relative">
             <ShareableWorkoutCard
               ref={cardRef}
               workout={workout}
@@ -117,20 +144,26 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         </div>
 
         {/* Style Selector */}
-        <div className="px-4 pb-2">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="text-xs text-zinc-500 uppercase font-bold">Style:</span>
+        <div className="px-4 py-3 bg-zinc-900/50 border-t border-zinc-800">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mr-2">STYLE</span>
             {variants.map((v) => (
               <button
                 key={v.id}
                 onClick={() => setVariant(v.id)}
                 className={`
-                  px-3 py-1.5 rounded-full text-xs font-bold uppercase transition-all
+                  px-3 py-1.5 text-xs font-bold uppercase transition-all border-2
                   ${variant === v.id
-                    ? `${v.color} text-black`
-                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                    ? 'text-black'
+                    : 'bg-transparent text-zinc-500 border-zinc-700 hover:border-zinc-500'
                   }
                 `}
+                style={{
+                  backgroundColor: variant === v.id ? v.color : undefined,
+                  borderColor: variant === v.id ? v.color : undefined,
+                  clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+                  boxShadow: variant === v.id ? `0 0 15px ${v.color}40` : undefined,
+                }}
               >
                 {v.name}
               </button>
@@ -139,23 +172,26 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="p-4 border-t border-zinc-800 grid grid-cols-3 gap-2">
+        <div className="p-4 border-t border-zinc-800 grid grid-cols-3 gap-2 bg-black">
           {/* Share Button (Mobile) */}
           {canShare && (
             <button
               onClick={handleShare}
               disabled={isGenerating}
               className={`
-                flex flex-col items-center justify-center gap-1 py-3 rounded-xl font-bold text-sm uppercase transition-all
+                flex flex-col items-center justify-center gap-1 py-3 font-bold text-xs uppercase transition-all border-2
                 ${shared
-                  ? 'bg-green-500 text-black'
-                  : 'bg-[#ccff00] text-black hover:bg-[#b8e600]'
+                  ? 'bg-green-500 border-green-500 text-black'
+                  : 'bg-primary border-primary text-black hover:shadow-neon'
                 }
                 ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}
               `}
+              style={{
+                clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+              }}
             >
-              {shared ? <Check size={20} /> : <Share2 size={20} />}
-              {shared ? 'Shared!' : 'Share'}
+              {shared ? <Check size={18} /> : <Share2 size={18} />}
+              {shared ? 'SENT' : 'SHARE'}
             </button>
           )}
 
@@ -164,16 +200,19 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             onClick={handleCopy}
             disabled={isGenerating}
             className={`
-              flex flex-col items-center justify-center gap-1 py-3 rounded-xl font-bold text-sm uppercase transition-all
+              flex flex-col items-center justify-center gap-1 py-3 font-bold text-xs uppercase transition-all border-2
               ${copied
-                ? 'bg-green-500 text-black'
-                : 'bg-zinc-800 text-white hover:bg-zinc-700'
+                ? 'bg-green-500 border-green-500 text-black'
+                : 'bg-zinc-900 border-zinc-700 text-white hover:border-zinc-500'
               }
               ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}
             `}
+            style={{
+              clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+            }}
           >
-            {copied ? <Check size={20} /> : <Copy size={20} />}
-            {copied ? 'Copied!' : 'Copy'}
+            {copied ? <Check size={18} /> : <Copy size={18} />}
+            {copied ? 'DONE' : 'COPY'}
           </button>
 
           {/* Download Button */}
@@ -181,22 +220,31 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             onClick={handleDownload}
             disabled={isGenerating}
             className={`
-              flex flex-col items-center justify-center gap-1 py-3 rounded-xl font-bold text-sm uppercase transition-all
-              bg-zinc-800 text-white hover:bg-zinc-700
+              flex flex-col items-center justify-center gap-1 py-3 font-bold text-xs uppercase transition-all border-2
+              bg-zinc-900 border-zinc-700 text-white hover:border-zinc-500
               ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}
             `}
+            style={{
+              clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+            }}
           >
-            <Download size={20} />
-            Save
+            <Download size={18} />
+            SAVE
           </button>
         </div>
 
         {/* Loading Overlay */}
         {isGenerating && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <div className="bg-zinc-800 px-6 py-4 rounded-xl flex items-center gap-3">
-              <div className="w-5 h-5 border-2 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
-              <span className="text-white font-medium">Generating image...</span>
+          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+            <div
+              className="bg-zinc-900 border-2 border-primary px-6 py-4 flex items-center gap-3"
+              style={{
+                clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+                boxShadow: '0 0 30px rgba(204, 255, 0, 0.3)',
+              }}
+            >
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent animate-spin" style={{ clipPath: 'none', borderRadius: '50%' }} />
+              <span className="text-white font-bold uppercase text-sm tracking-wide">Generating...</span>
             </div>
           </div>
         )}

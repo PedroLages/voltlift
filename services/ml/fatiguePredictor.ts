@@ -148,7 +148,8 @@ export async function predictFatigue(
   );
 
   // Convert to tensor
-  const inputTensor = featuresToTensor(sequence);
+  const inputArray = featuresToTensor(sequence);
+  const inputTensor = tf.tensor2d(inputArray);
 
   // Reshape for batch: [1, sequenceLength, features]
   const batchedInput = inputTensor.expandDims(0);
@@ -200,8 +201,8 @@ function predictDeloadNeed(predictions: FatiguePrediction[]): {
   deloadWindow?: { start: string; end: string };
 } {
   // Find when fatigue exceeds high threshold
-  const highFatigueDay = predictions.findIndex(p => p.predictedFatigueLevel > FATIGUE_THRESHOLDS.high);
-  const criticalFatigueDay = predictions.findIndex(p => p.predictedFatigueLevel > FATIGUE_THRESHOLDS.critical);
+  const highFatigueDay = predictions.findIndex(p => p.predictedFatigueLevel !== undefined && p.predictedFatigueLevel > FATIGUE_THRESHOLDS.high);
+  const criticalFatigueDay = predictions.findIndex(p => p.predictedFatigueLevel !== undefined && p.predictedFatigueLevel > FATIGUE_THRESHOLDS.critical);
 
   if (criticalFatigueDay !== -1 && criticalFatigueDay < 7) {
     // Critical fatigue predicted within a week
@@ -209,8 +210,8 @@ function predictDeloadNeed(predictions: FatiguePrediction[]): {
       deloadRecommended: true,
       deloadUrgency: 'urgent',
       deloadWindow: {
-        start: predictions[Math.max(0, criticalFatigueDay - 3)].date,
-        end: predictions[criticalFatigueDay].date
+        start: predictions[Math.max(0, criticalFatigueDay - 3)].date || '',
+        end: predictions[criticalFatigueDay].date || ''
       }
     };
   }
@@ -221,23 +222,23 @@ function predictDeloadNeed(predictions: FatiguePrediction[]): {
       deloadRecommended: true,
       deloadUrgency: 'recommended',
       deloadWindow: {
-        start: predictions[Math.max(0, highFatigueDay - 2)].date,
-        end: predictions[Math.min(predictions.length - 1, highFatigueDay + 2)].date
+        start: predictions[Math.max(0, highFatigueDay - 2)].date || '',
+        end: predictions[Math.min(predictions.length - 1, highFatigueDay + 2)].date || ''
       }
     };
   }
 
   // Check for steadily increasing fatigue
-  const firstWeekAvg = predictions.slice(0, 7).reduce((sum, p) => sum + p.predictedFatigueLevel, 0) / 7;
-  const secondWeekAvg = predictions.slice(7).reduce((sum, p) => sum + p.predictedFatigueLevel, 0) / 7;
+  const firstWeekAvg = predictions.slice(0, 7).reduce((sum, p) => sum + (p.predictedFatigueLevel || 0), 0) / 7;
+  const secondWeekAvg = predictions.slice(7).reduce((sum, p) => sum + (p.predictedFatigueLevel || 0), 0) / 7;
 
   if (secondWeekAvg > firstWeekAvg + 0.15 && secondWeekAvg > FATIGUE_THRESHOLDS.moderate) {
     return {
       deloadRecommended: true,
       deloadUrgency: 'suggested',
       deloadWindow: {
-        start: predictions[7].date,
-        end: predictions[13].date
+        start: predictions[7].date || '',
+        end: predictions[13].date || ''
       }
     };
   }
@@ -483,8 +484,8 @@ export async function deleteModel(): Promise<void> {
 // =============================================================================
 
 function classifyRiskLevel(fatigue: number): FatiguePrediction['riskLevel'] {
-  if (fatigue >= FATIGUE_THRESHOLDS.critical) return 'high';
-  if (fatigue >= FATIGUE_THRESHOLDS.high) return 'elevated';
+  if (fatigue >= FATIGUE_THRESHOLDS.critical) return 'critical';
+  if (fatigue >= FATIGUE_THRESHOLDS.high) return 'high';
   if (fatigue >= FATIGUE_THRESHOLDS.moderate) return 'moderate';
   return 'low';
 }
@@ -516,20 +517,20 @@ function identifyContributingFactors(
   const recentData = sequence.slice(-7);
 
   // Check volume trend
-  const avgVolume = recentData.reduce((sum, d) => sum + d.totalSets, 0) / recentData.length;
+  const avgVolume = recentData.reduce((sum, d) => sum + d.volumeTotal, 0) / recentData.length;
   if (avgVolume > 20) {
     factors.push(`High recent volume (${avgVolume.toFixed(0)} sets/day avg)`);
   }
 
   // Check RPE trend
-  const avgRPE = recentData.filter(d => d.averageRPE > 0).reduce((sum, d) => sum + d.averageRPE, 0) /
-    recentData.filter(d => d.averageRPE > 0).length;
+  const avgRPE = recentData.filter(d => d.avgRPE > 0).reduce((sum, d) => sum + d.avgRPE, 0) /
+    recentData.filter(d => d.avgRPE > 0).length;
   if (avgRPE > 8.5) {
     factors.push(`High training intensity (RPE ${avgRPE.toFixed(1)} avg)`);
   }
 
   // Check ACWR
-  const lastAcwr = sequence[sequence.length - 1]?.acuteChronicRatio || 1;
+  const lastAcwr = sequence[sequence.length - 1]?.acwr || 1;
   if (lastAcwr > 1.5) {
     factors.push(`Rapid volume increase (ACWR: ${lastAcwr.toFixed(2)})`);
   } else if (lastAcwr < 0.8) {
@@ -546,7 +547,7 @@ function identifyContributingFactors(
   }
 
   // Check consecutive training days
-  const consecutiveDays = sequence.filter(d => d.hadWorkout).length;
+  const consecutiveDays = sequence.filter(d => !d.isRestDay).length;
   if (consecutiveDays > 5) {
     factors.push(`${consecutiveDays} training days in sequence`);
   }
@@ -571,17 +572,18 @@ function calculateOverallConfidence(actualDays: number, requiredDays: number): n
 
 function featuresToArray(features: DailyMLFeatures): number[] {
   return [
-    features.totalSets / 50, // Normalize to ~0-1
-    features.totalVolume / 50000,
-    features.averageRPE / 10,
-    features.acuteChronicRatio / 2,
-    features.daysSinceLastWorkout / 7,
+    features.volumeTotal / 50, // Normalize to ~0-1
+    features.avgRPE / 10,
+    features.maxRPE / 10,
+    features.avgIntensity / 100,
+    features.acwr / 2,
+    features.daysSinceRest / 7,
     features.sleepHours / 10,
     features.sleepQuality / 5,
     features.stressLevel / 5,
-    features.muscleSoreness / 5,
+    features.sorenessLevel / 5,
     features.perceivedRecovery / 5,
-    features.hadWorkout ? 1 : 0,
+    features.isRestDay ? 0 : 1,
     features.dayOfWeek / 6
   ];
 }
