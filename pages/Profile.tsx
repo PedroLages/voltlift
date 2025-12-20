@@ -110,20 +110,42 @@ const TacticalStatCard = ({ icon, value, label, trend }: { icon: React.ReactNode
 );
 
 // Rounded Toggle Switch
-const MilitaryToggle = ({ enabled, onToggle, label }: { enabled: boolean; onToggle: () => void; label: string }) => (
+const MilitaryToggle = ({
+  enabled,
+  onToggle,
+  label,
+  loading = false
+}: {
+  enabled: boolean;
+  onToggle: () => void;
+  label: string;
+  loading?: boolean;
+}) => (
   <button
     onClick={onToggle}
+    disabled={loading}
     className={`relative w-16 h-11 rounded-full border-2 transition-all duration-300 min-h-[44px] ${
-      enabled ? 'bg-primary/20 border-primary' : 'bg-[#111] border-[#333]'
+      loading
+        ? 'bg-[#111] border-[#333] opacity-50 cursor-not-allowed'
+        : enabled
+        ? 'bg-primary/20 border-primary'
+        : 'bg-[#111] border-[#333]'
     }`}
     aria-label={label}
     aria-pressed={enabled}
+    aria-busy={loading}
   >
-    <span
-      className={`absolute left-1 top-1.5 w-7 h-7 rounded-full transition-all duration-300 ease-in-out ${
-        enabled ? 'translate-x-6 bg-primary' : 'translate-x-0 bg-[#666]'
-      }`}
-    />
+    {loading ? (
+      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </span>
+    ) : (
+      <span
+        className={`absolute left-1 top-1.5 w-7 h-7 rounded-full transition-all duration-300 ease-in-out ${
+          enabled ? 'translate-x-6 bg-primary' : 'translate-x-0 bg-[#666]'
+        }`}
+      />
+    )}
   </button>
 );
 
@@ -145,6 +167,7 @@ const Profile = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showWellnessCheckin, setShowWellnessCheckin] = useState(false);
   const [healthKitAvailable, setHealthKitAvailable] = useState(false);
+  const [healthKitToggling, setHealthKitToggling] = useState(false);
 
   // Validate image URL
   const isValidImageUrl = (url: string | null): url is string => {
@@ -191,13 +214,31 @@ const Profile = () => {
 
   // Handle HealthKit toggle
   const handleHealthKitToggle = async () => {
-    if (!settings.healthKitEnabled) {
-      const granted = await requestHealthPermissions();
-      if (granted) {
-        updateSettings({ healthKitEnabled: true });
+    if (healthKitToggling) return; // Prevent rapid toggling
+
+    setHealthKitToggling(true);
+
+    try {
+      if (!settings.healthKitEnabled) {
+        // Enabling HealthKit - request permissions
+        const granted = await requestHealthPermissions();
+        if (granted) {
+          updateSettings({ healthKitEnabled: true });
+          console.log('✅ HealthKit enabled successfully');
+        } else {
+          console.warn('❌ HealthKit permission denied');
+          alert('HealthKit permission was denied. Please enable it in Settings > Privacy > Health > IronPath to use this feature.');
+        }
+      } else {
+        // Disabling HealthKit
+        updateSettings({ healthKitEnabled: false });
+        console.log('ℹ️ HealthKit disabled');
       }
-    } else {
-      updateSettings({ healthKitEnabled: false });
+    } catch (error) {
+      console.error('❌ HealthKit toggle failed:', error);
+      alert('Failed to toggle HealthKit integration. Please try again.');
+    } finally {
+      setHealthKitToggling(false);
     }
   };
 
@@ -764,6 +805,7 @@ const Profile = () => {
                   enabled={settings.healthKitEnabled || false}
                   onToggle={handleHealthKitToggle}
                   label={settings.healthKitEnabled ? 'Disable HealthKit' : 'Enable HealthKit'}
+                  loading={healthKitToggling}
                 />
               </div>
 
