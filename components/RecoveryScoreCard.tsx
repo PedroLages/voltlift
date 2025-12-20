@@ -72,7 +72,8 @@ export function RecoveryScoreCard({ onOpenWellnessCheckin, compact = false }: Re
     const context = extractBanditContext(workoutHistory, dailyLogs, today);
 
     // Calculate fatigue level from avgFatigue7d (1-5 scale, normalized to 0-1)
-    const fatigueLevel = (context.avgFatigue7d - 1) / 4;
+    // Add bounds checking to ensure result is in valid 0-1 range
+    const fatigueLevel = Math.max(0, Math.min(1, (context.avgFatigue7d - 1) / 4));
 
     // Calculate ACWR from the most recent features
     const latestFeature = features[features.length - 1];

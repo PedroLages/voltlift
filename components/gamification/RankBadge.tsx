@@ -9,6 +9,7 @@ import React, { useMemo } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { getRankForXP } from '../../services/gamification';
+import { getRankHexColor } from '../../utils/rankColors';
 
 interface RankBadgeProps {
   size?: 'sm' | 'md' | 'lg';
@@ -46,28 +47,8 @@ export const RankBadge: React.FC<RankBadgeProps> = ({
 
   const config = sizeConfig[size];
 
-  // Extract hex color for glow effect
-  const getHexColor = () => {
-    if (rank.color.startsWith('text-[')) {
-      return rank.color.match(/#[0-9a-fA-F]+/)?.[0] || '#ccff00';
-    }
-    // Map Tailwind color classes to hex
-    const colorMap: Record<string, string> = {
-      'text-zinc-400': '#a1a1aa',
-      'text-zinc-300': '#d4d4d8',
-      'text-amber-400': '#fbbf24',
-      'text-amber-500': '#f59e0b',
-      'text-orange-400': '#fb923c',
-      'text-orange-500': '#f97316',
-      'text-red-400': '#f87171',
-      'text-red-500': '#ef4444',
-      'text-purple-400': '#c084fc',
-      'text-purple-500': '#a855f7',
-    };
-    return colorMap[rank.color] || '#ccff00';
-  };
-
-  const hexColor = getHexColor();
+  // Extract hex color for glow effect using utility
+  const hexColor = getRankHexColor(rank.color);
   const colorClasses = rank.color.startsWith('text-[') ? '' : rank.color;
 
   return (

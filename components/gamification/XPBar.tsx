@@ -9,6 +9,7 @@ import React, { useMemo } from 'react';
 import { Zap } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { IRON_RANKS, getRankForXP, getLevelProgress } from '../../services/gamification';
+import { getRankHexColor } from '../../utils/rankColors';
 
 interface XPBarProps {
   showNumbers?: boolean;
@@ -30,21 +31,15 @@ export const XPBar: React.FC<XPBarProps> = ({
   const isMaxLevel = rank.level === IRON_RANKS.length;
   const barHeight = compact ? 'h-3' : 'h-4';
 
-  // Calculate filled cells
-  const filledCells = Math.floor((progress / 100) * cells);
-  const partialFill = ((progress / 100) * cells) % 1;
+  // Calculate filled cells (memoized for performance)
+  const filledCells = useMemo(() => Math.floor((progress / 100) * cells), [progress, cells]);
+  const partialFill = useMemo(() => ((progress / 100) * cells) % 1, [progress, cells]);
 
-  // Get color based on rank
-  const getBarColor = () => {
+  // Get color based on rank using utility
+  const barColor = useMemo(() => {
     if (isMaxLevel) return '#ccff00';
-    // Use rank color or default to primary
-    if (rank.color.startsWith('text-[')) {
-      return rank.color.match(/#[0-9a-fA-F]+/)?.[0] || '#ccff00';
-    }
-    return '#ccff00';
-  };
-
-  const barColor = getBarColor();
+    return getRankHexColor(rank.color);
+  }, [isMaxLevel, rank.color]);
 
   return (
     <div className="w-full">
@@ -110,11 +105,14 @@ export const XPBar: React.FC<XPBarProps> = ({
                 />
               )}
 
-              {/* Pulse effect on the leading edge */}
+              {/* Pulse effect on the leading edge - optimized with will-change */}
               {isLast && (
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 animate-pulse"
-                  style={{ backgroundColor: barColor }}
+                  style={{
+                    backgroundColor: barColor,
+                    willChange: 'opacity'
+                  }}
                 />
               )}
             </div>
@@ -141,9 +139,7 @@ export const XPBar: React.FC<XPBarProps> = ({
               <span
                 className="text-xs font-bold italic uppercase"
                 style={{
-                  color: IRON_RANKS[rank.level].color.startsWith('text-[')
-                    ? IRON_RANKS[rank.level].color.match(/#[0-9a-fA-F]+/)?.[0]
-                    : undefined
+                  color: getRankHexColor(IRON_RANKS[rank.level].color)
                 }}
               >
                 {IRON_RANKS[rank.level].name}
