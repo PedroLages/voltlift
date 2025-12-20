@@ -15,10 +15,22 @@ import {
   processWorkoutCompletion,
   createInitialGamificationState,
   IRON_RANKS,
-  type WorkoutXPContext,
   type GamificationState,
 } from '../gamification';
 import type { WorkoutSession, ExerciseLog } from '../../types';
+
+// Helper to get relative dates (future-proof test dates)
+function getRelativeDate(daysOffset: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + daysOffset);
+  return date.toISOString().split('T')[0];
+}
+
+function getRelativeDateISO(daysOffset: number): Date {
+  const date = new Date();
+  date.setDate(date.getDate() + daysOffset);
+  return date;
+}
 
 // Helper to create a mock workout
 function createMockWorkout(overrides: Partial<WorkoutSession> = {}): WorkoutSession {
@@ -48,105 +60,103 @@ function createMockExerciseLogs(count: number): ExerciseLog[] {
 }
 
 describe('calculateWorkoutXP', () => {
-  test('should calculate base XP correctly', () => {
+  test('should award base 100 XP for workout with 3 exercises', () => {
     const workout = createMockWorkout({
       logs: createMockExerciseLogs(3),
     });
-    const context: WorkoutXPContext = {
+
+    const result = calculateWorkoutXP(workout, {
       hitPRs: 0,
       currentStreak: 0,
       volumeTotal: 3000,
-    };
+    });
 
-    const result = calculateWorkoutXP(workout, context);
-
-    expect(result.baseXP).toBeGreaterThan(0);
-    expect(result.totalXP).toBe(result.baseXP); // No bonuses
+    expect(result.baseXP).toBe(100);
+    expect(result.totalXP).toBe(100); // No bonuses
     expect(result.bonuses).toHaveLength(0);
   });
 
-  test('should apply PR bonus correctly', () => {
+  test('should award 50 XP per personal record', () => {
     const workout = createMockWorkout({
       logs: createMockExerciseLogs(3),
     });
-    const context: WorkoutXPContext = {
+
+    const result = calculateWorkoutXP(workout, {
       hitPRs: 2,
       currentStreak: 0,
       volumeTotal: 3000,
-    };
-
-    const result = calculateWorkoutXP(workout, context);
+    });
 
     const prBonus = result.bonuses.find(b => b.reason === 'Personal Records');
     expect(prBonus).toBeDefined();
-    expect(prBonus?.amount).toBe(2 * 50); // 50 XP per PR
+    expect(prBonus?.amount).toBe(100); // 2 PRs × 50 XP each
     expect(result.totalXP).toBe(result.baseXP + 100);
   });
 
-  test('should cap exercise bonus at 8 exercises', () => {
+  test('should cap exercise variety bonus at 8 exercises (40 XP max)', () => {
     const workout = createMockWorkout({
       logs: createMockExerciseLogs(12), // More than 8
     });
-    const context: WorkoutXPContext = {
+
+    const result = calculateWorkoutXP(workout, {
       hitPRs: 0,
       currentStreak: 0,
       volumeTotal: 12000,
-    };
-
-    const result = calculateWorkoutXP(workout, context);
+    });
 
     const varietyBonus = result.bonuses.find(b => b.reason === 'Exercise Variety');
     expect(varietyBonus).toBeDefined();
-    expect(varietyBonus?.amount).toBe(8 * 5); // Capped at 8 exercises
+    expect(varietyBonus?.amount).toBe(40); // (8 - 3) × 10 XP = 40 XP max
   });
 
-  test('should apply streak bonus for 3+ day streaks', () => {
+  test('should award streak bonus for 3+ consecutive days', () => {
     const workout = createMockWorkout({
       logs: createMockExerciseLogs(3),
     });
-    const context: WorkoutXPContext = {
+
+    const result = calculateWorkoutXP(workout, {
       hitPRs: 0,
       currentStreak: 5,
       volumeTotal: 3000,
-    };
-
-    const result = calculateWorkoutXP(workout, context);
+    });
 
     const streakBonus = result.bonuses.find(b => b.reason === 'Streak Bonus');
     expect(streakBonus).toBeDefined();
     expect(streakBonus?.amount).toBeGreaterThan(0);
   });
 
-  test('should apply weekend warrior bonus on Saturday/Sunday', () => {
-    const saturday = new Date('2025-12-20T10:00:00Z'); // Saturday
+  test('should award 25 XP weekend warrior bonus on Saturday/Sunday', () => {
+    // Find next Saturday from today
+    const today = new Date();
+    const daysUntilSaturday = (6 - today.getDay() + 7) % 7 || 7;
+    const saturday = getRelativeDateISO(daysUntilSaturday);
+
     const workout = createMockWorkout({
       startTime: saturday.getTime(),
       logs: createMockExerciseLogs(3),
     });
-    const context: WorkoutXPContext = {
+
+    const result = calculateWorkoutXP(workout, {
       hitPRs: 0,
       currentStreak: 0,
       volumeTotal: 3000,
-    };
-
-    const result = calculateWorkoutXP(workout, context);
+    });
 
     const weekendBonus = result.bonuses.find(b => b.reason === 'Weekend Warrior');
     expect(weekendBonus).toBeDefined();
     expect(weekendBonus?.amount).toBe(25);
   });
 
-  test('should calculate volume bonus correctly', () => {
+  test('should award volume bonus for high-volume workouts (10k+ lbs)', () => {
     const workout = createMockWorkout({
       logs: createMockExerciseLogs(3),
     });
-    const context: WorkoutXPContext = {
+
+    const result = calculateWorkoutXP(workout, {
       hitPRs: 0,
       currentStreak: 0,
       volumeTotal: 15000, // High volume
-    };
-
-    const result = calculateWorkoutXP(workout, context);
+    });
 
     const volumeBonus = result.bonuses.find(b => b.reason === 'High Volume');
     expect(volumeBonus).toBeDefined();
@@ -155,17 +165,19 @@ describe('calculateWorkoutXP', () => {
 });
 
 describe('updateStreak', () => {
-  const today = new Date('2025-12-20T12:00:00Z').toISOString().split('T')[0];
-  const yesterday = new Date('2025-12-19T12:00:00Z').toISOString().split('T')[0];
-  const twoDaysAgo = new Date('2025-12-18T12:00:00Z').toISOString().split('T')[0];
+  const today = getRelativeDate(0);
+  const yesterday = getRelativeDate(-1);
+  const twoDaysAgo = getRelativeDate(-2);
+  const threeDaysAgo = getRelativeDate(-3);
+  const oldWeekStart = getRelativeDate(-11); // Week start from 11 days ago
 
-  test('should maintain streak for consecutive days', () => {
+  test('should increment streak for consecutive day workouts', () => {
     const currentStreak = {
       current: 5,
       best: 10,
       lastWorkoutDate: yesterday,
       freezesUsed: 0,
-      freezeWeekStart: '2025-12-16',
+      freezeWeekStart: getRelativeDate(-4),
     };
 
     const result = updateStreak(currentStreak);
@@ -175,13 +187,13 @@ describe('updateStreak', () => {
     expect(result.best).toBe(10); // Unchanged
   });
 
-  test('should use freeze for single day gap within limit', () => {
+  test('should use freeze for single day gap when freezes available', () => {
     const currentStreak = {
       current: 5,
       best: 10,
       lastWorkoutDate: twoDaysAgo,
       freezesUsed: 0,
-      freezeWeekStart: '2025-12-16',
+      freezeWeekStart: getRelativeDate(-4),
     };
 
     const result = updateStreak(currentStreak);
@@ -191,14 +203,13 @@ describe('updateStreak', () => {
     expect(result.lastWorkoutDate).toBe(today);
   });
 
-  test('should reset streak after 2+ day gap', () => {
-    const threeDaysAgo = new Date('2025-12-17T12:00:00Z').toISOString().split('T')[0];
+  test('should reset streak to 1 after 2+ day gap', () => {
     const currentStreak = {
       current: 5,
       best: 10,
       lastWorkoutDate: threeDaysAgo,
       freezesUsed: 0,
-      freezeWeekStart: '2025-12-16',
+      freezeWeekStart: getRelativeDate(-4),
     };
 
     const result = updateStreak(currentStreak);
@@ -208,28 +219,28 @@ describe('updateStreak', () => {
     expect(result.lastWorkoutDate).toBe(today);
   });
 
-  test('should reset freeze counter on new week', () => {
+  test('should reset freeze counter at start of new week', () => {
     const currentStreak = {
       current: 5,
       best: 10,
       lastWorkoutDate: yesterday,
       freezesUsed: 2,
-      freezeWeekStart: '2025-12-09', // Old week
+      freezeWeekStart: oldWeekStart, // Old week
     };
 
     const result = updateStreak(currentStreak);
 
     expect(result.freezesUsed).toBe(0); // Reset
-    expect(result.freezeWeekStart).not.toBe('2025-12-09'); // Updated
+    expect(result.freezeWeekStart).not.toBe(oldWeekStart); // Updated
   });
 
-  test('should update best streak when current exceeds it', () => {
+  test('should update best streak when current streak exceeds it', () => {
     const currentStreak = {
       current: 10,
       best: 10,
       lastWorkoutDate: yesterday,
       freezesUsed: 0,
-      freezeWeekStart: '2025-12-16',
+      freezeWeekStart: getRelativeDate(-4),
     };
 
     const result = updateStreak(currentStreak);
@@ -238,13 +249,13 @@ describe('updateStreak', () => {
     expect(result.best).toBe(11); // Updated
   });
 
-  test('should not use freeze if already used 2 this week', () => {
+  test('should reset streak when 2 freezes already used this week', () => {
     const currentStreak = {
       current: 5,
       best: 10,
       lastWorkoutDate: twoDaysAgo,
       freezesUsed: 2, // Already at limit
-      freezeWeekStart: '2025-12-16',
+      freezeWeekStart: getRelativeDate(-4),
     };
 
     const result = updateStreak(currentStreak);

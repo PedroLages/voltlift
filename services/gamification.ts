@@ -31,13 +31,23 @@ export const IRON_RANKS: IronRank[] = [
 
 /**
  * Get rank info for a given XP amount
- * Optimized: findLast provides O(log n) performance vs O(n) reverse iteration
+ * Optimized: O(n) forward iteration with early exit (avg case O(current_level))
  */
 export function getRankForXP(totalXP: number): IronRank {
-  // findLast is more efficient than reverse iteration for sorted arrays
-  // Returns the last (highest) rank where totalXP >= minXP
-  const rank = [...IRON_RANKS].reverse().find(r => totalXP >= r.minXP);
-  return rank || IRON_RANKS[0];
+  // Forward iteration since IRON_RANKS is sorted by minXP (ascending)
+  // Find the highest rank that the user has reached
+  let currentRank = IRON_RANKS[0]; // Start with ROOKIE
+
+  for (const rank of IRON_RANKS) {
+    if (totalXP >= rank.minXP) {
+      currentRank = rank;
+    } else {
+      // Early exit: Since ranks are sorted, we've found the right one
+      break;
+    }
+  }
+
+  return currentRank;
 }
 
 /**
