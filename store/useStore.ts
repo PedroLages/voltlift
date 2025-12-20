@@ -1621,9 +1621,13 @@ export const useStore = create<AppState>()(
         // Version 5: Add gamification state (XP, streaks, achievements)
         if (version < 5) {
           console.log('[Migration v5] Adding gamification state');
+          // Merge with existing partial state if present (handles interrupted migrations)
+          const initialState = createInitialGamificationState();
           return {
             ...persistedState,
-            gamification: createInitialGamificationState(),
+            gamification: persistedState.gamification
+              ? { ...initialState, ...persistedState.gamification }
+              : initialState,
           };
         }
 
