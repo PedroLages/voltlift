@@ -62,6 +62,41 @@ Next set recommendation:`,
   },
 
   // ---------------------------------------------------------------------------
+  // Suggestion Explanation
+  // ---------------------------------------------------------------------------
+  suggestion_explanation: {
+    id: 'suggestion_explanation',
+    version: '1.0.0',
+    systemPrompt: `You are an expert strength coach explaining AI workout suggestions.
+Explain the science behind progressive overload recommendations in clear, accessible language.
+Focus on education - help users understand WHY, not just WHAT.
+Keep it concise but informative.`,
+    userPromptTemplate: `User: {{userName}} ({{experienceLevel}})
+Exercise: {{exerciseName}}
+Last Performance: {{lastWeight}}{{units}} x {{lastReps}} reps {{rpeInfo}}
+
+AI Suggestion: {{suggestedWeight}}{{units}} x {{suggestedRepsMin}}-{{suggestedRepsMax}} reps
+Confidence: {{confidence}}
+Recovery Score: {{recoveryScore}}/10
+{{deloadNote}}
+
+Explain WHY this suggestion makes sense for progressive overload.
+Include:
+1. Main reasoning (2-3 sentences)
+2. Key factors considered (bullet points)
+3. What to expect from this approach (1 sentence)`,
+    variables: [
+      'userName', 'experienceLevel', 'exerciseName',
+      'lastWeight', 'lastReps', 'units', 'rpeInfo',
+      'suggestedWeight', 'suggestedRepsMin', 'suggestedRepsMax',
+      'confidence', 'recoveryScore', 'deloadNote'
+    ],
+    maxTokens: 300,
+    temperature: 0.5,
+    model: 'gemini-flash',
+  },
+
+  // ---------------------------------------------------------------------------
   // Form Guide
   // ---------------------------------------------------------------------------
   form_guide: {

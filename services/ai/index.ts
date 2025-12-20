@@ -208,6 +208,151 @@ export async function getProgressiveOverloadSuggestion(params: {
 }
 
 // =============================================================================
+// Suggestion Explanation
+// =============================================================================
+
+/**
+ * Explain WHY an AI suggestion was made
+ *
+ * Strategy:
+ * - Takes a ProgressiveSuggestion from local ML
+ * - Uses LLM to generate educational explanation
+ * - Helps users understand progressive overload science
+ */
+export async function explainSuggestion(params: {
+  suggestion: ProgressiveSuggestion;
+  exerciseId: string;
+  lastWorkout?: ExerciseLog;
+  settings: UserSettings;
+}): Promise<AIResponse<SuggestionExplanationResponse>> {
+  const { suggestion, exerciseId, lastWorkout, settings } = params;
+  const startTime = Date.now();
+
+  const exercise = EXERCISE_LIBRARY.find((e) => e.id === exerciseId);
+  if (!exercise) {
+    return {
+      success: false,
+      error: 'Exercise not found',
+      source: 'fallback',
+      latency: Date.now() - startTime,
+    };
+  }
+
+  // Fallback explanation (offline mode)
+  const fallbackExplanation: SuggestionExplanationResponse = {
+    explanation: `Based on your last workout, this suggestion ${
+      suggestion.shouldDeload
+        ? 'recommends a deload to prioritize recovery'
+        : 'aims to progressively overload your muscles for continued strength gains'
+    }. ${
+      suggestion.confidence === 'high'
+        ? 'We have high confidence based on your consistent training history.'
+        : suggestion.confidence === 'medium'
+        ? 'This is a moderate confidence suggestion based on available data.'
+        : 'This is a conservative suggestion due to limited training data.'
+    }`,
+    keyFactors: [
+      `Recovery score: ${suggestion.recoveryScore}/10`,
+      `Previous performance: ${lastWorkout?.sets.filter(s => s.completed).pop()?.weight || 0}${settings.units} × ${lastWorkout?.sets.filter(s => s.completed).pop()?.reps || 0} reps`,
+      `Estimated 1RM: ${suggestion.estimated1RM || 'N/A'}${settings.units}`,
+      `Current intensity: ${suggestion.currentIntensity || 'N/A'}%`,
+    ],
+    whatToExpect: suggestion.shouldDeload
+      ? 'Expect improved recovery and readiness for your next heavy session.'
+      : 'This load should challenge you while maintaining good form and technique.',
+  };
+
+  // If offline or LLM unavailable, return fallback immediately
+  if (!navigator.onLine || !llmClient.isAvailable()) {
+    return {
+      success: true,
+      data: fallbackExplanation,
+      source: 'fallback',
+      latency: Date.now() - startTime,
+    };
+  }
+
+  // Try LLM enhancement
+  return withCache(
+    'suggestion_explanation',
+    {
+      exerciseId,
+      weight: suggestion.weight,
+      reps: suggestion.reps,
+      confidence: suggestion.confidence,
+      recoveryScore: suggestion.recoveryScore,
+    },
+    async () => {
+      const lastSet = lastWorkout?.sets.filter((s) => s.completed).pop();
+      const rpeInfo = buildRPEInfo(lastSet?.rpe);
+
+      const prompt = compilePrompt('suggestion_explanation', {
+        userName: settings.name,
+        experienceLevel: settings.experienceLevel,
+        exerciseName: exercise.name,
+        lastWeight: lastSet?.weight || 0,
+        lastReps: lastSet?.reps || 0,
+        units: settings.units,
+        rpeInfo,
+        suggestedWeight: suggestion.weight,
+        suggestedRepsMin: suggestion.reps[0],
+        suggestedRepsMax: suggestion.reps[1],
+        confidence: suggestion.confidence,
+        recoveryScore: suggestion.recoveryScore,
+        deloadNote: suggestion.shouldDeload
+          ? '\n**Deload Recommended** - Recovery prioritized over intensity'
+          : '',
+      });
+
+      const config = getTemplateConfig('suggestion_explanation');
+      const response = await llmClient.generateText(prompt, config, 'suggestion_explanation');
+
+      if (response.success && response.data) {
+        // Parse LLM response into structured format
+        const explanationText = response.data;
+
+        // Simple parsing - split by numbered sections
+        const lines = explanationText.split('\n').filter((l) => l.trim());
+        const keyFactors: string[] = [];
+        let mainExplanation = '';
+        let whatToExpect = '';
+
+        lines.forEach((line) => {
+          if (line.match(/^[•\-*]\s/)) {
+            keyFactors.push(line.replace(/^[•\-*]\s/, ''));
+          } else if (line.toLowerCase().includes('expect')) {
+            whatToExpect = line;
+          } else if (!mainExplanation && line.length > 20) {
+            mainExplanation = line;
+          }
+        });
+
+        return {
+          success: true,
+          data: {
+            explanation: mainExplanation || explanationText.substring(0, 200),
+            keyFactors: keyFactors.length > 0 ? keyFactors : fallbackExplanation.keyFactors,
+            whatToExpect: whatToExpect || fallbackExplanation.whatToExpect,
+          },
+          source: 'llm' as const,
+          latency: Date.now() - startTime,
+          tokensUsed: response.tokensUsed,
+          cost: response.cost,
+        };
+      }
+
+      return {
+        success: true,
+        data: fallbackExplanation,
+        source: 'fallback' as const,
+        latency: Date.now() - startTime,
+      };
+    },
+    TTL_BY_FEATURE['form_guide'] // Reuse form_guide TTL for similar educational content
+  );
+}
+
+// =============================================================================
 // Form Guide
 // =============================================================================
 
@@ -647,6 +792,7 @@ export type {
   FormGuideResponse,
   WorkoutSummaryResponse,
   CoachingResponse,
+  SuggestionExplanationResponse,
   AIContext,
 } from './types';
 

@@ -11,12 +11,15 @@
  */
 
 import { ExerciseLog, UserSettings, WorkoutSession, DailyLog } from '../types';
+import { ProgressiveSuggestion } from './progressiveOverload';
 import {
   initializeAI,
   getProgressiveOverloadSuggestion,
   getMotivation,
   generateExerciseVisual as aiGenerateExerciseVisual,
   getAIStatus,
+  explainSuggestion as aiExplainSuggestion,
+  generateWorkoutSummary as aiGenerateWorkoutSummary,
 } from './ai';
 
 // Initialize AI services on module load
@@ -122,4 +125,50 @@ export const isAIAvailable = (): boolean => {
 export const getAIUsageStats = () => {
   const status = getAIStatus();
   return status.usageStats;
+};
+
+/**
+ * Explain WHY an AI suggestion was made
+ *
+ * @param suggestion - The ProgressiveSuggestion to explain
+ * @param exerciseId - ID of the exercise
+ * @param lastWorkout - Previous workout log for context
+ * @param settings - User settings
+ * @returns Natural language explanation of the suggestion
+ */
+export const explainSuggestion = async (
+  suggestion: ProgressiveSuggestion,
+  exerciseId: string,
+  lastWorkout: ExerciseLog | undefined,
+  settings: UserSettings
+) => {
+  return aiExplainSuggestion({
+    suggestion,
+    exerciseId,
+    lastWorkout,
+    settings,
+  });
+};
+
+/**
+ * Generate post-workout session summary
+ *
+ * @param workout - Completed workout session
+ * @param settings - User settings
+ * @param previousWeekVolume - Optional previous week's volume for comparison
+ * @param prsAchieved - Array of PRs achieved during the workout
+ * @returns AI-generated workout summary with insights
+ */
+export const generateSessionSummary = async (
+  workout: WorkoutSession,
+  settings: UserSettings,
+  previousWeekVolume?: number,
+  prsAchieved?: string[]
+) => {
+  return aiGenerateWorkoutSummary({
+    workout,
+    settings,
+    previousWeekVolume,
+    prsAchieved,
+  });
 };
