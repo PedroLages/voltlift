@@ -15,6 +15,7 @@ import { checkAchievements, awardXP } from '../services/gamification';
 import { Achievement } from '../types';
 import SwipeableRow from '../components/SwipeableRow';
 import Toast from '../components/Toast';
+import { AchievementToast } from '../components/AchievementToast';
 import { Skeleton } from '../components/Skeleton';
 import KeyboardToolbar from '../components/KeyboardToolbar';
 import { InAppVideoPlayer } from '../components/InAppVideoPlayer';
@@ -85,6 +86,7 @@ const WorkoutLogger = () => {
 
   // Achievement Celebration State
   const [activeAchievement, setActiveAchievement] = useState<Achievement | null>(null);
+  const [achievementToast, setAchievementToast] = useState<Achievement | null>(null);
 
   // Video Player State
   const [activeVideo, setActiveVideo] = useState<{ videoUrl: string; exerciseName: string } | null>(null);
@@ -438,6 +440,9 @@ const WorkoutLogger = () => {
                               }
                               updateGamification(updatedGamification);
 
+                              // Show toast notification immediately
+                              setAchievementToast(firstAchievement);
+
                               // Show celebration modal for first achievement
                               setActiveAchievement(firstAchievement);
                           }
@@ -721,6 +726,15 @@ const WorkoutLogger = () => {
                 achievement={activeAchievement}
             />
           </Suspense>
+      )}
+
+      {/* Achievement Toast Notification */}
+      {achievementToast && (
+          <AchievementToast
+              achievement={achievementToast}
+              onClose={() => setAchievementToast(null)}
+              duration={4000}
+          />
       )}
 
       {/* Plate Calculator Modal */}
