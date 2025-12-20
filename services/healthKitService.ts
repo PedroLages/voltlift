@@ -7,11 +7,15 @@
  *
  * Data imported:
  * - Sleep duration (for recovery score calculation)
- * - Heart rate variability (optional, for fatigue detection)
- * - Resting heart rate (optional, for recovery tracking)
+ * - Heart rate variability (for fatigue detection)
+ * - Resting heart rate (for recovery tracking)
+ * - Heart rate (for workout intensity)
+ *
+ * Uses: @flomentumsolutions/capacitor-health-extended
+ * Supports: sleep, hrv, resting-heart-rate, heart-rate, and 25+ other metrics
  */
 
-import { Health } from '@capgo/capacitor-health';
+import { CapacitorHealthExtended } from '@flomentumsolutions/capacitor-health-extended';
 import { Capacitor } from '@capacitor/core';
 
 export interface HealthData {
@@ -30,7 +34,7 @@ export async function isHealthKitAvailable(): Promise<boolean> {
   }
 
   try {
-    const result = await Health.isAvailable();
+    const result = await CapacitorHealthExtended.isHealthAvailable();
     return result.available;
   } catch (error) {
     console.error('HealthKit availability check failed:', error);
@@ -42,17 +46,31 @@ export async function isHealthKitAvailable(): Promise<boolean> {
  * Request permissions to read health data
  * Call this during onboarding or when user enables the feature
  *
- * NOTE: @capgo/capacitor-health only supports: steps, distance, calories, heartRate, weight
- * Sleep, HRV, and resting HR are NOT supported by this plugin
+ * Requests permissions for:
+ * - READ_SLEEP - Sleep duration and quality
+ * - READ_HRV - Heart rate variability (recovery indicator)
+ * - READ_RESTING_HEART_RATE - Resting heart rate (fitness indicator)
+ * - READ_HEART_RATE - Active heart rate (workout intensity)
  */
 export async function requestHealthPermissions(): Promise<boolean> {
   try {
-    // Fixed: Use requestAuthorization() not requestPermission()
-    // Limited to supported data types only
-    await Health.requestAuthorization({
-      read: ['heartRate'], // Only heartRate is supported from our original list
-      write: [] // We only read, never write
+    const result = await CapacitorHealthExtended.requestHealthPermissions({
+      permissions: [
+        'READ_SLEEP',
+        'READ_HRV',
+        'READ_RESTING_HEART_RATE',
+        'READ_HEART_RATE'
+      ]
     });
+
+    // Check if at least one permission was granted
+    const granted = result.permissions.some(p => p.granted);
+
+    if (!granted) {
+      console.warn('No health permissions granted');
+      return false;
+    }
+
     return true;
   } catch (error) {
     console.error('HealthKit permission request failed:', error);
@@ -63,45 +81,96 @@ export async function requestHealthPermissions(): Promise<boolean> {
 /**
  * Get sleep data for a specific date
  *
- * NOTE: Sleep data is NOT SUPPORTED by @capgo/capacitor-health
- * This function returns 0 and logs a warning
- *
  * @param date - ISO date string (YYYY-MM-DD)
- * @returns Always returns 0 (sleep not supported)
+ * @returns Sleep duration in hours
  */
 export async function getSleepData(date: string): Promise<number> {
-  console.warn('Sleep data is not supported by @capgo/capacitor-health. Consider using manual input or switching to capacitor-health-extended.');
-  return 0; // Sleep not supported by this plugin
+  try {
+    // Query aggregated sleep data for the day
+    const result = await CapacitorHealthExtended.queryAggregated({
+      dataType: 'sleep',
+      startDate: `${date}T00:00:00.000Z`,
+      endDate: `${date}T23:59:59.999Z`,
+      bucket: 'day'
+    });
+
+    if (!result.samples || result.samples.length === 0) {
+      return 0; // No sleep data available
+    }
+
+    // Get total sleep minutes for the day
+    const totalMinutes = result.samples.reduce((sum, sample) => {
+      return sum + (sample.value || 0);
+    }, 0);
+
+    // Convert minutes to hours with 1 decimal place
+    return Math.round((totalMinutes / 60) * 10) / 10;
+  } catch (error) {
+    console.error('Failed to fetch sleep data:', error);
+    return 0;
+  }
 }
 
 /**
  * Get Heart Rate Variability (HRV) for a specific date
  * Higher HRV = better recovery
  *
- * NOTE: HRV is NOT SUPPORTED by @capgo/capacitor-health
- * This function returns undefined and logs a warning
- *
  * @param date - ISO date string (YYYY-MM-DD)
- * @returns Always returns undefined (HRV not supported)
+ * @returns HRV in milliseconds (average for the day)
  */
 export async function getHRVData(date: string): Promise<number | undefined> {
-  console.warn('HRV data is not supported by @capgo/capacitor-health. Consider using manual input or switching to capacitor-health-extended.');
-  return undefined; // HRV not supported by this plugin
+  try {
+    // Query latest HRV sample (typically morning measurement)
+    const result = await CapacitorHealthExtended.queryLatestSample({
+      dataType: 'hrv'
+    });
+
+    if (!result.sample || !result.sample.value) {
+      return undefined;
+    }
+
+    // Check if sample is from the requested date
+    const sampleDate = new Date(result.sample.timestamp).toISOString().split('T')[0];
+    if (sampleDate !== date) {
+      return undefined; // Sample not from requested date
+    }
+
+    return Math.round(result.sample.value);
+  } catch (error) {
+    console.error('Failed to fetch HRV data:', error);
+    return undefined;
+  }
 }
 
 /**
  * Get Resting Heart Rate for a specific date
  * Lower RHR = better fitness/recovery
  *
- * NOTE: Resting HR is NOT SUPPORTED by @capgo/capacitor-health
- * This function returns undefined and logs a warning
- *
  * @param date - ISO date string (YYYY-MM-DD)
- * @returns Always returns undefined (resting HR not supported)
+ * @returns Resting HR in bpm (average for the day)
  */
 export async function getRestingHRData(date: string): Promise<number | undefined> {
-  console.warn('Resting heart rate is not supported by @capgo/capacitor-health. Consider using manual input or switching to capacitor-health-extended.');
-  return undefined; // Resting HR not supported by this plugin
+  try {
+    // Query latest resting HR sample
+    const result = await CapacitorHealthExtended.queryLatestSample({
+      dataType: 'resting-heart-rate'
+    });
+
+    if (!result.sample || !result.sample.value) {
+      return undefined;
+    }
+
+    // Check if sample is from the requested date
+    const sampleDate = new Date(result.sample.timestamp).toISOString().split('T')[0];
+    if (sampleDate !== date) {
+      return undefined; // Sample not from requested date
+    }
+
+    return Math.round(result.sample.value);
+  } catch (error) {
+    console.error('Failed to fetch resting HR data:', error);
+    return undefined;
+  }
 }
 
 /**
