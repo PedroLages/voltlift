@@ -1,7 +1,7 @@
 
 import React, { useEffect, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, Link, useNavigate } from 'react-router-dom';
-import { Home, Dumbbell, Calendar, User, Play, Timer } from 'lucide-react';
+import { Home, Dumbbell, Calendar, User, Play, Timer, Trophy } from 'lucide-react';
 import { useStore } from './store/useStore';
 import { useAuthStore } from './store/useAuthStore';
 import NotificationScheduler from './components/NotificationScheduler';
@@ -27,6 +27,7 @@ const ProgramBuilder = lazy(() => import('./pages/ProgramBuilder'));
 const ProgramBrowser = lazy(() => import('./pages/ProgramBrowser'));
 const ProgramDetail = lazy(() => import('./pages/ProgramDetail'));
 const Analytics = lazy(() => import('./pages/Analytics'));
+const Achievements = lazy(() => import('./pages/Achievements'));
 const Login = lazy(() => import('./pages/Login'));
 
 // Desktop Dashboard Pages
@@ -114,6 +115,7 @@ const BottomNav = () => {
       </div>
 
       <LinkItem to="/history" icon={<Calendar size={22} />} label="LOGS" active={isActive('/history')} />
+      <LinkItem to="/achievements" icon={<Trophy size={22} />} label="TROPHIES" active={isActive('/achievements')} />
       <LinkItem to="/profile" icon={<User size={22} />} label="YOU" active={isActive('/profile')} />
     </nav>
   );
@@ -228,6 +230,7 @@ const AppContent = () => {
             <Route path="/history/:id" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </Suspense>

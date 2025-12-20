@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Zap, Trophy } from 'lucide-react';
 import { Achievement } from '../../types';
 import { getTierColor, getAngularClipPath } from '../../utils/achievementUtils';
+import { Confetti } from '../Confetti';
 
 interface AchievementCelebrationModalProps {
   isOpen: boolean;
@@ -22,15 +23,18 @@ export function AchievementCelebrationModal({
   achievement,
 }: AchievementCelebrationModalProps) {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setIsAnimating(true);
+      setShowConfetti(true); // Trigger confetti on open
       // Auto-close after 4 seconds
       const timer = setTimeout(onClose, 4000);
       return () => clearTimeout(timer);
     }
     setIsAnimating(false);
+    setShowConfetti(false);
     return undefined;
   }, [isOpen]);
 
@@ -282,6 +286,14 @@ export function AchievementCelebrationModal({
           animation: slide-up 0.6s ease-out;
         }
       `}</style>
+
+      {/* Confetti Effect */}
+      <Confetti
+        active={showConfetti}
+        onComplete={() => setShowConfetti(false)}
+        particleCount={50}
+        duration={3000}
+      />
     </div>
   );
 }
