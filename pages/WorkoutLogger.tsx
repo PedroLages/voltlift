@@ -17,6 +17,7 @@ import { Skeleton } from '../components/Skeleton';
 import KeyboardToolbar from '../components/KeyboardToolbar';
 import { InAppVideoPlayer } from '../components/InAppVideoPlayer';
 import { SmartSwapModal } from '../components/SmartSwapModal';
+import { findSubstitutes as findExerciseSubstitutes } from '../services/exerciseRecommendation';
 
 // Lazy load heavy components
 const PRCelebration = lazy(() => import('../components/PRCelebration'));
@@ -431,22 +432,39 @@ const WorkoutLogger = () => {
     setLoadingAi(null);
   };
 
-  const findSubstitutes = (exerciseId: string) => {
-      const currentEx = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
-      if (!currentEx) return [];
+  /**
+   * Find substitute exercises using the centralized recommendation service.
+   * This ensures consistent filtering across Smart Swap, Add Exercise, and AI suggestions.
+   */
+  const findSubstitutes = useCallback((exerciseId: string) => {
+      const allExercises = getAllExercises();
 
-      // Get all exercise IDs already in the workout to exclude them
-      const exercisesInWorkout = activeWorkout?.logs.map(log => log.exerciseId) || [];
+      const result = findExerciseSubstitutes({
+          exerciseId,
+          currentWorkout: activeWorkout,
+          settings,
+          allExercises,
+          allowSecondaryMuscle: false,
+          limit: 10,
+      });
 
-      return getAllExercises().filter(e =>
-          e.muscleGroup === currentEx.muscleGroup &&
-          e.id !== exerciseId &&
-          !exercisesInWorkout.includes(e.id) && // Exclude exercises already in workout
-          settings.availableEquipment.includes(e.equipment)
-      );
-  };
+      // Log debug info in development
+      if (process.env.NODE_ENV === 'development' && result.debug) {
+          console.log('[SmartSwap] Finding substitutes for:', exerciseId);
+          console.log('[SmartSwap] Current exercise:', result.debug.currentExercise?.name);
+          console.log('[SmartSwap] Exercises in workout:', result.debug.exercisesInWorkout);
+          console.log('[SmartSwap] Available equipment:', result.debug.availableEquipment);
+          console.log('[SmartSwap] After muscle filter:', result.debug.afterMuscleFilter);
+          console.log('[SmartSwap] After exclude filter:', result.debug.afterExcludeFilter);
+          console.log('[SmartSwap] After equipment filter:', result.debug.afterEquipmentFilter);
+          console.log('[SmartSwap] Match type:', result.matchType);
+          console.log('[SmartSwap] Results:', result.exercises.map(e => e.name));
+      }
 
-  const handleSwap = (logId: string, currentExerciseId: string) => {
+      return result.exercises;
+  }, [activeWorkout, settings, getAllExercises]);
+
+  const handleSwap = useCallback((logId: string, currentExerciseId: string) => {
       const subs = findSubstitutes(currentExerciseId);
       const currentEx = getAllExercises().find(e => e.id === currentExerciseId);
 
@@ -459,10 +477,11 @@ const WorkoutLogger = () => {
           });
       } else {
           // No substitutes found - open exercise selector for manual selection
+          console.log('[SmartSwap] No substitutes found, opening full exercise selector');
           setSwapTargetLogId(logId);
           setShowExerciseSelector(true);
       }
-  };
+  }, [findSubstitutes, getAllExercises]);
 
   const handleSmartSwapConfirm = (exerciseId: string) => {
       if (smartSwapData) {
