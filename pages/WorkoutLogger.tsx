@@ -266,23 +266,6 @@ const WorkoutLogger = () => {
       addBiometricPoint({ timestamp: Date.now(), heartRate: bpm });
   }, [bpm, activeWorkout, addBiometricPoint]);
 
-  if (!activeWorkout) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen p-6 text-center bg-background">
-        <h2 className="volt-header text-3xl mb-4 text-white">NO SESSION ACTIVE</h2>
-        <p className="text-[#666] mb-8 font-mono text-xs uppercase">Select a protocol to begin tracking.</p>
-        <button onClick={() => {
-            useStore.getState().startWorkout();
-        }} className="bg-primary text-black px-8 py-4 font-black italic uppercase tracking-wider mb-4 w-full max-w-xs">
-          Quick Start
-        </button>
-        <button onClick={() => navigate('/lift')} className="text-white underline text-xs uppercase tracking-widest">
-          Go to Lift Hub
-        </button>
-      </div>
-    );
-  }
-
   const handleFinish = () => {
     setShowCompletionModal(true);
   };
@@ -632,6 +615,24 @@ const WorkoutLogger = () => {
     const currentIndex = inputs.indexOf(focusedInput);
     return currentIndex < inputs.length - 1;
   }, [focusedInput, getAllInputs]);
+
+  // Early return AFTER all hooks to avoid "rendered fewer hooks" error
+  if (!activeWorkout) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen p-6 text-center bg-background">
+        <h2 className="volt-header text-3xl mb-4 text-white">NO SESSION ACTIVE</h2>
+        <p className="text-[#666] mb-8 font-mono text-xs uppercase">Select a protocol to begin tracking.</p>
+        <button onClick={() => {
+            useStore.getState().startWorkout();
+        }} className="bg-primary text-black px-8 py-4 font-black italic uppercase tracking-wider mb-4 w-full max-w-xs">
+          Quick Start
+        </button>
+        <button onClick={() => navigate('/lift')} className="text-white underline text-xs uppercase tracking-widest">
+          Go to Lift Hub
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-8 bg-background min-h-screen" onClick={() => setActiveMenuId(null)}>
