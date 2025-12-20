@@ -271,13 +271,16 @@ const WorkoutLogger = () => {
   };
 
   const handleCompleteWorkout = () => {
-    // Save reference to workout before finishing (for feedback modal)
-    if (activeWorkout) {
-      setCompletedWorkoutRef({ ...activeWorkout });
-    }
-
+    // Call finishWorkout first - it sets endTime and adds to history
     finishWorkout();
     setShowCompletionModal(false);
+
+    // Get the completed workout from history[0] (most recent)
+    // This ensures we have the workout WITH endTime set
+    const completedWorkout = history[0];
+    if (completedWorkout) {
+      setCompletedWorkoutRef({ ...completedWorkout });
+    }
 
     // Phase 5: Check if this was a Greg Nuckols program cycle completion
     // TODO: Add cycle tracking logic here
