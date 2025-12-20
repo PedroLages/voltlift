@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Save, X, Trophy, Clock, TrendingUp, Zap } from 'lucide-react';
+import { CheckCircle2, Save, X, Trophy, Clock, TrendingUp, Zap, WifiOff } from 'lucide-react';
 import { WorkoutSession, UserSettings } from '../types';
 import { generateSessionSummary } from '../services/geminiService';
 import { WorkoutSummaryResponse } from '../services/ai/types';
 import { getAngularClipPath } from '../utils/achievementUtils';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import { CornerBrackets } from './ui/CornerBrackets';
 
 interface WorkoutCompletionModalProps {
   workout: WorkoutSession;
@@ -28,6 +30,10 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
 }) => {
   const [summary, setSummary] = useState<WorkoutSummaryResponse | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Focus trap and Escape key handler
+  const modalRef = useFocusTrap({ isOpen: true, onClose: onDismiss });
 
   // Calculate workout stats
   const duration = workout.endTime
@@ -45,6 +51,20 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
       }
     });
   });
+
+  // Track online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Fetch AI summary on mount (optional enhancement)
   useEffect(() => {
@@ -74,8 +94,14 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
   }, [workout, settings, previousWeekVolume, prsAchieved]);
 
   return (
-    <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div
+      className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 animate-fade-in motion-reduce:animate-none"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="workout-completion-title"
+    >
       <div
+        ref={modalRef}
         className="bg-black border-2 border-primary max-w-lg w-full overflow-hidden flex flex-col relative max-h-[90vh]"
         style={{
           clipPath: getAngularClipPath(16),
@@ -83,10 +109,7 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
         }}
       >
         {/* Corner Brackets */}
-        <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-primary pointer-events-none z-10" />
-        <div className="absolute top-0 right-4 w-4 h-4 border-r-2 border-t-2 border-primary pointer-events-none z-10" />
-        <div className="absolute bottom-4 left-0 w-4 h-4 border-l-2 border-b-2 border-primary pointer-events-none z-10" />
-        <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-primary pointer-events-none z-10" />
+        <CornerBrackets color="#ccff00" size={4} />
 
         {/* Scan Lines */}
         <div
@@ -113,13 +136,24 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
             >
               <CheckCircle2 size={20} className="text-black" />
             </div>
-            <h2 className="font-black italic uppercase text-white text-lg tracking-wide">
-              Workout Complete
-            </h2>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 id="workout-completion-title" className="font-black italic uppercase text-white text-lg tracking-wide">
+                  Workout Complete
+                </h2>
+                {isOffline && (
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-800 border border-zinc-700">
+                    <WifiOff size={10} className="text-zinc-500" />
+                    <span className="text-[8px] text-zinc-500 uppercase font-bold">Offline</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <button
             onClick={onDismiss}
-            className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            aria-label="Close workout completion modal"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors motion-reduce:transition-none"
             style={{
               clipPath: getAngularClipPath(4),
             }}
@@ -150,7 +184,7 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
               <span className="text-[10px] text-zinc-500 uppercase font-bold">Volume</span>
             </div>
             <div className="text-lg font-black font-mono text-white">
-              {Math.round(totalVolume).toLocaleString()}
+              {Math.round(totalVolume).toLocaleString()} {settings.units}
             </div>
           </div>
 
@@ -237,7 +271,7 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
         <div className="relative z-10 p-4 border-t border-zinc-800 space-y-2">
           <button
             onClick={onFinish}
-            className="w-full py-3 font-bold text-sm uppercase transition-all border-2 bg-primary border-primary text-black hover:shadow-neon flex items-center justify-center gap-2"
+            className="w-full min-h-[44px] py-3 font-bold text-sm uppercase transition-all motion-reduce:transition-none border-2 bg-primary border-primary text-black hover:shadow-neon motion-reduce:hover:shadow-none flex items-center justify-center gap-2"
             style={{
               clipPath: getAngularClipPath(6),
             }}
@@ -248,7 +282,7 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
 
           <button
             onClick={onSaveDraft}
-            className="w-full py-3 font-bold text-sm uppercase transition-all border-2 bg-zinc-900 border-zinc-700 text-white hover:border-zinc-500 flex items-center justify-center gap-2"
+            className="w-full min-h-[44px] py-3 font-bold text-sm uppercase transition-all motion-reduce:transition-none border-2 bg-zinc-900 border-zinc-700 text-white hover:border-zinc-500 flex items-center justify-center gap-2"
             style={{
               clipPath: getAngularClipPath(6),
             }}
@@ -259,7 +293,7 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
 
           <button
             onClick={onCancel}
-            className="w-full py-3 font-bold text-sm uppercase transition-all border-2 bg-transparent border-red-500/30 text-red-500 hover:bg-red-500/10 flex items-center justify-center gap-2"
+            className="w-full min-h-[44px] py-3 font-bold text-sm uppercase transition-all motion-reduce:transition-none border-2 bg-transparent border-red-500/30 text-red-500 hover:bg-red-500/10 motion-reduce:hover:bg-transparent flex items-center justify-center gap-2"
             style={{
               clipPath: getAngularClipPath(6),
             }}
