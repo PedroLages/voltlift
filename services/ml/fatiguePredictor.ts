@@ -257,6 +257,9 @@ export function prepareTrainingData(
   dailyLogs: DailyLog[],
   config: PredictorConfig = DEFAULT_CONFIG
 ): TrainingData | null {
+  // Guard against undefined/null history
+  if (!history || !Array.isArray(history)) return null;
+
   const sequences: number[][][] = [];
   const labels: number[][] = [];
 
@@ -589,6 +592,8 @@ function calculateActualFatigue(
   startDate: number,
   days: number
 ): number[] {
+  // Guard against undefined/null history
+  const safeHistory = history && Array.isArray(history) ? history : [];
   const fatigueValues: number[] = [];
 
   for (let i = 0; i < days; i++) {
@@ -603,7 +608,7 @@ function calculateActualFatigue(
       fatigueValues.push((5 - dailyLog.perceivedRecovery) / 4);
     } else {
       // Estimate from workout RPE
-      const dayWorkouts = history.filter(w => {
+      const dayWorkouts = safeHistory.filter(w => {
         if (!w.endTime) return false;
         const workoutDate = new Date(w.endTime).toISOString().split('T')[0];
         return workoutDate === dateStr;
