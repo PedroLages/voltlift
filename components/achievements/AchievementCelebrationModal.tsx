@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Zap, Trophy } from 'lucide-react';
 import { Achievement } from '../../types';
+import { getTierColor, getAngularClipPath } from '../../utils/achievementUtils';
 
 interface AchievementCelebrationModalProps {
   isOpen: boolean;
@@ -35,24 +36,6 @@ export function AchievementCelebrationModal({
 
   if (!isOpen || !achievement) return null;
 
-  // Tier colors
-  const getTierColor = (tier: Achievement['tier']) => {
-    switch (tier) {
-      case 'bronze':
-        return '#cd7f32';
-      case 'silver':
-        return '#c0c0c0';
-      case 'gold':
-        return '#ffd700';
-      case 'platinum':
-        return '#e5e4e2';
-      case 'diamond':
-        return '#b9f2ff';
-      default:
-        return '#ccff00';
-    }
-  };
-
   const tierColor = getTierColor(achievement.tier);
 
   return (
@@ -70,7 +53,7 @@ export function AchievementCelebrationModal({
         `}
         style={{
           borderColor: tierColor,
-          clipPath: 'polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))',
+          clipPath: getAngularClipPath(24),
           boxShadow: `0 0 60px ${tierColor}60, inset 0 0 40px ${tierColor}10`,
         }}
         onClick={(e) => e.stopPropagation()}
@@ -80,7 +63,7 @@ export function AchievementCelebrationModal({
           className="absolute inset-0 pointer-events-none animate-pulse-border"
           style={{
             background: `linear-gradient(45deg, ${tierColor}40, transparent, ${tierColor}40)`,
-            clipPath: 'polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))',
+            clipPath: getAngularClipPath(24),
           }}
         />
 
@@ -124,7 +107,7 @@ export function AchievementCelebrationModal({
               style={{
                 borderColor: tierColor,
                 backgroundColor: `${tierColor}15`,
-                clipPath: 'polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px)',
+                clipPath: getAngularClipPath(16),
                 boxShadow: `0 0 40px ${tierColor}80, inset 0 0 20px ${tierColor}20`,
               }}
             >
@@ -136,7 +119,7 @@ export function AchievementCelebrationModal({
               className="absolute inset-0 animate-pulse-ring"
               style={{
                 border: `3px solid ${tierColor}`,
-                clipPath: 'polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px)',
+                clipPath: getAngularClipPath(16),
               }}
             />
           </div>
@@ -159,7 +142,7 @@ export function AchievementCelebrationModal({
               style={{
                 borderColor: tierColor,
                 backgroundColor: `${tierColor}20`,
-                clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+                clipPath: getAngularClipPath(6),
               }}
             >
               <span className="text-xs font-bold uppercase tracking-wider" style={{ color: tierColor }}>
@@ -172,7 +155,7 @@ export function AchievementCelebrationModal({
               style={{
                 borderColor: '#ccff00',
                 backgroundColor: '#ccff0020',
-                clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+                clipPath: getAngularClipPath(6),
               }}
             >
               <Zap size={14} className="text-primary" fill="currentColor" />
@@ -192,7 +175,7 @@ export function AchievementCelebrationModal({
               borderColor: tierColor,
               color: tierColor,
               backgroundColor: 'transparent',
-              clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+              clipPath: getAngularClipPath(8),
             }}
           >
             Continue

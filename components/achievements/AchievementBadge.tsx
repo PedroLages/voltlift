@@ -8,6 +8,7 @@
 import React from 'react';
 import { Lock, Zap } from 'lucide-react';
 import { Achievement } from '../../types';
+import { getTierColor, getTierOpacities, getAngularClipPath } from '../../utils/achievementUtils';
 
 interface AchievementBadgeProps {
   achievement: Achievement;
@@ -22,27 +23,8 @@ export function AchievementBadge({
   progress = 0,
   compact = false,
 }: AchievementBadgeProps) {
-  // Tier colors
-  const getTierColor = (tier: Achievement['tier']) => {
-    switch (tier) {
-      case 'bronze':
-        return '#cd7f32';
-      case 'silver':
-        return '#c0c0c0';
-      case 'gold':
-        return '#ffd700';
-      case 'platinum':
-        return '#e5e4e2';
-      case 'diamond':
-        return '#b9f2ff';
-      default:
-        return '#71717a';
-    }
-  };
-
   const tierColor = getTierColor(achievement.tier);
-  const bgOpacity = unlocked ? '20' : '08';
-  const borderOpacity = unlocked ? '60' : '30';
+  const { bg: bgOpacity, border: borderOpacity } = getTierOpacities(unlocked);
 
   if (compact) {
     // Compact version for grids
@@ -52,7 +34,7 @@ export function AchievementBadge({
         style={{
           borderColor: `${tierColor}${borderOpacity}`,
           backgroundColor: `${tierColor}${bgOpacity}`,
-          clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+          clipPath: getAngularClipPath(8),
           opacity: unlocked ? 1 : 0.5,
           filter: unlocked ? 'none' : 'grayscale(1)',
         }}
@@ -68,7 +50,7 @@ export function AchievementBadge({
             <div
               className="bg-black/80 w-10 h-10 flex items-center justify-center border border-zinc-700"
               style={{
-                clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+                clipPath: getAngularClipPath(4),
               }}
             >
               <Lock className="w-5 h-5 text-zinc-500" />
@@ -100,7 +82,7 @@ export function AchievementBadge({
       style={{
         borderColor: `${tierColor}${borderOpacity}`,
         backgroundColor: `${tierColor}${bgOpacity}`,
-        clipPath: 'polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)',
+        clipPath: getAngularClipPath(12),
         opacity: unlocked ? 1 : 0.6,
         filter: unlocked ? 'none' : 'grayscale(0.8)',
       }}
@@ -119,7 +101,7 @@ export function AchievementBadge({
             style={{
               borderColor: tierColor,
               backgroundColor: `${tierColor}15`,
-              clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+              clipPath: getAngularClipPath(8),
             }}
           >
             <span className="text-4xl">{achievement.icon}</span>
@@ -131,7 +113,7 @@ export function AchievementBadge({
               <div
                 className="bg-black/90 w-full h-full flex items-center justify-center border-2 border-zinc-700"
                 style={{
-                  clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+                  clipPath: getAngularClipPath(8),
                 }}
               >
                 <Lock className="w-6 h-6 text-zinc-500" />
@@ -152,7 +134,7 @@ export function AchievementBadge({
                 style={{
                   backgroundColor: `${tierColor}20`,
                   border: `1px solid ${tierColor}50`,
-                  clipPath: 'polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px)',
+                  clipPath: getAngularClipPath(3),
                 }}
               >
                 <Zap size={10} style={{ color: tierColor }} fill={tierColor} />
@@ -172,7 +154,7 @@ export function AchievementBadge({
               color: tierColor,
               backgroundColor: `${tierColor}15`,
               border: `1px solid ${tierColor}40`,
-              clipPath: 'polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px)',
+              clipPath: getAngularClipPath(3),
             }}
           >
             {achievement.tier}

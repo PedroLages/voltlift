@@ -14,6 +14,7 @@ import {
   type ReadinessInputs,
   type ReadinessResult,
 } from '../services/readinessScore';
+import { getAngularClipPath } from '../utils/achievementUtils';
 
 interface ReadinessCheckModalProps {
   isOpen: boolean;
@@ -116,7 +117,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
       <div
         className="bg-black border-2 border-zinc-700 max-w-md w-full overflow-hidden flex flex-col relative"
         style={{
-          clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))',
+          clipPath: getAngularClipPath(16),
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -146,7 +147,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
             <div
               className="w-10 h-10 bg-primary flex items-center justify-center"
               style={{
-                clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+                clipPath: getAngularClipPath(6),
               }}
             >
               <Zap size={20} className="text-black" fill="currentColor" />
@@ -158,7 +159,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
             aria-label="Skip readiness check"
             className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
             style={{
-              clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+              clipPath: getAngularClipPath(4),
             }}
           >
             <X size={18} />
@@ -179,7 +180,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
               style={{
                 borderColor: scoreColor,
                 backgroundColor: `${scoreColor}15`,
-                clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)',
+                clipPath: getAngularClipPath(10),
                 boxShadow: `0 0 20px ${scoreColor}30`,
               }}
             >
@@ -197,7 +198,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
               'bg-red-500/10 border-red-500/30'
             }`}
             style={{
-              clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+              clipPath: getAngularClipPath(6),
             }}
           >
             <div className={`font-bold uppercase text-sm ${textColorClass}`}>
@@ -220,7 +221,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
                 <div
                   className="px-2 py-1 bg-zinc-900 border border-zinc-700"
                   style={{
-                    clipPath: 'polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px)',
+                    clipPath: getAngularClipPath(3),
                   }}
                 >
                   <span className="text-white font-black font-mono">{inputs[metric.key]}</span>
@@ -243,7 +244,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
                     style={{
                       backgroundColor: inputs[metric.key] === value ? metric.color : undefined,
                       borderColor: inputs[metric.key] === value ? metric.color : undefined,
-                      clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+                      clipPath: getAngularClipPath(4),
                       boxShadow: inputs[metric.key] === value ? `0 0 10px ${metric.color}40` : undefined,
                     }}
                   >
@@ -267,7 +268,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
             onClick={handleSkip}
             className="py-3 font-bold text-sm uppercase transition-all border-2 bg-zinc-900 border-zinc-700 text-white hover:border-zinc-500"
             style={{
-              clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+              clipPath: getAngularClipPath(6),
             }}
           >
             Skip
@@ -276,7 +277,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
             onClick={handleSubmit}
             className="py-3 font-bold text-sm uppercase transition-all border-2 bg-primary border-primary text-black hover:shadow-neon"
             style={{
-              clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+              clipPath: getAngularClipPath(6),
             }}
           >
             Start Workout
