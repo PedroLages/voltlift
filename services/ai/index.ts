@@ -262,6 +262,16 @@ export async function explainSuggestion(params: {
       : 'This load should challenge you while maintaining good form and technique.',
   };
 
+  // If LLM features disabled in settings, return fallback immediately
+  if (settings.llmFeatures?.enabled === false || settings.llmFeatures?.enhanceSuggestions === false) {
+    return {
+      success: true,
+      data: fallbackExplanation,
+      source: 'fallback',
+      latency: Date.now() - startTime,
+    };
+  }
+
   // If offline or LLM unavailable, return fallback immediately
   if (!navigator.onLine || !llmClient.isAvailable()) {
     return {
@@ -505,6 +515,16 @@ export async function generateWorkoutSummary(params: {
     previousVolume: previousWeekVolume,
     units: settings.units,
   });
+
+  // If LLM features disabled in settings, return fallback immediately
+  if (settings.llmFeatures?.enabled === false || settings.llmFeatures?.generateSummaries === false) {
+    return {
+      success: true,
+      data: fallbackSummary,
+      source: 'fallback',
+      latency: Date.now() - startTime,
+    };
+  }
 
   // Try LLM enhancement
   return withCache(
