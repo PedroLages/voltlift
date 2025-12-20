@@ -4,8 +4,9 @@
  * Displays the user's current Iron Rank with color-coded badge
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useStore } from '../../store/useStore';
+import { getRankForXP } from '../../services/gamification';
 
 interface RankBadgeProps {
   size?: 'sm' | 'md' | 'lg';
@@ -18,7 +19,8 @@ export const RankBadge: React.FC<RankBadgeProps> = ({
   showName = true,
   showLevel = false
 }) => {
-  const { rank } = useStore(state => state.getRankInfo());
+  const totalXP = useStore(state => state.gamification.totalXP);
+  const rank = useMemo(() => getRankForXP(totalXP), [totalXP]);
 
   const sizeClasses = {
     sm: 'text-xs px-2 py-0.5',

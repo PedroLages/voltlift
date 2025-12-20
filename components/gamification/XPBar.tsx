@@ -4,9 +4,9 @@
  * Displays XP progress bar towards next level
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useStore } from '../../store/useStore';
-import { IRON_RANKS } from '../../services/gamification';
+import { IRON_RANKS, getRankForXP, getLevelProgress } from '../../services/gamification';
 
 interface XPBarProps {
   showNumbers?: boolean;
@@ -17,8 +17,11 @@ export const XPBar: React.FC<XPBarProps> = ({
   showNumbers = true,
   compact = false
 }) => {
-  const gamification = useStore(state => state.gamification);
-  const { rank, progress, xpToNext } = useStore(state => state.getRankInfo());
+  const totalXP = useStore(state => state.gamification.totalXP);
+  const xpToNextLevel = useStore(state => state.gamification.xpToNextLevel);
+  const rank = useMemo(() => getRankForXP(totalXP), [totalXP]);
+  const progress = useMemo(() => getLevelProgress(totalXP), [totalXP]);
+  const xpToNext = xpToNextLevel;
 
   const isMaxLevel = rank.level === IRON_RANKS.length;
   const barHeight = compact ? 'h-1.5' : 'h-2.5';
@@ -28,7 +31,7 @@ export const XPBar: React.FC<XPBarProps> = ({
       {showNumbers && (
         <div className="flex justify-between items-center mb-1">
           <span className="text-xs text-gray-400 font-medium">
-            {gamification.totalXP.toLocaleString()} XP
+            {totalXP.toLocaleString()} XP
           </span>
           <span className="text-xs text-gray-500">
             {isMaxLevel

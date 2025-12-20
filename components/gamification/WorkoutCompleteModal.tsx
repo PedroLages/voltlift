@@ -6,10 +6,10 @@
  * Includes share functionality for social media
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Share2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { IRON_RANKS } from '../../services/gamification';
+import { IRON_RANKS, getRankForXP } from '../../services/gamification';
 import { WorkoutSession } from '../../types';
 import XPBar from './XPBar';
 import { ShareModal } from '../share';
@@ -28,10 +28,11 @@ export const WorkoutCompleteModal: React.FC<WorkoutCompleteModalProps> = ({
   const lastWorkoutXP = useStore(state => state.lastWorkoutXP);
   const lastAchievements = useStore(state => state.lastAchievements);
   const lastLevelUp = useStore(state => state.lastLevelUp);
-  const gamification = useStore(state => state.gamification);
+  const totalXP = useStore(state => state.gamification.totalXP);
+  const streakCurrent = useStore(state => state.gamification.streak.current);
   const clearLastWorkoutRewards = useStore(state => state.clearLastWorkoutRewards);
   const settings = useStore(state => state.settings);
-  const { rank } = useStore(state => state.getRankInfo());
+  const rank = useMemo(() => getRankForXP(totalXP), [totalXP]);
 
   const [showXP, setShowXP] = useState(false);
   const [showBonuses, setShowBonuses] = useState(false);
@@ -183,7 +184,7 @@ export const WorkoutCompleteModal: React.FC<WorkoutCompleteModalProps> = ({
         <div className="flex justify-center items-center gap-2 mb-6">
           <span className="text-2xl">🔥</span>
           <span className="text-lg font-bold text-orange-400">
-            {gamification.streak.current} Day Streak
+            {streakCurrent} Day Streak
           </span>
         </div>
 
@@ -218,8 +219,8 @@ export const WorkoutCompleteModal: React.FC<WorkoutCompleteModalProps> = ({
           workout={workout}
           xpResult={lastWorkoutXP}
           userName={settings.name}
-          totalXP={gamification.totalXP}
-          streak={gamification.streak.current}
+          totalXP={totalXP}
+          streak={streakCurrent}
           prsHit={prsHit}
         />
       )}
