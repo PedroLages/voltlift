@@ -485,13 +485,23 @@ export interface BanditContext {
  * Output from the fatigue prediction model
  */
 export interface FatiguePrediction {
-  fatigueScore: number;        // 0-100 (100 = maximum fatigue)
-  deloadProbability: number;   // 0-1 (probability needing deload in next 7 days)
-  daysUntilDeload: number;     // 1-14 (predicted days until deload needed)
+  // Date-based predictions (used by ML predictor)
+  date?: string;                     // ISO date string for prediction
+  predictedFatigueLevel?: number;   // 0-1 predicted fatigue for specific date
+
+  // Current state (used by heuristic analyzer)
+  fatigueScore?: number;        // 0-100 (100 = maximum fatigue)
+  deloadProbability?: number;   // 0-1 (probability needing deload in next 7 days)
+  daysUntilDeload?: number;     // 1-14 (predicted days until deload needed)
   confidence: number;          // 0-1 (model confidence based on data quality)
   riskLevel: 'low' | 'moderate' | 'high' | 'critical';
   recommendation: string;
-  factors: {
+
+  // Contributing factors (optional, used by ML predictor)
+  contributingFactors?: string[];
+
+  // Detailed factors (used by heuristic analyzer)
+  factors?: {
     acwr: number;              // Acute:Chronic Workload Ratio
     rpeTrend: number;          // RPE progression over time
     sleepDebt: number;         // Accumulated sleep deficit

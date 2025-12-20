@@ -1,65 +1,154 @@
 /**
  * XPBar Component
  *
- * Displays XP progress bar towards next level
+ * Industrial power cell progress bar showing XP towards next level
+ * Features: segmented cells, pulse effect, neon glow
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
+import { Zap } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { IRON_RANKS } from '../../services/gamification';
+import { IRON_RANKS, getRankForXP, getLevelProgress } from '../../services/gamification';
 
 interface XPBarProps {
   showNumbers?: boolean;
   compact?: boolean;
+  cells?: number;
 }
 
 export const XPBar: React.FC<XPBarProps> = ({
   showNumbers = true,
-  compact = false
+  compact = false,
+  cells = 10
 }) => {
-  const gamification = useStore(state => state.gamification);
-  const { rank, progress, xpToNext } = useStore(state => state.getRankInfo());
+  const totalXP = useStore(state => state.gamification.totalXP);
+  const xpToNextLevel = useStore(state => state.gamification.xpToNextLevel);
+  const rank = useMemo(() => getRankForXP(totalXP), [totalXP]);
+  const progress = useMemo(() => getLevelProgress(totalXP), [totalXP]);
+  const xpToNext = xpToNextLevel;
 
   const isMaxLevel = rank.level === IRON_RANKS.length;
-  const barHeight = compact ? 'h-1.5' : 'h-2.5';
+  const barHeight = compact ? 'h-3' : 'h-4';
+
+  // Calculate filled cells
+  const filledCells = Math.floor((progress / 100) * cells);
+  const partialFill = ((progress / 100) * cells) % 1;
+
+  // Get color based on rank
+  const getBarColor = () => {
+    if (isMaxLevel) return '#ccff00';
+    // Use rank color or default to primary
+    if (rank.color.startsWith('text-[')) {
+      return rank.color.match(/#[0-9a-fA-F]+/)?.[0] || '#ccff00';
+    }
+    return '#ccff00';
+  };
+
+  const barColor = getBarColor();
 
   return (
     <div className="w-full">
       {showNumbers && (
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-gray-400 font-medium">
-            {gamification.totalXP.toLocaleString()} XP
-          </span>
-          <span className="text-xs text-gray-500">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-1.5">
+            <Zap size={12} className="text-primary" fill="currentColor" />
+            <span className="text-xs text-white font-mono font-bold">
+              {totalXP.toLocaleString()}
+            </span>
+            <span className="text-xs text-zinc-600 font-mono">XP</span>
+          </div>
+          <span className="text-xs text-zinc-500 font-mono uppercase">
             {isMaxLevel
-              ? 'MAX LEVEL'
-              : `${xpToNext.toLocaleString()} to next`}
+              ? 'MAXED'
+              : `${xpToNext.toLocaleString()} TO RANK UP`}
           </span>
         </div>
       )}
 
-      <div className={`w-full bg-zinc-800 rounded-full ${barHeight} overflow-hidden`}>
-        <div
-          className={`${barHeight} rounded-full transition-all duration-500 ease-out`}
-          style={{
-            width: `${progress}%`,
-            backgroundColor: isMaxLevel ? '#ccff00' : '#3b82f6',
-            boxShadow: isMaxLevel
-              ? '0 0 10px rgba(204, 255, 0, 0.5)'
-              : '0 0 6px rgba(59, 130, 246, 0.5)',
-          }}
-        />
+      {/* Power Cell Container */}
+      <div
+        className={`w-full bg-zinc-900 border border-zinc-800 ${barHeight} flex gap-0.5 p-0.5`}
+        style={{
+          clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+        }}
+      >
+        {Array.from({ length: cells }).map((_, i) => {
+          const isFilled = i < filledCells;
+          const isPartial = i === filledCells && partialFill > 0;
+          const isLast = i === filledCells - 1 || (i === filledCells && partialFill > 0);
+
+          return (
+            <div
+              key={i}
+              className={`
+                flex-1 relative overflow-hidden
+                transition-all duration-300
+                ${isFilled || isPartial ? '' : 'bg-zinc-800/50'}
+              `}
+              style={{
+                background: isFilled
+                  ? barColor
+                  : isPartial
+                    ? `linear-gradient(to right, ${barColor} ${partialFill * 100}%, transparent ${partialFill * 100}%)`
+                    : undefined,
+                boxShadow: (isFilled || isPartial) ? `0 0 8px ${barColor}60` : undefined,
+              }}
+            >
+              {/* Diagonal stripe pattern for filled cells */}
+              {isFilled && (
+                <div
+                  className="absolute inset-0 opacity-20"
+                  style={{
+                    background: `repeating-linear-gradient(
+                      -45deg,
+                      transparent,
+                      transparent 2px,
+                      rgba(0,0,0,0.3) 2px,
+                      rgba(0,0,0,0.3) 4px
+                    )`,
+                  }}
+                />
+              )}
+
+              {/* Pulse effect on the leading edge */}
+              {isLast && (
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 animate-pulse"
+                  style={{ backgroundColor: barColor }}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {!compact && (
-        <div className="flex justify-between items-center mt-1">
-          <span className={`text-xs font-bold ${rank.color}`}>
-            {rank.name}
-          </span>
-          {!isMaxLevel && rank.level < IRON_RANKS.length && (
-            <span className={`text-xs ${IRON_RANKS[rank.level].color}`}>
-              {IRON_RANKS[rank.level].name}
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-xs font-black italic uppercase"
+              style={{ color: barColor }}
+            >
+              {rank.name}
             </span>
+            <span className="text-[10px] text-zinc-600 font-mono">
+              LV.{rank.level.toString().padStart(2, '0')}
+            </span>
+          </div>
+          {!isMaxLevel && rank.level < IRON_RANKS.length && (
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-zinc-600">NEXT:</span>
+              <span
+                className="text-xs font-bold italic uppercase"
+                style={{
+                  color: IRON_RANKS[rank.level].color.startsWith('text-[')
+                    ? IRON_RANKS[rank.level].color.match(/#[0-9a-fA-F]+/)?.[0]
+                    : undefined
+                }}
+              >
+                {IRON_RANKS[rank.level].name}
+              </span>
+            </div>
           )}
         </div>
       )}

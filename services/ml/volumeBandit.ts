@@ -16,6 +16,78 @@
 import { VolumeAction, BanditContext, BanditState, MuscleGroup } from '../../types';
 
 // =============================================================================
+// Helper Types and Functions
+// =============================================================================
+
+/**
+ * Simplified action type for internal use (maps to VolumeAction enum)
+ */
+type SimpleAction = 'decrease' | 'maintain' | 'increase';
+
+/**
+ * Map SimpleAction to VolumeAction enum
+ */
+function toVolumeAction(action: SimpleAction): VolumeAction {
+  switch (action) {
+    case 'decrease': return VolumeAction.DECREASE_MODERATE;
+    case 'maintain': return VolumeAction.MAINTAIN;
+    case 'increase': return VolumeAction.INCREASE_MODERATE;
+  }
+}
+
+/**
+ * Derive fatigue level (0-1) from BanditContext
+ */
+function getFatigueLevel(context: BanditContext): number {
+  // avgFatigue7d is 1-5 scale, convert to 0-1
+  return (context.avgFatigue7d - 1) / 4;
+}
+
+/**
+ * Derive recovery score (0-1) from BanditContext
+ */
+function getRecoveryScore(context: BanditContext): number {
+  // Combine sleep quality and inverse of soreness/fatigue
+  // All inputs are 1-5 scale, convert to 0-1
+  const sleepScore = (context.sleepQuality7d - 1) / 4;
+  const fatigueScore = (5 - context.avgFatigue7d) / 4; // Inverse
+  const sorenessScore = (5 - context.avgSoreness7d) / 4; // Inverse
+  return (sleepScore + fatigueScore + sorenessScore) / 3;
+}
+
+/**
+ * Get performance trend from BanditContext
+ */
+function getPerformanceTrend(context: BanditContext): number {
+  // avgRPETrend is already -1 to 1, so use it directly
+  // But weight it with recentPRCount vs stalledExercises
+  const prBoost = context.recentPRCount * 0.1; // Each PR adds 0.1
+  const stalledPenalty = context.stalledExercises * -0.05; // Each stalled -0.05
+  return Math.max(-1, Math.min(1, context.avgRPETrend + prBoost + stalledPenalty));
+}
+
+/**
+ * Extended BanditContext with derived properties
+ */
+interface ExtendedContext extends BanditContext {
+  fatigueLevel: number;
+  recoveryScore: number;
+  recentPerformanceTrend: number;
+}
+
+/**
+ * Extend BanditContext with derived properties
+ */
+function extendContext(context: BanditContext): ExtendedContext {
+  return {
+    ...context,
+    fatigueLevel: getFatigueLevel(context),
+    recoveryScore: getRecoveryScore(context),
+    recentPerformanceTrend: getPerformanceTrend(context)
+  };
+}
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -142,8 +214,11 @@ export function getVolumeRecommendation(
   state: BanditState,
   muscleGroup: MuscleGroup
 ): BanditRecommendation {
-  const actions: VolumeAction[] = ['decrease', 'maintain', 'increase'];
+  const actions: SimpleAction[] = ['decrease', 'maintain', 'increase'];
   const contextualAdjustments: string[] = [];
+
+  // Extend context with derived properties
+  const extCtx = extendContext(context);
 
   // Get priors for this muscle group
   const muscleState = state.muscleGroupStates[muscleGroup] || {
@@ -153,17 +228,17 @@ export function getVolumeRecommendation(
   };
 
   // Calculate contextual weights
-  const fatigueLevel = context.fatigueLevel > 0.7 ? 'high' : context.fatigueLevel > 0.4 ? 'moderate' : 'low';
-  const recoveryLevel = context.recoveryScore < 0.4 ? 'poor' : context.recoveryScore < 0.7 ? 'moderate' : 'good';
-  const performanceLevel = context.recentPerformanceTrend < -0.1 ? 'declining'
-    : context.recentPerformanceTrend > 0.1 ? 'improving' : 'stable';
+  const fatigueLevel = extCtx.fatigueLevel > 0.7 ? 'high' : extCtx.fatigueLevel > 0.4 ? 'moderate' : 'low';
+  const recoveryLevel = extCtx.recoveryScore < 0.4 ? 'poor' : extCtx.recoveryScore < 0.7 ? 'moderate' : 'good';
+  const performanceLevel = extCtx.recentPerformanceTrend < -0.1 ? 'declining'
+    : extCtx.recentPerformanceTrend > 0.1 ? 'improving' : 'stable';
 
-  contextualAdjustments.push(`Fatigue: ${fatigueLevel} (${(context.fatigueLevel * 100).toFixed(0)}%)`);
-  contextualAdjustments.push(`Recovery: ${recoveryLevel} (${(context.recoveryScore * 100).toFixed(0)}%)`);
-  contextualAdjustments.push(`Performance: ${performanceLevel} (${(context.recentPerformanceTrend * 100).toFixed(1)}%)`);
+  contextualAdjustments.push(`Fatigue: ${fatigueLevel} (${(extCtx.fatigueLevel * 100).toFixed(0)}%)`);
+  contextualAdjustments.push(`Recovery: ${recoveryLevel} (${(extCtx.recoveryScore * 100).toFixed(0)}%)`);
+  contextualAdjustments.push(`Performance: ${performanceLevel} (${(extCtx.recentPerformanceTrend * 100).toFixed(1)}%)`);
 
   // Sample from each action's posterior with contextual adjustments
-  const sampledValues: Record<VolumeAction, number> = {
+  const sampledValues: Record<SimpleAction, number> = {
     decrease: 0,
     maintain: 0,
     increase: 0
@@ -192,7 +267,7 @@ export function getVolumeRecommendation(
   }
 
   // Select action with highest sampled value
-  let bestAction: VolumeAction = 'maintain';
+  let bestAction: SimpleAction = 'maintain';
   let bestValue = -Infinity;
 
   for (const action of actions) {
@@ -201,6 +276,9 @@ export function getVolumeRecommendation(
       bestAction = action;
     }
   }
+
+  // Convert to VolumeAction enum
+  const volumeAction = toVolumeAction(bestAction);
 
   // Calculate confidence based on:
   // 1. Total samples collected
@@ -213,18 +291,27 @@ export function getVolumeRecommendation(
   const marginConfidence = sortedValues[0] - sortedValues[1]; // 0 to ~0.5
 
   // Check if recommendation aligns with obvious heuristics
-  const heuristicAlignment = getHeuristicAlignment(bestAction, context);
+  const heuristicAlignment = getHeuristicAlignment(volumeAction, extCtx);
 
   const confidence = (sampleConfidence * 0.4 + marginConfidence * 0.3 + heuristicAlignment * 0.3);
 
   // Generate reasoning
-  const reasoning = generateReasoning(bestAction, context, sampledValues, totalSamples);
+  const reasoning = generateReasoning(volumeAction, extCtx, sampledValues, totalSamples);
+
+  // Convert sampledValues to VolumeAction keys
+  const sampledValuesEnum: Record<VolumeAction, number> = {
+    [VolumeAction.INCREASE_AGGRESSIVE]: 0,
+    [VolumeAction.INCREASE_MODERATE]: sampledValues.increase,
+    [VolumeAction.MAINTAIN]: sampledValues.maintain,
+    [VolumeAction.DECREASE_MODERATE]: sampledValues.decrease,
+    [VolumeAction.DELOAD]: 0
+  };
 
   return {
-    action: bestAction,
+    action: volumeAction,
     confidence: Math.min(0.95, Math.max(0.1, confidence)),
     reasoning,
-    sampledValues,
+    sampledValues: sampledValuesEnum,
     contextualAdjustments
   };
 }
@@ -334,7 +421,7 @@ export function calculateReward(
  */
 export function initializeBanditState(): BanditState {
   return {
-    muscleGroupStates: {},
+    muscleGroupStates: {} as BanditState['muscleGroupStates'],
     totalUpdates: 0,
     lastUpdate: Date.now(),
     history: []
@@ -379,35 +466,37 @@ export function getExplorationBonus(
 // Helper Functions
 // =============================================================================
 
-function getHeuristicAlignment(action: VolumeAction, context: BanditContext): number {
+function getHeuristicAlignment(action: VolumeAction, context: ExtendedContext): number {
   // Check if the action aligns with obvious heuristics
   let alignment = 0.5; // Neutral
 
   // High fatigue + decrease = aligned
-  if (context.fatigueLevel > 0.7 && action === 'decrease') alignment += 0.3;
-  if (context.fatigueLevel > 0.7 && action === 'increase') alignment -= 0.3;
+  if (context.fatigueLevel > 0.7 && action === VolumeAction.DECREASE_MODERATE) alignment += 0.3;
+  if (context.fatigueLevel > 0.7 && action === VolumeAction.INCREASE_MODERATE) alignment -= 0.3;
 
   // Good recovery + increase = aligned
-  if (context.recoveryScore > 0.7 && action === 'increase') alignment += 0.2;
-  if (context.recoveryScore < 0.3 && action === 'increase') alignment -= 0.3;
+  if (context.recoveryScore > 0.7 && action === VolumeAction.INCREASE_MODERATE) alignment += 0.2;
+  if (context.recoveryScore < 0.3 && action === VolumeAction.INCREASE_MODERATE) alignment -= 0.3;
 
   // Declining performance + decrease = aligned
-  if (context.recentPerformanceTrend < -0.1 && action === 'decrease') alignment += 0.2;
-  if (context.recentPerformanceTrend < -0.1 && action === 'increase') alignment -= 0.2;
+  if (context.recentPerformanceTrend < -0.1 && action === VolumeAction.DECREASE_MODERATE) alignment += 0.2;
+  if (context.recentPerformanceTrend < -0.1 && action === VolumeAction.INCREASE_MODERATE) alignment -= 0.2;
 
   return Math.max(0, Math.min(1, alignment));
 }
 
 function generateReasoning(
   action: VolumeAction,
-  context: BanditContext,
-  sampledValues: Record<VolumeAction, number>,
+  context: ExtendedContext,
+  sampledValues: Record<SimpleAction, number>,
   totalSamples: number
 ): string {
-  const actionLabels = {
-    decrease: 'Reduce volume',
-    maintain: 'Maintain current volume',
-    increase: 'Increase volume'
+  const actionLabels: Record<VolumeAction, string> = {
+    [VolumeAction.DECREASE_MODERATE]: 'Reduce volume',
+    [VolumeAction.MAINTAIN]: 'Maintain current volume',
+    [VolumeAction.INCREASE_MODERATE]: 'Increase volume',
+    [VolumeAction.INCREASE_AGGRESSIVE]: 'Aggressively increase volume',
+    [VolumeAction.DELOAD]: 'Take a deload week'
   };
 
   let reasoning = `${actionLabels[action]}. `;
@@ -453,22 +542,27 @@ export function actionToVolumeChange(
   currentSets: number,
   context: BanditContext
 ): { newSets: number; change: number; description: string } {
-  const baseChange = {
-    decrease: -2,
-    maintain: 0,
-    increase: 2
-  }[action];
+  // Extend context with derived properties
+  const extCtx = extendContext(context);
+
+  const baseChange: Record<VolumeAction, number> = {
+    [VolumeAction.INCREASE_AGGRESSIVE]: 4,
+    [VolumeAction.INCREASE_MODERATE]: 2,
+    [VolumeAction.MAINTAIN]: 0,
+    [VolumeAction.DECREASE_MODERATE]: -2,
+    [VolumeAction.DELOAD]: -4
+  };
 
   // Modulate change based on confidence and context
-  let adjustedChange = baseChange;
+  let adjustedChange = baseChange[action];
 
   // More aggressive changes when fatigue is extreme
-  if (action === 'decrease' && context.fatigueLevel > 0.8) {
+  if (action === VolumeAction.DECREASE_MODERATE && extCtx.fatigueLevel > 0.8) {
     adjustedChange = -3; // Extra reduction for high fatigue
   }
 
   // More conservative increases when recovery is questionable
-  if (action === 'increase' && context.recoveryScore < 0.5) {
+  if (action === VolumeAction.INCREASE_MODERATE && extCtx.recoveryScore < 0.5) {
     adjustedChange = 1; // Smaller increase
   }
 
