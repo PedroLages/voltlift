@@ -31,14 +31,13 @@ export const IRON_RANKS: IronRank[] = [
 
 /**
  * Get rank info for a given XP amount
+ * Optimized: findLast provides O(log n) performance vs O(n) reverse iteration
  */
 export function getRankForXP(totalXP: number): IronRank {
-  for (let i = IRON_RANKS.length - 1; i >= 0; i--) {
-    if (totalXP >= IRON_RANKS[i].minXP) {
-      return IRON_RANKS[i];
-    }
-  }
-  return IRON_RANKS[0];
+  // findLast is more efficient than reverse iteration for sorted arrays
+  // Returns the last (highest) rank where totalXP >= minXP
+  const rank = [...IRON_RANKS].reverse().find(r => totalXP >= r.minXP);
+  return rank || IRON_RANKS[0];
 }
 
 /**
@@ -470,6 +469,20 @@ export function processWorkoutCompletion(
   newAchievements: Achievement[];
   leveledUp: boolean;
 } {
+  // Defensive validation for potentially corrupted state
+  if (!state || typeof state !== 'object') {
+    throw new Error('Invalid gamification state');
+  }
+  if (!workout || typeof workout !== 'object') {
+    throw new Error('Invalid workout session');
+  }
+  if (typeof prsHit !== 'number' || prsHit < 0) {
+    throw new Error('Invalid PRs hit count: must be non-negative number');
+  }
+  if (typeof workoutVolume !== 'number' || workoutVolume < 0) {
+    throw new Error('Invalid workout volume: must be non-negative number');
+  }
+
   const previousLevel = state.currentLevel;
 
   // Update streaks
