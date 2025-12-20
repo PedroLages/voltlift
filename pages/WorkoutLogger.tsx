@@ -18,6 +18,7 @@ import KeyboardToolbar from '../components/KeyboardToolbar';
 import { InAppVideoPlayer } from '../components/InAppVideoPlayer';
 import { SmartSwapModal } from '../components/SmartSwapModal';
 import { findSubstitutes as findExerciseSubstitutes } from '../services/exerciseRecommendation';
+import { WorkoutCompleteModal as XPCelebrationModal } from '../components/gamification';
 
 // Lazy load heavy components
 const PRCelebration = lazy(() => import('../components/PRCelebration'));
@@ -91,6 +92,9 @@ const WorkoutLogger = () => {
 
   // Track celebrated PRs in this workout session (to avoid duplicate celebrations)
   const [celebratedPRs, setCelebratedPRs] = useState<Set<string>>(new Set());
+
+  // XP Celebration Modal State
+  const [showXPCelebration, setShowXPCelebration] = useState(false);
 
   // Live Heart Rate Simulation State
   const [bpm, setBpm] = useState(70);
@@ -295,7 +299,13 @@ const WorkoutLogger = () => {
     // Phase 5: Check if this was a Greg Nuckols program cycle completion
     // TODO: Add cycle tracking logic here
 
-    // Show post-workout feedback modal instead of navigating immediately
+    // Show XP celebration modal first
+    setShowXPCelebration(true);
+  };
+
+  const handleXPCelebrationClose = () => {
+    setShowXPCelebration(false);
+    // Then show post-workout feedback modal
     setShowPostWorkoutFeedback(true);
   };
 
@@ -1509,6 +1519,12 @@ const WorkoutLogger = () => {
           />
         </Suspense>
       )}
+
+      {/* Gamification: XP Celebration Modal */}
+      <XPCelebrationModal
+        isOpen={showXPCelebration}
+        onClose={handleXPCelebrationClose}
+      />
 
       {/* ML: Post-Workout Feedback Modal */}
       {showPostWorkoutFeedback && completedWorkoutRef && (

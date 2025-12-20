@@ -264,6 +264,93 @@ export interface UserSettings {
     aggressiveness: 'conservative' | 'moderate' | 'aggressive'; // How aggressive progression suggestions should be
     autoApplyTM: boolean; // Auto-apply Training Max suggestions (vs manual confirmation)
   };
+
+  // Gamification System
+  gamification?: GamificationState;
+}
+
+// ============================================================================
+// GAMIFICATION SYSTEM
+// ============================================================================
+
+export type AchievementCategory = 'workout' | 'streak' | 'strength' | 'volume' | 'social' | 'milestone';
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // Emoji or icon name
+  category: AchievementCategory;
+  xpReward: number;
+  requirement: {
+    type: 'workout_count' | 'streak_days' | 'total_volume' | 'pr_count' | 'program_complete' | 'custom';
+    value: number;
+    exerciseId?: string; // For exercise-specific achievements
+  };
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum'; // Visual tier
+}
+
+export interface UnlockedAchievement {
+  achievementId: string;
+  unlockedAt: number; // timestamp
+  xpAwarded: number;
+}
+
+export interface XPTransaction {
+  id: string;
+  amount: number;
+  source: 'workout_complete' | 'pr_achieved' | 'streak_bonus' | 'achievement' | 'challenge' | 'volume_bonus';
+  description: string;
+  timestamp: number;
+  workoutId?: string;
+}
+
+export interface IronRank {
+  level: number;
+  name: string;
+  minXP: number;
+  maxXP: number;
+  color: string; // Tailwind color class
+  perks?: string[]; // Unlocked features/perks
+}
+
+export interface StreakData {
+  current: number; // Current streak days
+  longest: number; // Longest streak ever
+  lastWorkoutDate: string; // ISO date string (YYYY-MM-DD)
+  streakStartDate: string; // When current streak started
+  freezesRemaining: number; // Rest day "freezes" (like Duolingo)
+  freezesUsedThisWeek: number;
+}
+
+export interface GamificationState {
+  // XP & Levels
+  totalXP: number;
+  currentLevel: number;
+  xpToNextLevel: number;
+  xpHistory: XPTransaction[]; // Last 50 transactions
+
+  // Streaks
+  streak: StreakData;
+
+  // Achievements
+  unlockedAchievements: UnlockedAchievement[];
+
+  // Weekly Challenges
+  weeklyChallenge?: {
+    id: string;
+    name: string;
+    description: string;
+    progress: number;
+    target: number;
+    xpReward: number;
+    expiresAt: number;
+  };
+
+  // Stats
+  totalWorkouts: number;
+  totalVolume: number; // Lifetime volume in lbs
+  totalPRs: number;
 }
 
 // Body Metrics Goals

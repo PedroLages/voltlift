@@ -17,6 +17,7 @@ import SmartInsightsPanel from '../components/SmartInsightsPanel';
 import DeloadAlert from '../components/DeloadAlert';
 import { RecoveryScoreCard } from '../components/RecoveryScoreCard';
 import { DailyWellnessCheckin } from '../components/DailyWellnessCheckin';
+import { RankBadge, XPBar, StreakDisplay } from '../components/gamification';
 
 const Dashboard = () => {
   const { settings, history, activeWorkout, restTimerStart, restDuration, stopRestTimer, getFatigueStatus, programs, templates, startWorkout, resumeWorkout, syncStatus, logDailyBio, dailyLogs, getVolumeWarning } = useStore();
@@ -290,6 +291,17 @@ const Dashboard = () => {
             )}
         </div>
       </header>
+
+      {/* Gamification Stats Bar */}
+      <div className="bg-[#111] border border-[#222] p-3 rounded-lg">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <RankBadge size="sm" showLevel />
+            <StreakDisplay size="sm" variant="badge" />
+          </div>
+        </div>
+        <XPBar showNumbers compact={false} />
+      </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 gap-2">
