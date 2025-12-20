@@ -3,33 +3,44 @@
  *
  * Celebratory modal shown after completing a workout
  * Displays XP earned, achievements unlocked, and level ups
+ * Includes share functionality for social media
  */
 
 import React, { useEffect, useState } from 'react';
+import { Share2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { IRON_RANKS } from '../../services/gamification';
+import { WorkoutSession } from '../../types';
 import XPBar from './XPBar';
+import { ShareModal } from '../share';
 
 interface WorkoutCompleteModalProps {
   isOpen: boolean;
   onClose: () => void;
+  workout?: WorkoutSession | null;
 }
 
 export const WorkoutCompleteModal: React.FC<WorkoutCompleteModalProps> = ({
   isOpen,
-  onClose
+  onClose,
+  workout
 }) => {
   const lastWorkoutXP = useStore(state => state.lastWorkoutXP);
   const lastAchievements = useStore(state => state.lastAchievements);
   const lastLevelUp = useStore(state => state.lastLevelUp);
   const gamification = useStore(state => state.gamification);
   const clearLastWorkoutRewards = useStore(state => state.clearLastWorkoutRewards);
+  const settings = useStore(state => state.settings);
   const { rank } = useStore(state => state.getRankInfo());
 
   const [showXP, setShowXP] = useState(false);
   const [showBonuses, setShowBonuses] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showLevelUp, setShowLevelUp] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+
+  // Count PRs hit for share card
+  const prsHit = lastWorkoutXP?.bonuses.filter(b => b.name.includes('PR')).length || 0;
 
   // Staggered animation reveals
   useEffect(() => {
@@ -176,14 +187,42 @@ export const WorkoutCompleteModal: React.FC<WorkoutCompleteModalProps> = ({
           </span>
         </div>
 
-        {/* Close Button */}
-        <button
-          onClick={handleClose}
-          className="w-full py-3 bg-[#ccff00] text-black font-bold rounded-xl uppercase tracking-wider hover:bg-[#b8e600] transition-colors"
-        >
-          Continue
-        </button>
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          {/* Share Button */}
+          {workout && (
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="flex-1 py-3 bg-zinc-800 text-white font-bold rounded-xl uppercase tracking-wider hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Share2 size={18} />
+              Share
+            </button>
+          )}
+
+          {/* Continue Button */}
+          <button
+            onClick={handleClose}
+            className={`${workout ? 'flex-1' : 'w-full'} py-3 bg-[#ccff00] text-black font-bold rounded-xl uppercase tracking-wider hover:bg-[#b8e600] transition-colors`}
+          >
+            Continue
+          </button>
+        </div>
       </div>
+
+      {/* Share Modal */}
+      {workout && (
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          workout={workout}
+          xpResult={lastWorkoutXP}
+          userName={settings.name}
+          totalXP={gamification.totalXP}
+          streak={gamification.streak.current}
+          prsHit={prsHit}
+        />
+      )}
     </div>
   );
 };

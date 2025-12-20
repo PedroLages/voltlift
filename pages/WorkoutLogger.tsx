@@ -1524,6 +1524,7 @@ const WorkoutLogger = () => {
       <XPCelebrationModal
         isOpen={showXPCelebration}
         onClose={handleXPCelebrationClose}
+        workout={completedWorkoutRef}
       />
 
       {/* ML: Post-Workout Feedback Modal */}
