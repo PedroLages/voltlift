@@ -171,6 +171,149 @@ This document outlines all planned features and improvements for IronPath, organ
 
 ## P2: Medium Priority (Important Enhancements)
 
+### 🎯 Phase 2: Enhanced AI Coaching & Gamification (Q1 2025)
+
+**Status:** 🟦 **IN PROGRESS (0/3 complete)**
+
+**Goal:** Improve AI coaching transparency, add pre-workout readiness checks, and expand gamification with achievement badges.
+
+#### Readiness Check-in Flow
+- [ ] ⬜ **Daily wellness modal before workout**
+  - Pre-workout readiness prompt ("Feeling 💯?" or "Scale back?")
+  - Quick input: Sleep quality (1-5), Soreness (1-5), Stress level (1-5)
+  - Visual feedback on readiness score (0-100)
+  - AI adjusts workout recommendations based on readiness
+  - Component: `components/ReadinessCheckModal.tsx`
+  - Service: `services/readinessScore.ts` (calculates 0-100 score from inputs)
+  - Integration: Show modal on workout start if no daily log exists
+
+- [ ] ⬜ **Readiness score visualization**
+  - Dashboard widget showing today's readiness
+  - Color-coded status (FRESH/READY/FATIGUED/DEPLETED)
+  - Historical readiness trends (7-day chart)
+  - Correlation with workout performance
+  - Component: `components/ReadinessScoreCard.tsx`
+
+#### Enhanced AI Coaching Transparency
+- [ ] ⬜ **Embedded video player for form guides**
+  - Modal video player component (YouTube embeds)
+  - Replace external links with in-app player
+  - Auto-play on open, supports fullscreen
+  - Component: `components/InAppVideoPlayer.tsx`
+  - Integration: ExerciseLibrary, WorkoutLogger exercise cards
+  - YouTube iframe API with privacy-enhanced mode
+
+- [ ] ⬜ **Custom video URL field**
+  - Allow users to add video URLs when creating custom exercises
+  - Store in `Exercise.videoUrl` field
+  - Validation for YouTube/Vimeo URLs
+  - Form field in custom exercise creator
+
+- [ ] ⬜ **AI reasoning transparency**
+  - Expand suggestion tooltips with detailed reasoning
+  - Show formula used: "220×6 @ RPE 7 → Try 225lbs (2.5% increase)"
+  - Display confidence factors: "High recovery (8h sleep), Low fatigue"
+  - Component: `components/AISuggestionExplanation.tsx`
+  - Integration: Enhance existing AISuggestionBadge
+
+#### Achievement Badge System
+- [ ] ⬜ **Achievement unlock system**
+  - 12 achievement types (workout milestones, streaks, PRs, volume)
+  - Achievement data structure in types.ts
+  - Service: `services/achievements.ts` - Check/unlock logic
+  - Store in `UserSettings.unlockedAchievements[]`
+  - Zustand method: `unlockAchievement(achievementId)`
+
+- [ ] ⬜ **Achievement celebration UX**
+  - Unlock notification modal with badge animation
+  - Confetti effect on unlock
+  - Share achievement card feature
+  - Component: `components/AchievementUnlockModal.tsx`
+  - Integration: Trigger on workout completion, PR detection
+
+- [ ] ⬜ **Achievement gallery**
+  - Profile page section showing all achievements
+  - Locked vs unlocked state visualization
+  - Progress bars for partial achievements
+  - Sort by: Date unlocked, Rarity, Category
+  - Component: `components/AchievementGallery.tsx`
+  - Page: Profile tab or dedicated route
+
+### 🎯 Phase 3: Weekly AI Progress Summaries (Q1 2025)
+
+**Status:** 🟦 **IN PROGRESS (0/3 complete)**
+
+**Goal:** Implement AI-powered weekly summaries and insights using Gemini API, providing actionable recommendations based on workout history.
+
+#### Gemini API Integration for Weekly Analysis
+
+- [ ] ⬜ **Weekly summary generation service**
+  - Runs async on Sunday night (non-blocking)
+  - Analyzes last 7 days of workouts
+  - Compares to previous weeks (volume, intensity, frequency trends)
+  - Generates personalized insights via Gemini API
+  - Service: `services/weeklyAISummary.ts`
+  - API integration: `services/geminiService.ts` (extend existing)
+  - Zustand method: `generateWeeklySummary()` (stores in UserSettings.weeklySummaries[])
+
+- [ ] ⬜ **AI-generated insights and recommendations**
+  - Volume trend analysis: "Squat volume up 15% vs last week"
+  - Strength gains detection: "Bench 1RM improved 5lbs in 2 weeks"
+  - Recovery quality assessment: "Sleep average 7.2h - optimal for gains"
+  - Plateau detection: "Deadlift stalled 3 weeks - try deload or variation"
+  - Next week planning: "Increase leg volume 10%, maintain upper body"
+  - Exercise variation suggestions: "Try Romanian Deadlifts to break plateau"
+  - Component: `components/WeeklySummaryCard.tsx`
+  - Display format: Markdown-style with bullet points
+
+- [ ] ⬜ **Privacy-first implementation & summary display**
+  - Explicit opt-in required (modal on first weekly summary)
+  - Local-first storage (summaries stored in IndexedDB)
+  - Optional cloud backup (Firebase) with user consent
+  - Clear privacy policy section in settings
+  - Never sell/share user data (explicitly stated in UI)
+  - Component: `components/WeeklySummaryModal.tsx` (celebration style)
+  - Dashboard widget: "This Week's Insights" with summary preview
+  - History page: Weekly summary archive (past 12 weeks)
+  - Integration: Auto-show modal on Monday login if summary ready
+
+### 🎯 Phase 4: Advanced Gamification & Social Features (Q2 2025)
+
+**Status:** ⬜ **PLANNED (0/3 complete)**
+
+**Goal:** Expand gamification with leaderboards, challenges, and lightweight social features to drive engagement and retention.
+
+#### Leaderboards & Challenges
+
+- [ ] ⬜ **Global & friend leaderboards**
+  - Leaderboard types: Total volume, PRs this week, Workout streak, Strength score
+  - Filter by: Friends only, Global (all users), Top 10/50/100
+  - Time ranges: This week, This month, All time
+  - Privacy controls: Public profile opt-in required
+  - Backend: Firebase Firestore leaderboard collection (indexed by metric/timeRange)
+  - Component: `components/Leaderboard.tsx`
+  - Page: `/leaderboard` route or Profile tab
+
+- [ ] ⬜ **Weekly challenges system**
+  - Challenge types: "Hit 3 PRs this week", "10k lbs total volume", "5 workouts logged"
+  - Automatic enrollment vs opt-in challenges
+  - Progress tracking with real-time updates
+  - Completion rewards: XP bonus, special badge, celebration animation
+  - Backend: `UserSettings.activeChallenges[]` and `completedChallenges[]`
+  - Service: `services/challenges.ts` - Check progress on workout completion
+  - Component: `components/ChallengeCard.tsx` (shows progress bar + reward)
+  - Dashboard widget: "Active Challenges" section
+
+- [ ] ⬜ **Share & social features (basic)**
+  - Share completed workout cards (existing ShareModal enhancement)
+  - Share PR achievements with custom celebration cards
+  - Share weekly summary insights (opt-in)
+  - "Follow" other users (see workout feed, not private data)
+  - Like/comment on shared workouts (Firebase Firestore)
+  - Privacy: All sharing requires explicit user action (no auto-posts)
+  - Component: `components/WorkoutFeed.tsx` (lightweight social feed)
+  - Integration: Web Share API + custom share cards for social media
+
 ### Advanced Workout Features
 - [x] ✅ **Superset support** (COMPLETE - Dec 3, 2024)
   - ✅ Group exercises together via toggle menu (Link/Unlink with Next)

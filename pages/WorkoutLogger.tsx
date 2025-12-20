@@ -617,20 +617,43 @@ const WorkoutLogger = () => {
   }, [focusedInput, getAllInputs]);
 
   // Early return AFTER all hooks to avoid "rendered fewer hooks" error
+  // BUT render celebration/feedback modals BEFORE the early return so they show after workout completion
   if (!activeWorkout) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen p-6 text-center bg-background">
-        <h2 className="volt-header text-3xl mb-4 text-white">NO SESSION ACTIVE</h2>
-        <p className="text-[#666] mb-8 font-mono text-xs uppercase">Select a protocol to begin tracking.</p>
-        <button onClick={() => {
-            useStore.getState().startWorkout();
-        }} className="bg-primary text-black px-8 py-4 font-black italic uppercase tracking-wider mb-4 w-full max-w-xs">
-          Quick Start
-        </button>
-        <button onClick={() => navigate('/lift')} className="text-white underline text-xs uppercase tracking-widest">
-          Go to Lift Hub
-        </button>
-      </div>
+      <>
+        {/* XP Celebration Modal - shown after workout completion */}
+        <XPCelebrationModal
+          isOpen={showXPCelebration}
+          onClose={handleXPCelebrationClose}
+          workout={completedWorkoutRef}
+        />
+
+        {/* Post-Workout Feedback Modal */}
+        {showPostWorkoutFeedback && completedWorkoutRef && (
+          <Suspense fallback={<div />}>
+            <PostWorkoutFeedback
+              workout={completedWorkoutRef}
+              onComplete={handleFeedbackComplete}
+            />
+          </Suspense>
+        )}
+
+        {/* Default "No Session" UI when no modals are active */}
+        {!showXPCelebration && !showPostWorkoutFeedback && (
+          <div className="flex flex-col items-center justify-center h-screen p-6 text-center bg-background">
+            <h2 className="volt-header text-3xl mb-4 text-white">NO SESSION ACTIVE</h2>
+            <p className="text-[#666] mb-8 font-mono text-xs uppercase">Select a protocol to begin tracking.</p>
+            <button onClick={() => {
+                useStore.getState().startWorkout();
+            }} className="bg-primary text-black px-8 py-4 font-black italic uppercase tracking-wider mb-4 w-full max-w-xs">
+              Quick Start
+            </button>
+            <button onClick={() => navigate('/lift')} className="text-white underline text-xs uppercase tracking-widest">
+              Go to Lift Hub
+            </button>
+          </div>
+        )}
+      </>
     );
   }
 
