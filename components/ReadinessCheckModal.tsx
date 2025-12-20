@@ -5,7 +5,7 @@
  * Industrial HUD-style design with quick 1-5 scale inputs
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Moon, Battery, Flame, Brain, Zap, AlertTriangle } from 'lucide-react';
 import {
   calculateReadinessScore,
@@ -74,19 +74,15 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
     sorenessLevel: 3,
     stressLevel: 3,
   });
-  const [result, setResult] = useState<ReadinessResult | null>(null);
+
+  // Calculate result from inputs (no need for separate state)
+  const result = useMemo(() => calculateReadinessScore(inputs), [inputs]);
 
   const handleInputChange = (metric: ReadinessMetric, value: number) => {
-    const newInputs = { ...inputs, [metric]: value };
-    setInputs(newInputs);
-
-    // Recalculate readiness score
-    const newResult = calculateReadinessScore(newInputs);
-    setResult(newResult);
+    setInputs({ ...inputs, [metric]: value });
   };
 
   const handleSubmit = () => {
-    if (!result) return;
     onSubmit(inputs, result);
     onClose();
   };
@@ -104,14 +100,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
     onClose();
   };
 
-  // Calculate initial result on mount
-  React.useEffect(() => {
-    if (isOpen && !result) {
-      setResult(calculateReadinessScore(inputs));
-    }
-  }, [isOpen, inputs, result]);
-
-  if (!isOpen || !result) return null;
+  if (!isOpen) return null;
 
   const scoreColor = getReadinessColor(result.category);
   const textColorClass = getReadinessTextColor(result.category);
@@ -120,6 +109,9 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
       onClick={handleSkip}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="readiness-modal-title"
     >
       <div
         className="bg-black border-2 border-zinc-700 max-w-md w-full overflow-hidden flex flex-col relative"
@@ -159,10 +151,11 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
             >
               <Zap size={20} className="text-black" fill="currentColor" />
             </div>
-            <h2 className="font-black italic uppercase text-white text-lg tracking-wide">Daily Check-in</h2>
+            <h2 id="readiness-modal-title" className="font-black italic uppercase text-white text-lg tracking-wide">Daily Check-in</h2>
           </div>
           <button
             onClick={handleSkip}
+            aria-label="Skip readiness check"
             className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
             style={{
               clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',

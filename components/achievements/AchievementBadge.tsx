@@ -56,13 +56,15 @@ export function AchievementBadge({
           opacity: unlocked ? 1 : 0.5,
           filter: unlocked ? 'none' : 'grayscale(1)',
         }}
+        role="status"
+        aria-label={`${achievement.name} - ${unlocked ? 'Unlocked' : 'Locked'} ${achievement.tier} tier achievement`}
       >
         {/* Badge Icon */}
         <div className="text-3xl">{achievement.icon}</div>
 
         {/* Lock Overlay */}
         {!unlocked && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
             <div
               className="bg-black/80 w-10 h-10 flex items-center justify-center border border-zinc-700"
               style={{
@@ -102,6 +104,8 @@ export function AchievementBadge({
         opacity: unlocked ? 1 : 0.6,
         filter: unlocked ? 'none' : 'grayscale(0.8)',
       }}
+      role="article"
+      aria-label={`${achievement.name} achievement - ${unlocked ? 'Unlocked' : 'Locked'}`}
     >
       {/* Corner Brackets */}
       <div className="absolute top-0 left-0 w-3 h-3 border-l-2 border-t-2 pointer-events-none" style={{ borderColor: tierColor }} />
@@ -123,7 +127,7 @@ export function AchievementBadge({
 
           {/* Lock Overlay */}
           {!unlocked && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
               <div
                 className="bg-black/90 w-full h-full flex items-center justify-center border-2 border-zinc-700"
                 style={{

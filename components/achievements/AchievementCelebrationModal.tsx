@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-<parameter name="X, Zap, Trophy } from 'lucide-react';
+import { X, Zap, Trophy } from 'lucide-react';
 import { Achievement } from '../../types';
 
 interface AchievementCelebrationModalProps {
@@ -26,14 +26,12 @@ export function AchievementCelebrationModal({
     if (isOpen) {
       setIsAnimating(true);
       // Auto-close after 4 seconds
-      const timer = setTimeout(() => {
-        onClose();
-      }, 4000);
+      const timer = setTimeout(onClose, 4000);
       return () => clearTimeout(timer);
-    } else {
-      setIsAnimating(false);
     }
-  }, [isOpen, onClose]);
+    setIsAnimating(false);
+    return undefined;
+  }, [isOpen]);
 
   if (!isOpen || !achievement) return null;
 
@@ -61,6 +59,9 @@ export function AchievementCelebrationModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="achievement-modal-title"
     >
       <div
         className={`
@@ -107,7 +108,7 @@ export function AchievementCelebrationModal({
         <div className="relative p-6 border-b-2 text-center" style={{ borderColor: `${tierColor}40` }}>
           <div className="flex items-center justify-center gap-2 mb-2">
             <Trophy className="w-5 h-5 animate-bounce" style={{ color: tierColor }} />
-            <h2 className="font-black italic uppercase tracking-widest text-sm" style={{ color: tierColor }}>
+            <h2 id="achievement-modal-title" className="font-black italic uppercase tracking-widest text-sm" style={{ color: tierColor }}>
               Achievement Unlocked
             </h2>
             <Trophy className="w-5 h-5 animate-bounce" style={{ color: tierColor }} />
