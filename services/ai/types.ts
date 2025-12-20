@@ -218,6 +218,13 @@ export interface CoachingResponse {
   warningsOrCautions?: string[];
 }
 
+export interface SuggestionExplanationResponse {
+  explanation: string;
+  keyFactors: string[];
+  scienceBehindIt?: string;
+  whatToExpect: string;
+}
+
 // =============================================================================
 // Cache Types
 // =============================================================================

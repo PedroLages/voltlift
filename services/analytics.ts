@@ -3,9 +3,10 @@
  *
  * Phase 3 Foundation: Extract and analyze performance data over time.
  * Provides time series data for forecasting, plateau detection, and insights.
+ * Also tracks AI suggestion acceptance rates for continuous improvement.
  */
 
-import { WorkoutSession, ExerciseLog, DailyLog, MuscleGroup } from '../types';
+import { WorkoutSession, ExerciseLog, DailyLog, MuscleGroup, SuggestionFeedback } from '../types';
 import { EXERCISE_LIBRARY } from '../constants';
 import { estimate1RM } from './progressiveOverload';
 
@@ -414,5 +415,235 @@ export function detectPlateau(
     weeksSincePR,
     currentPR,
     reasoning
+  };
+}
+
+// =============================================================================
+// AI Suggestion Acceptance Tracking
+// =============================================================================
+
+/**
+ * Suggestion acceptance statistics
+ */
+export interface SuggestionStats {
+  totalSuggestions: number;
+  acceptedCount: number;
+  overriddenCount: number;
+  acceptanceRate: number; // 0-100%
+  byConfidence: {
+    high: { total: number; accepted: number; rate: number };
+    medium: { total: number; accepted: number; rate: number };
+    low: { total: number; accepted: number; rate: number };
+  };
+  byExercise: Map<string, { total: number; accepted: number; rate: number }>;
+  averageWeightDelta: number; // How much heavier/lighter users go vs suggestion
+  trend: 'improving' | 'stable' | 'declining';
+}
+
+/**
+ * Calculate AI suggestion acceptance rate across all exercises
+ *
+ * @param suggestionHistory - All suggestion feedback events
+ * @param weeksBack - How many weeks to analyze (0 = all time)
+ * @returns Comprehensive suggestion statistics
+ */
+export function calculateSuggestionAcceptanceRate(
+  suggestionHistory: SuggestionFeedback[],
+  weeksBack: number = 0
+): SuggestionStats {
+  const cutoffDate = weeksBack > 0
+    ? Date.now() - (weeksBack * 7 * 24 * 60 * 60 * 1000)
+    : 0;
+
+  const relevantFeedback = suggestionHistory.filter(f => f.timestamp >= cutoffDate);
+
+  if (relevantFeedback.length === 0) {
+    return {
+      totalSuggestions: 0,
+      acceptedCount: 0,
+      overriddenCount: 0,
+      acceptanceRate: 0,
+      byConfidence: {
+        high: { total: 0, accepted: 0, rate: 0 },
+        medium: { total: 0, accepted: 0, rate: 0 },
+        low: { total: 0, accepted: 0, rate: 0 },
+      },
+      byExercise: new Map(),
+      averageWeightDelta: 0,
+      trend: 'stable',
+    };
+  }
+
+  const totalSuggestions = relevantFeedback.length;
+  const acceptedCount = relevantFeedback.filter(f => f.accepted).length;
+  const overriddenCount = totalSuggestions - acceptedCount;
+  const acceptanceRate = (acceptedCount / totalSuggestions) * 100;
+
+  // Calculate by confidence level
+  const byConfidence = {
+    high: { total: 0, accepted: 0, rate: 0 },
+    medium: { total: 0, accepted: 0, rate: 0 },
+    low: { total: 0, accepted: 0, rate: 0 },
+  };
+
+  relevantFeedback.forEach(f => {
+    byConfidence[f.confidence].total++;
+    if (f.accepted) {
+      byConfidence[f.confidence].accepted++;
+    }
+  });
+
+  // Calculate rates
+  byConfidence.high.rate = byConfidence.high.total > 0
+    ? (byConfidence.high.accepted / byConfidence.high.total) * 100
+    : 0;
+  byConfidence.medium.rate = byConfidence.medium.total > 0
+    ? (byConfidence.medium.accepted / byConfidence.medium.total) * 100
+    : 0;
+  byConfidence.low.rate = byConfidence.low.total > 0
+    ? (byConfidence.low.accepted / byConfidence.low.total) * 100
+    : 0;
+
+  // Calculate by exercise
+  const byExercise = new Map<string, { total: number; accepted: number; rate: number }>();
+
+  relevantFeedback.forEach(f => {
+    if (!byExercise.has(f.exerciseId)) {
+      byExercise.set(f.exerciseId, { total: 0, accepted: 0, rate: 0 });
+    }
+    const exerciseStats = byExercise.get(f.exerciseId)!;
+    exerciseStats.total++;
+    if (f.accepted) {
+      exerciseStats.accepted++;
+    }
+  });
+
+  // Calculate rates for each exercise
+  byExercise.forEach((stats, exerciseId) => {
+    stats.rate = (stats.accepted / stats.total) * 100;
+  });
+
+  // Calculate average weight delta (how much users deviate from suggestions)
+  const weightDeltas = relevantFeedback.map(f => f.actualWeight - f.suggestedWeight);
+  const averageWeightDelta = weightDeltas.reduce((sum, delta) => sum + delta, 0) / weightDeltas.length;
+
+  // Calculate trend (compare last 4 weeks vs previous 4 weeks)
+  const fourWeeksAgo = Date.now() - (4 * 7 * 24 * 60 * 60 * 1000);
+  const eightWeeksAgo = Date.now() - (8 * 7 * 24 * 60 * 60 * 1000);
+
+  const recentFeedback = relevantFeedback.filter(f => f.timestamp >= fourWeeksAgo);
+  const previousFeedback = relevantFeedback.filter(f => f.timestamp >= eightWeeksAgo && f.timestamp < fourWeeksAgo);
+
+  const recentRate = recentFeedback.length > 0
+    ? (recentFeedback.filter(f => f.accepted).length / recentFeedback.length) * 100
+    : 0;
+  const previousRate = previousFeedback.length > 0
+    ? (previousFeedback.filter(f => f.accepted).length / previousFeedback.length) * 100
+    : 0;
+
+  let trend: 'improving' | 'stable' | 'declining';
+  if (recentRate > previousRate + 5) {
+    trend = 'improving';
+  } else if (recentRate < previousRate - 5) {
+    trend = 'declining';
+  } else {
+    trend = 'stable';
+  }
+
+  return {
+    totalSuggestions,
+    acceptedCount,
+    overriddenCount,
+    acceptanceRate,
+    byConfidence,
+    byExercise,
+    averageWeightDelta,
+    trend,
+  };
+}
+
+/**
+ * Get suggestion acceptance insights and recommendations
+ *
+ * @param suggestionHistory - All suggestion feedback events
+ * @returns Actionable insights about suggestion quality
+ */
+export function getSuggestionInsights(
+  suggestionHistory: SuggestionFeedback[]
+): {
+  overallQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  strengths: string[];
+  improvements: string[];
+  recommendations: string[];
+} {
+  const stats = calculateSuggestionAcceptanceRate(suggestionHistory);
+
+  const strengths: string[] = [];
+  const improvements: string[] = [];
+  const recommendations: string[] = [];
+
+  // Determine overall quality
+  let overallQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  if (stats.acceptanceRate >= 80) {
+    overallQuality = 'excellent';
+    strengths.push(`High acceptance rate (${stats.acceptanceRate.toFixed(1)}%) - users trust AI suggestions`);
+  } else if (stats.acceptanceRate >= 60) {
+    overallQuality = 'good';
+    strengths.push(`Good acceptance rate (${stats.acceptanceRate.toFixed(1)}%)`);
+  } else if (stats.acceptanceRate >= 40) {
+    overallQuality = 'fair';
+    improvements.push(`Moderate acceptance rate (${stats.acceptanceRate.toFixed(1)}%) - room for improvement`);
+  } else {
+    overallQuality = 'poor';
+    improvements.push(`Low acceptance rate (${stats.acceptanceRate.toFixed(1)}%) - suggestions need calibration`);
+  }
+
+  // Analyze confidence levels
+  if (stats.byConfidence.high.rate >= 85) {
+    strengths.push('High-confidence suggestions very accurate');
+  }
+  if (stats.byConfidence.low.rate < 40) {
+    improvements.push('Low-confidence suggestions need improvement');
+    recommendations.push('Consider being more conservative with low-confidence suggestions');
+  }
+
+  // Analyze weight delta
+  if (Math.abs(stats.averageWeightDelta) < 2.5) {
+    strengths.push('Weight suggestions are well-calibrated');
+  } else if (stats.averageWeightDelta > 5) {
+    improvements.push(`Suggestions tend to be too conservative (avg ${stats.averageWeightDelta.toFixed(1)}kg lighter than users lift)`);
+    recommendations.push('Increase progression rate for high-recovery users');
+  } else if (stats.averageWeightDelta < -5) {
+    improvements.push(`Suggestions tend to be too aggressive (avg ${Math.abs(stats.averageWeightDelta).toFixed(1)}kg heavier than users lift)`);
+    recommendations.push('Be more conservative with progression, especially for beginners');
+  }
+
+  // Analyze trend
+  if (stats.trend === 'improving') {
+    strengths.push('Acceptance rate improving over time - algorithm learning');
+  } else if (stats.trend === 'declining') {
+    improvements.push('Acceptance rate declining - may need algorithm adjustment');
+    recommendations.push('Review recent algorithm changes or user feedback patterns');
+  }
+
+  // Exercise-specific analysis
+  const exercisesWithLowAcceptance: string[] = [];
+  stats.byExercise.forEach((exerciseStats, exerciseId) => {
+    if (exerciseStats.total >= 5 && exerciseStats.rate < 50) {
+      const exercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
+      exercisesWithLowAcceptance.push(exercise?.name || exerciseId);
+    }
+  });
+
+  if (exercisesWithLowAcceptance.length > 0) {
+    improvements.push(`Low acceptance for: ${exercisesWithLowAcceptance.join(', ')}`);
+    recommendations.push('Review progression formulas for these exercises');
+  }
+
+  return {
+    overallQuality,
+    strengths,
+    improvements,
+    recommendations,
   };
 }

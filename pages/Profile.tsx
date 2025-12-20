@@ -1449,6 +1449,116 @@ const Profile = () => {
         </div>
       </CollapsibleSection>
 
+      {/* LLM Features (Gemini) Settings */}
+      <CollapsibleSection
+        title="LLM Features"
+        icon={<Sparkles size={18} className={settings.llmFeatures?.enabled ? 'text-primary' : 'text-[#666]'} />}
+        defaultExpanded={false}
+        summary={settings.llmFeatures?.enabled ? 'Active' : 'Disabled'}
+        tier="medium"
+      >
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6">
+          {/* API Status */}
+          <div className="flex items-center gap-2 mb-6 p-3 bg-[#000] border border-[#1a1a1a]">
+            <div className={`w-2 h-2 rounded-full ${import.meta.env.VITE_GEMINI_API_KEY ? 'bg-primary animate-pulse' : 'bg-red-500'}`}></div>
+            <span className="text-xs font-mono uppercase tracking-wider text-[#666]">
+              Gemini API: <span className={import.meta.env.VITE_GEMINI_API_KEY ? 'text-primary' : 'text-red-500'}>
+                {import.meta.env.VITE_GEMINI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}
+              </span>
+            </span>
+          </div>
+
+          {/* Master Toggle */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <div className="text-sm font-black italic uppercase text-white tracking-wider">
+                {settings.llmFeatures?.enabled ? 'ENABLED' : 'DISABLED'}
+              </div>
+              <p className="text-xs text-[#666] mt-1 uppercase font-mono tracking-wider">
+                {settings.llmFeatures?.enabled ? 'Natural language AI explanations' : 'Basic fallback responses only'}
+              </p>
+            </div>
+            <MilitaryToggle
+              enabled={settings.llmFeatures?.enabled ?? true}
+              onToggle={() => updateSettings({
+                llmFeatures: {
+                  enabled: !(settings.llmFeatures?.enabled ?? true),
+                  enhanceSuggestions: settings.llmFeatures?.enhanceSuggestions ?? true,
+                  generateSummaries: settings.llmFeatures?.generateSummaries ?? true
+                }
+              })}
+              label={settings.llmFeatures?.enabled ? 'Disable LLM features' : 'Enable LLM features'}
+            />
+          </div>
+
+          {settings.llmFeatures?.enabled && (
+            <div className="space-y-6 border-t border-[#1a1a1a] pt-6">
+              {/* Feature Description */}
+              <div className="grid grid-cols-1 gap-3 text-xs">
+                <div className="flex items-start gap-3 p-3 bg-[#000] border border-[#1a1a1a]">
+                  <Sparkles size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="font-bold text-white uppercase">Natural Language Explanations</span>
+                    <p className="text-[#666] mt-0.5">Powered by Google Gemini Flash for educational insights</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-[#000] border border-[#1a1a1a]">
+                  <Activity size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="font-bold text-white uppercase">Offline-First Design</span>
+                    <p className="text-[#666] mt-0.5">Core features work without LLM - AI enhances, not replaces</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhance Suggestions Toggle */}
+              <div className="flex justify-between items-center p-4 bg-[#000] border border-[#1a1a1a]">
+                <div>
+                  <span className="text-xs font-bold text-white uppercase">Suggestion Explanations</span>
+                  <p className="text-[10px] text-[#666] mt-1">Explain WHY progressive overload suggestions are made</p>
+                </div>
+                <MilitaryToggle
+                  enabled={settings.llmFeatures?.enhanceSuggestions ?? true}
+                  onToggle={() => updateSettings({
+                    llmFeatures: {
+                      ...settings.llmFeatures!,
+                      enhanceSuggestions: !(settings.llmFeatures?.enhanceSuggestions ?? true)
+                    }
+                  })}
+                  label="Toggle suggestion explanations"
+                />
+              </div>
+
+              {/* Generate Summaries Toggle */}
+              <div className="flex justify-between items-center p-4 bg-[#000] border border-[#1a1a1a]">
+                <div>
+                  <span className="text-xs font-bold text-white uppercase">Workout Summaries</span>
+                  <p className="text-[10px] text-[#666] mt-1">AI-generated post-workout insights and analysis</p>
+                </div>
+                <MilitaryToggle
+                  enabled={settings.llmFeatures?.generateSummaries ?? true}
+                  onToggle={() => updateSettings({
+                    llmFeatures: {
+                      ...settings.llmFeatures!,
+                      generateSummaries: !(settings.llmFeatures?.generateSummaries ?? true)
+                    }
+                  })}
+                  label="Toggle workout summaries"
+                />
+              </div>
+            </div>
+          )}
+
+          {!import.meta.env.VITE_GEMINI_API_KEY && (
+            <div className="mt-4 p-3 bg-red-900/20 border border-red-900/30">
+              <p className="text-[10px] text-red-400 font-mono uppercase tracking-wider">
+                ⚠ Add VITE_GEMINI_API_KEY to .env.local to enable LLM features
+              </p>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
       {/* Notification Settings Section */}
       <section id="notifications" className="mt-12">
         <TacticalHeader title="⌜ALERT SYSTEM⌟" statusLabel="MONITORING" statusActive={true} />

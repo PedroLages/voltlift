@@ -265,6 +265,13 @@ export interface UserSettings {
     autoApplyTM: boolean; // Auto-apply Training Max suggestions (vs manual confirmation)
   };
 
+  // LLM Features (Gemini API)
+  llmFeatures?: {
+    enabled: boolean; // Master toggle for Gemini LLM features
+    enhanceSuggestions?: boolean; // Use LLM to explain progressive overload suggestions
+    generateSummaries?: boolean; // Use LLM to generate post-workout summaries
+  };
+
   // Gamification System
   gamification?: GamificationState;
 }
