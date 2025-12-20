@@ -10,13 +10,14 @@ export interface Exercise {
   secondaryMuscles?: MuscleGroup[];
   equipment: string;
   category: ExerciseCategory;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced'; // Optional - removed from UI as it's subjective
   instructions?: string; // Legacy field, kept for compatibility if needed
   formGuide: string[];
   commonMistakes: string[];
   tips: string[];
   gifUrl?: string; // Placeholder URL
   videoUrl?: string; // YouTube video URL for exercise demonstration
+  customVideoUrl?: string; // User-added custom video URL (overrides default videoUrl)
 }
 
 export type SetType = 'N' | 'W' | 'D' | 'F'; // Normal, Warmup, Drop, Failure

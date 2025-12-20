@@ -305,10 +305,10 @@ const Dashboard = () => {
 
       {/* Secondary Stats */}
       <div className="grid grid-cols-2 gap-2 -mt-4">
-        <StatCard icon={<TrendingUp size={18} />} value={`${settings.goal.targetPerWeek}`} label="WEEKLY TARGET" color="text-primary" />
+        <StatCard icon={<TrendingUp size={18} />} value={`${settings.goal?.targetPerWeek || 4}`} label="WEEKLY TARGET" color="text-primary" />
         <div className="bg-[#111] p-4 border border-[#222] flex flex-col items-center justify-center text-center">
           <div className="mb-3 text-white"><Calendar size={18} /></div>
-          <span className="text-3xl font-black italic text-white leading-none">{workoutsThisWeek >= settings.goal.targetPerWeek ? '✓' : Math.max(0, settings.goal.targetPerWeek - workoutsThisWeek)}</span>
+          <span className="text-3xl font-black italic text-white leading-none">{workoutsThisWeek >= (settings.goal?.targetPerWeek || 4) ? '✓' : Math.max(0, (settings.goal?.targetPerWeek || 4) - workoutsThisWeek)}</span>
           <span className="text-[10px] font-bold text-[#666] uppercase mt-1 tracking-widest">REMAINING</span>
         </div>
       </div>

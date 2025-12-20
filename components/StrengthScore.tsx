@@ -13,7 +13,7 @@ interface StrengthScoreProps {
 export const StrengthScore: React.FC<StrengthScoreProps> = ({
   personalRecords,
   bodyweight = 180, // Default fallback
-  gender = 'male',
+  gender = 'male' as const,
   compact = false
 }) => {
   // Handle undefined or null personalRecords

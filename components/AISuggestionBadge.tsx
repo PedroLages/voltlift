@@ -9,7 +9,7 @@
  */
 
 import React, { useState } from 'react';
-import { Sparkles, Info, TrendingUp, AlertCircle } from 'lucide-react';
+import { Sparkles, Info, TrendingUp, AlertCircle, ChevronDown } from 'lucide-react';
 import { ProgressiveSuggestion } from '../services/progressiveOverload';
 
 interface AISuggestionBadgeProps {
@@ -70,7 +70,13 @@ export const AISuggestionBadge: React.FC<AISuggestionBadgeProps> = ({
 
   return (
     <div className="relative">
-      <div className={`flex items-center gap-3 px-4 py-3 bg-black/30 border ${confidenceColor} backdrop-blur-sm`}>
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowTooltip(!showTooltip);
+        }}
+        className={`flex items-center gap-3 px-4 py-3 bg-black/30 border ${confidenceColor} backdrop-blur-sm cursor-pointer hover:bg-black/40 transition-colors`}
+      >
         <div className="flex items-center gap-2 flex-1">
           <Sparkles size={16} className="shrink-0" />
           <div className="flex flex-col">
@@ -84,16 +90,10 @@ export const AISuggestionBadge: React.FC<AISuggestionBadgeProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowTooltip(!showTooltip);
-            }}
-            className="p-2 hover:bg-white/10 rounded transition-colors"
-            aria-label="Show reasoning"
-          >
-            {confidenceIcon}
-          </button>
+          <ChevronDown
+            size={16}
+            className={`transition-transform ${showTooltip ? 'rotate-180' : ''}`}
+          />
 
           {showApplyButton && onApply && (
             <button
@@ -110,54 +110,73 @@ export const AISuggestionBadge: React.FC<AISuggestionBadgeProps> = ({
       </div>
 
       {showTooltip && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-[#333] p-4 z-50 shadow-xl animate-fade-in">
-          <div className="flex items-start gap-2 mb-3">
-            <Info size={14} className={confidenceColor.split(' ')[0]} />
-            <p className="text-xs font-mono text-[#aaa] leading-relaxed">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-[#0a0a0a] border-2 border-primary/30 p-4 z-50 shadow-xl animate-fade-in">
+          {/* Recovery Score with Visual Progress Bar */}
+          <div className="mb-3 pb-3 border-b border-[#222]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-[#999] uppercase">Recovery Score</span>
+              <div className="flex items-center gap-2">
+                <div className="w-24 h-2 bg-[#222] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${(suggestion.recoveryScore / 10) * 100}%` }}
+                  />
+                </div>
+                <span className="text-white font-bold text-sm">{suggestion.recoveryScore}/10</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Reasoning */}
+          <div className="bg-[#111] border border-[#333] p-3 mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Info size={12} className="text-primary" />
+              <span className="text-[10px] text-[#666] uppercase tracking-wider">Why This Weight?</span>
+            </div>
+            <p className="text-sm text-white leading-relaxed">
               {suggestion.reasoning}
             </p>
           </div>
 
-          {/* NEW: Math Explanation (Phase 1 AI Transparency) */}
+          {/* Math Explanation */}
           {suggestion.mathExplanation && (
-            <div className="mb-3 px-3 py-2 bg-[#0a0a0a] border border-[#222]">
+            <div className="mb-3 px-3 py-2 bg-[#111] border border-[#333]">
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles size={10} className="text-primary" />
-                <span className="text-[9px] text-[#666] uppercase font-bold tracking-widest">The Math</span>
+                <span className="text-[10px] text-[#666] uppercase font-bold tracking-widest">Calculation</span>
               </div>
-              <p className="text-[10px] font-mono text-white leading-relaxed">
+              <p className="text-xs font-mono text-white leading-relaxed">
                 {suggestion.mathExplanation}
               </p>
             </div>
           )}
 
-          <div className={`grid ${suggestion.estimated1RM ? 'grid-cols-4' : 'grid-cols-2'} gap-3 text-[10px] border-t border-[#222] pt-3`}>
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-3 gap-3 mb-3">
             {suggestion.estimated1RM && (
-              <div>
-                <span className="text-[#666] uppercase block mb-1">Est. 1RM</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#999] uppercase">Est. 1RM</span>
                 <span className="font-bold text-white">
                   {suggestion.estimated1RM}{units}
                 </span>
               </div>
             )}
             {suggestion.currentIntensity !== undefined && (
-              <div>
-                <span className="text-[#666] uppercase block mb-1">Intensity</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#999] uppercase">Intensity</span>
                 <span className="font-bold text-primary">
                   {suggestion.currentIntensity}%
                 </span>
               </div>
             )}
-            <div>
-              <span className="text-[#666] uppercase block mb-1">Confidence</span>
-              <span className={`font-bold uppercase ${confidenceColor.split(' ')[0]}`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[#999] uppercase">Confidence</span>
+              <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${
+                suggestion.confidence === 'high' ? 'bg-primary/20 text-primary' :
+                suggestion.confidence === 'medium' ? 'bg-blue-500/20 text-blue-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>
                 {suggestion.confidence}
-              </span>
-            </div>
-            <div>
-              <span className="text-[#666] uppercase block mb-1">Recovery</span>
-              <span className="font-bold text-white">
-                {suggestion.recoveryScore}/10
               </span>
             </div>
           </div>
