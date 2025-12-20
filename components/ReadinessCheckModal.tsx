@@ -15,6 +15,7 @@ import {
   type ReadinessResult,
 } from '../services/readinessScore';
 import { getAngularClipPath } from '../utils/achievementUtils';
+import { MetricSlider } from './readiness/MetricSlider';
 
 interface ReadinessCheckModalProps {
   isOpen: boolean;
@@ -210,55 +211,16 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
         {/* Metrics Input */}
         <div className="relative z-10 p-4 space-y-4 max-h-[400px] overflow-y-auto">
           {METRICS.map((metric) => (
-            <div key={metric.key} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div style={{ color: metric.color }}>{metric.icon}</div>
-                  <span className="text-xs text-zinc-400 uppercase font-bold tracking-wider">
-                    {metric.label}
-                  </span>
-                </div>
-                <div
-                  className="px-2 py-1 bg-zinc-900 border border-zinc-700"
-                  style={{
-                    clipPath: getAngularClipPath(3),
-                  }}
-                >
-                  <span className="text-white font-black font-mono">{inputs[metric.key]}</span>
-                </div>
-              </div>
-
-              {/* 1-5 Scale Selector */}
-              <div className="grid grid-cols-5 gap-1">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <button
-                    key={value}
-                    onClick={() => handleInputChange(metric.key, value)}
-                    className={`
-                      h-10 border-2 transition-all font-bold text-sm
-                      ${inputs[metric.key] === value
-                        ? 'text-black'
-                        : 'bg-transparent text-zinc-600 border-zinc-700 hover:border-zinc-500'
-                      }
-                    `}
-                    style={{
-                      backgroundColor: inputs[metric.key] === value ? metric.color : undefined,
-                      borderColor: inputs[metric.key] === value ? metric.color : undefined,
-                      clipPath: getAngularClipPath(4),
-                      boxShadow: inputs[metric.key] === value ? `0 0 10px ${metric.color}40` : undefined,
-                    }}
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
-
-              {/* Labels */}
-              <div className="flex items-center justify-between text-[10px] text-zinc-600 uppercase px-1">
-                <span>{metric.lowLabel}</span>
-                <span>{metric.highLabel}</span>
-              </div>
-            </div>
+            <MetricSlider
+              key={metric.key}
+              label={metric.label}
+              icon={metric.icon}
+              value={inputs[metric.key]}
+              onChange={(value) => handleInputChange(metric.key, value)}
+              lowLabel={metric.lowLabel}
+              highLabel={metric.highLabel}
+              color={metric.color}
+            />
           ))}
         </div>
 
