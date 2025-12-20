@@ -1241,7 +1241,7 @@ const WorkoutLogger = () => {
                              value={set.rpe || (rpeTarget && !set.completed ? rpeTarget : '')}
                              onChange={(e) => updateSet(exerciseIndex, setIndex, { rpe: parseInt(e.target.value) || undefined })}
                              aria-label={`Rate of perceived exertion for set ${setIndex + 1} of ${exerciseDef?.name || 'exercise'}${rpeTarget ? ` (target: ${rpeTarget})` : ''}`}
-                             className={`w-full bg-black border-b-2 p-2 text-center text-sm font-bold focus:border-primary outline-none appearance-none ${
+                             className={`w-full bg-black border-b-2 p-2 text-center text-lg font-bold focus:border-primary outline-none appearance-none ${
                                set.rpe ? 'border-[#333] text-white' : rpeTarget ? 'border-primary/30 text-primary/60' : 'border-[#333] text-[#888]'
                              }`}
                              onClick={(e) => e.stopPropagation()}
