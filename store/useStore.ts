@@ -1,13 +1,22 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserSettings, WorkoutSession, ExerciseLog, SetLog, Goal, Program, DailyLog, BiometricPoint, PRType, PersonalRecord, Exercise } from '../types';
+import { UserSettings, WorkoutSession, ExerciseLog, SetLog, SetType, Goal, Program, DailyLog, BiometricPoint, PRType, PersonalRecord, Exercise, GamificationState, Achievement } from '../types';
 import { MOCK_HISTORY, INITIAL_TEMPLATES, EXERCISE_LIBRARY, INITIAL_PROGRAMS } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { backend } from '../services/backend';
 import { getSuggestion, checkVolumeWarning, shouldDeloadWeek, ProgressiveSuggestion } from '../services/progressiveOverload';
 import { calculate1RM, getBest1RM, classifyStrengthLevel, calculateOverallStrengthScore, OneRepMax } from '../services/strengthScore';
 import { detectDefaultUnits, getDefaultBarWeight } from '../utils/geolocation';
+import {
+  createInitialGamificationState,
+  processWorkoutCompletion,
+  getRankForXP,
+  getLevelProgress,
+  IRON_RANKS,
+  ACHIEVEMENTS,
+  WorkoutXPResult,
+} from '../services/gamification';
 
 interface UndoableAction {
   type: 'set' | 'exercise';
@@ -46,6 +55,12 @@ interface AppState {
   // Global Rest Timer State
   restTimerStart: number | null;
   restDuration: number;
+
+  // Gamification State
+  gamification: GamificationState;
+  lastWorkoutXP: WorkoutXPResult | null;
+  lastAchievements: Achievement[];
+  lastLevelUp: boolean;
   
   // Actions
   startWorkout: (templateId?: string) => void;
@@ -111,6 +126,11 @@ interface AppState {
 
   // Data Management
   resetAllData: () => void;
+
+  // Gamification Actions
+  getGamificationState: () => GamificationState;
+  getRankInfo: () => { rank: typeof IRON_RANKS[number]; progress: number; xpToNext: number };
+  clearLastWorkoutRewards: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -154,6 +174,12 @@ export const useStore = create<AppState>()(
 
       restTimerStart: null,
       restDuration: 90,
+
+      // Gamification
+      gamification: createInitialGamificationState(),
+      lastWorkoutXP: null,
+      lastAchievements: [],
+      lastLevelUp: false,
 
       startWorkout: (templateId) => {
         let newWorkout: WorkoutSession;
@@ -348,6 +374,26 @@ export const useStore = create<AppState>()(
         const newPendingWorkouts = new Set(get().pendingSyncWorkouts);
         newPendingWorkouts.add(completedWorkout.id);
 
+        // =========== GAMIFICATION PROCESSING ===========
+        // Calculate total workout volume for gamification
+        const workoutVolume = completedWorkout.logs.reduce((total, log) => {
+          return total + log.sets
+            .filter(s => s.completed && s.type !== 'W')
+            .reduce((sum, set) => sum + (set.weight * set.reps), 0);
+        }, 0);
+
+        // Count PRs hit (only weight PRs count as "true" PRs for gamification)
+        const prsHit = newPRsDetected.filter(pr => pr.type === 'weight').length;
+
+        // Process workout through gamification system
+        const gamificationResult = processWorkoutCompletion(
+          get().gamification,
+          completedWorkout,
+          prsHit,
+          workoutVolume
+        );
+        // =========== END GAMIFICATION ===========
+
         set({
           settings: newSettings,
           history: [completedWorkout, ...history],
@@ -355,7 +401,12 @@ export const useStore = create<AppState>()(
           restTimerStart: null,
           activeBiometrics: [],
           pendingSyncWorkouts: newPendingWorkouts,
-          settingsNeedsSync: prUpdated || settings.activeProgram !== newSettings.activeProgram
+          settingsNeedsSync: prUpdated || settings.activeProgram !== newSettings.activeProgram,
+          // Gamification updates
+          gamification: gamificationResult.newState,
+          lastWorkoutXP: gamificationResult.xpEarned,
+          lastAchievements: gamificationResult.newAchievements,
+          lastLevelUp: gamificationResult.leveledUp,
         });
 
         // Auto Sync on finish
@@ -1460,6 +1511,27 @@ export const useStore = create<AppState>()(
           return shouldDeloadWeek(history, dailyLogs);
       },
 
+      // Gamification Actions
+      getGamificationState: () => {
+          return get().gamification;
+      },
+
+      getRankInfo: () => {
+          const { gamification } = get();
+          const rank = getRankForXP(gamification.totalXP);
+          const progress = getLevelProgress(gamification.totalXP);
+          const xpToNext = gamification.xpToNextLevel;
+          return { rank, progress, xpToNext };
+      },
+
+      clearLastWorkoutRewards: () => {
+          set({
+              lastWorkoutXP: null,
+              lastAchievements: [],
+              lastLevelUp: false,
+          });
+      },
+
       // Data Management
       resetAllData: () => {
           const { settings } = get();
@@ -1475,6 +1547,11 @@ export const useStore = create<AppState>()(
               // Reset templates and programs to defaults
               templates: INITIAL_TEMPLATES,
               programs: INITIAL_PROGRAMS,
+              // Reset gamification
+              gamification: createInitialGamificationState(),
+              lastWorkoutXP: null,
+              lastAchievements: [],
+              lastLevelUp: false,
               // Keep basic user settings but reset records and programs
               settings: {
                   ...settings,
@@ -1487,7 +1564,7 @@ export const useStore = create<AppState>()(
     },
     {
       name: 'voltlift-storage',
-      version: 4, // Increment when schema changes
+      version: 5, // Increment when schema changes
       partialize: (state) => {
           const {
               customExerciseVisuals,
@@ -1498,6 +1575,10 @@ export const useStore = create<AppState>()(
               pendingSyncTemplates,
               pendingSyncPrograms,
               pendingSyncDailyLogs,
+              // Exclude transient gamification state (only persist core gamification)
+              lastWorkoutXP,
+              lastAchievements,
+              lastLevelUp,
               ...rest
           } = state;
           return rest;
@@ -1534,6 +1615,15 @@ export const useStore = create<AppState>()(
           return {
             ...persistedState,
             programs: INITIAL_PROGRAMS, // Refresh programs to pick up updated names
+          };
+        }
+
+        // Version 5: Add gamification state (XP, streaks, achievements)
+        if (version < 5) {
+          console.log('[Migration v5] Adding gamification state');
+          return {
+            ...persistedState,
+            gamification: createInitialGamificationState(),
           };
         }
 

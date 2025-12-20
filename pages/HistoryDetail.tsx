@@ -5,15 +5,17 @@ import { useStore } from '../store/useStore';
 import { ArrowLeft, Calendar, Clock, Box, Dumbbell, Share2, X, Activity, StickyNote, Copy, Check } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../constants';
 import { SetTypeBadge } from '../components/SetTypeBadge';
+import { ShareModal } from '../components/share';
 
 const HistoryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { history, settings, saveWorkoutAsTemplate } = useStore();
+  const { history, settings, saveWorkoutAsTemplate, gamification } = useStore();
   const [showReceipt, setShowReceipt] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const session = history.find(h => h.id === id);
 
@@ -213,7 +215,7 @@ const HistoryDetail = () => {
                     {savedSuccess ? <Check size={18} /> : <Copy size={18} />}
                     <span className="text-xs font-bold uppercase">{savedSuccess ? 'Saved!' : 'Save'}</span>
                 </button>
-                <button onClick={() => setShowReceipt(true)} className="flex items-center gap-2 text-primary hover:text-white transition-colors">
+                <button onClick={() => setShowShareModal(true)} className="flex items-center gap-2 text-primary hover:text-white transition-colors">
                     <Share2 size={20} /> <span className="text-xs font-bold uppercase">Share</span>
                 </button>
             </div>
@@ -315,6 +317,16 @@ const HistoryDetail = () => {
                )
            })}
        </div>
+
+       {/* Share Modal */}
+       <ShareModal
+         isOpen={showShareModal}
+         onClose={() => setShowShareModal(false)}
+         workout={session}
+         userName={settings.name}
+         totalXP={gamification.totalXP}
+         streak={gamification.streak.current}
+       />
 
     </div>
   );

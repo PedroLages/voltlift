@@ -77,8 +77,15 @@ export function RecoveryScoreCard({ onOpenWellnessCheckin, compact = false }: Re
     // Extract context for analysis
     const context = extractBanditContext(workoutHistory, dailyLogs, today);
 
+    // Calculate fatigue level from avgFatigue7d (1-5 scale, normalized to 0-1)
+    const fatigueLevel = (context.avgFatigue7d - 1) / 4;
+
+    // Calculate ACWR from the most recent features
+    const latestFeature = features[features.length - 1];
+    const acwr = latestFeature?.acuteChronicRatio ?? 1.0;
+
     // Calculate overall recovery score (100 - fatigue as percentage)
-    const recoveryScore = Math.round((1 - context.fatigueLevel) * 100);
+    const recoveryScore = Math.round((1 - fatigueLevel) * 100);
 
     // Determine trend from recent data
     let trend: RecoveryMetrics['recoveryTrend'] = 'stable';
@@ -102,9 +109,9 @@ export function RecoveryScoreCard({ onOpenWellnessCheckin, compact = false }: Re
 
     return {
       overallScore: recoveryScore,
-      fatigueLevel: context.fatigueLevel,
+      fatigueLevel,
       recoveryTrend: trend,
-      acwr: context.acuteChronicRatio,
+      acwr,
       dataQuality
     };
   }, [workoutHistory, dailyLogs]);

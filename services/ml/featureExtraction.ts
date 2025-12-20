@@ -311,6 +311,8 @@ export function featuresToTensor(features: DailyMLFeatures[]): number[][] {
 // =============================================================================
 
 function getWorkoutsForDate(date: string, history: WorkoutSession[]): WorkoutSession[] {
+  if (!history || !Array.isArray(history)) return [];
+
   const dayStart = new Date(date).setHours(0, 0, 0, 0);
   const dayEnd = new Date(date).setHours(23, 59, 59, 999);
 
@@ -323,6 +325,8 @@ function getWorkoutsForDate(date: string, history: WorkoutSession[]): WorkoutSes
 }
 
 function getWorkoutsInRange(endDate: string, days: number, history: WorkoutSession[]): WorkoutSession[] {
+  if (!history || !Array.isArray(history)) return [];
+
   const end = new Date(endDate).setHours(23, 59, 59, 999);
   const start = end - (days * 24 * 60 * 60 * 1000);
 
@@ -436,6 +440,8 @@ function calculateDaysSinceDeload(
   history: WorkoutSession[],
   settings: UserSettings
 ): number {
+  if (!history || !Array.isArray(history)) return 0;
+
   // Look for weeks with significantly reduced volume
   const targetDate = new Date(date);
 
