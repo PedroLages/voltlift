@@ -54,7 +54,6 @@ export const WorkoutRecoveryPrompt: React.FC = () => {
     // Save as incomplete workout
     finishWorkout();
     setShowPrompt(false);
-    setDismissed(true);
   };
 
   const handleDismiss = () => {

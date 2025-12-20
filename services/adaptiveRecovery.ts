@@ -71,7 +71,7 @@ export interface RecoveryAssessment {
 export function getRecoveryAssessment(
   history: WorkoutSession[],
   dailyLogs: DailyLog[],
-  experienceLevel: ExperienceLevel = 'intermediate',
+  experienceLevel: ExperienceLevel = 'Intermediate',
   lastRestDay?: number
 ): RecoveryAssessment {
   const now = Date.now();
@@ -314,8 +314,8 @@ function analyzeSleepPatterns(
 } {
   const cutoffDate = Date.now() - (daysToAnalyze * 24 * 60 * 60 * 1000);
   const recentLogs = dailyLogs
-    .filter(log => log.date >= cutoffDate && log.sleepHours !== undefined)
-    .sort((a, b) => b.date - a.date)
+    .filter(log => new Date(log.date).getTime() >= cutoffDate && log.sleepHours !== undefined)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, daysToAnalyze);
 
   if (recentLogs.length === 0) {
@@ -425,9 +425,9 @@ function getRestDayFrequency(
 ): number {
   // Base frequency by experience
   const baseFrequency = {
-    beginner: 2,     // Rest every 2 days
-    intermediate: 3, // Rest every 3 days
-    advanced: 4      // Rest every 4 days (or more)
+    Beginner: 2,     // Rest every 2 days
+    Intermediate: 3, // Rest every 3 days
+    Advanced: 4      // Rest every 4 days (or more)
   }[experienceLevel];
 
   // Adjust for high training stress
@@ -444,7 +444,7 @@ function getRestDayFrequency(
 export function getQuickRecoveryStatus(
   history: WorkoutSession[],
   dailyLogs: DailyLog[],
-  experienceLevel: ExperienceLevel = 'intermediate'
+  experienceLevel: ExperienceLevel = 'Intermediate'
 ): {
   score: number;
   status: 'excellent' | 'good' | 'fair' | 'poor';

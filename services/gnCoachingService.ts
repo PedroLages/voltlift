@@ -9,7 +9,13 @@
  */
 
 import { TrainingMax, WorkoutSession, DailyLog } from '../types';
-import { getAMAPProgression, getAMAPDescription } from '../utils/percentageCalculator';
+import {
+  getAMAPProgression,
+  getAMAPDescription,
+  GN_AMAP_SQUAT_PROGRESSION,
+  GN_AMAP_BENCH_PROGRESSION,
+  GN_AMAP_DEADLIFT_PROGRESSION
+} from '../utils/percentageCalculator';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
@@ -63,15 +69,12 @@ export async function getTrainingMaxSuggestion(
 ): Promise<TMSuggestion> {
 
   // Get standard AMAP progression as baseline
-  const standardProgression = getAMAPProgression(
-    exerciseId === 'e4' ? 'squat' : exerciseId === 'e1' ? 'bench' : 'deadlift',
-    amapReps
-  );
+  const amapTable = exerciseId === 'e4' ? GN_AMAP_SQUAT_PROGRESSION :
+                   exerciseId === 'e1' ? GN_AMAP_BENCH_PROGRESSION :
+                   GN_AMAP_DEADLIFT_PROGRESSION;
+  const standardProgression = getAMAPProgression(amapTable, amapReps);
   const standardRecommended = currentTM + standardProgression;
-  const standardDescription = getAMAPDescription(
-    exerciseId === 'e4' ? 'squat' : exerciseId === 'e1' ? 'bench' : 'deadlift',
-    amapReps
-  );
+  const standardDescription = getAMAPDescription(amapTable, amapReps);
 
   // Fallback if no API key
   if (!GEMINI_API_KEY) {

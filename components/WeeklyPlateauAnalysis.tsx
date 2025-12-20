@@ -26,7 +26,7 @@ interface WeeklyPlateauAnalysisProps {
 }
 
 export function WeeklyPlateauAnalysis({ className = '' }: WeeklyPlateauAnalysisProps) {
-  const { workoutHistory, settings } = useStore();
+  const { history: workoutHistory, settings } = useStore();
 
   // Analyze all exercises for plateaus and trends
   const analysisData = useMemo(() => {
@@ -58,7 +58,7 @@ export function WeeklyPlateauAnalysis({ className = '' }: WeeklyPlateauAnalysisP
     });
 
     // Analyze weak points (exercises with no progress in 8+ weeks)
-    const weakPoints = analyzeWeakPoints(completedWorkouts, 8);
+    const weakPoints = analyzeWeakPoints(completedWorkouts, settings.experienceLevel || 'Intermediate');
 
     return {
       exercises: exercises.filter(e => e.timeSeries.totalWorkouts >= 3), // Only show if 3+ workouts

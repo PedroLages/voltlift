@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize, KeyboardStyle } from '@capacitor/keyboard';
 
 const config: CapacitorConfig = {
   appId: 'com.voltlift.app',
@@ -28,8 +29,9 @@ const config: CapacitorConfig = {
       backgroundColor: '#000000',
     },
     Keyboard: {
-      resize: 'body',
-      style: 'dark',
+      // Use enum values from @capacitor/keyboard
+      resize: KeyboardResize.Body,
+      style: KeyboardStyle.Dark,
       resizeOnFullScreen: true,
     },
   },

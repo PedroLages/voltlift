@@ -97,7 +97,7 @@ export function findExerciseSubstitutions(
   exerciseId: string,
   availableEquipment: string[] = [],
   avoidMuscleGroups: MuscleGroup[] = [],
-  preferredDifficulty?: 'beginner' | 'intermediate' | 'advanced'
+  preferredDifficulty?: 'Beginner' | 'Intermediate' | 'Advanced'
 ): ExerciseSubstitution[] {
   const originalExercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
   if (!originalExercise) return [];
@@ -185,10 +185,10 @@ export function findExerciseSubstitutions(
  */
 export function analyzeWeakPoints(
   history: WorkoutSession[],
-  experienceLevel: ExperienceLevel = 'intermediate'
+  experienceLevel: ExperienceLevel = 'Intermediate'
 ): WeakPointAnalysis {
   const weakPoints: WeakPoint[] = [];
-  const muscleGroups: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'];
+  const muscleGroups: MuscleGroup[] = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
 
   // Factor 1: Detect undertrained muscle groups
   const volumeAnalysis = new Map<MuscleGroup, { sets: number; volume: number }>();
@@ -230,8 +230,8 @@ export function analyzeWeakPoints(
   });
 
   // Factor 2: Detect strength imbalances (push vs pull)
-  const chestData = volumeAnalysis.get('chest');
-  const backData = volumeAnalysis.get('back');
+  const chestData = volumeAnalysis.get('Chest');
+  const backData = volumeAnalysis.get('Back');
 
   if (chestData && backData && chestData.sets > 0 && backData.sets > 0) {
     const pushPullRatio = chestData.sets / backData.sets;
@@ -411,7 +411,7 @@ export function suggestExerciseVariations(
 export function selectBalancedExercises(
   targetMuscleGroups: MuscleGroup[],
   sessionCount: number,
-  experienceLevel: ExperienceLevel = 'intermediate',
+  experienceLevel: ExperienceLevel = 'Intermediate',
   availableEquipment: string[] = []
 ): Exercise[][] {
   const sessions: Exercise[][] = [];
@@ -428,7 +428,7 @@ export function selectBalancedExercises(
           const equipmentMatch = availableEquipment.length === 0 ||
             availableEquipment.includes(inferEquipmentCategory(e));
           const difficultyMatch = e.difficulty === experienceLevel ||
-            (experienceLevel === 'intermediate' && e.difficulty === 'beginner');
+            (experienceLevel === 'Intermediate' && e.difficulty === 'Beginner');
           return e.muscleGroup === muscleGroup && equipmentMatch && difficultyMatch;
         });
 
@@ -442,7 +442,7 @@ export function selectBalancedExercises(
         });
 
         // Take top 1-2 exercises
-        const exerciseCount = ['legs', 'back'].includes(muscleGroup) ? 2 : 1;
+        const exerciseCount = ['Legs', 'Back'].includes(muscleGroup) ? 2 : 1;
         sessionExercises.push(...exercisesForMuscle.slice(0, exerciseCount));
       });
 
@@ -454,8 +454,8 @@ export function selectBalancedExercises(
 
     if (splitType === 'ul') {
       // Upper/Lower split (4 sessions)
-      const upperMuscles = targetMuscleGroups.filter(mg => ['chest', 'back', 'shoulders', 'arms'].includes(mg));
-      const lowerMuscles = targetMuscleGroups.filter(mg => ['legs', 'core'].includes(mg));
+      const upperMuscles = targetMuscleGroups.filter(mg => ['Chest', 'Back', 'Shoulders', 'Arms'].includes(mg));
+      const lowerMuscles = targetMuscleGroups.filter(mg => ['Legs', 'Core'].includes(mg));
 
       // 2 upper days
       for (let i = 0; i < 2; i++) {
@@ -472,18 +472,18 @@ export function selectBalancedExercises(
         const lowerExercises: Exercise[] = [];
         lowerMuscles.forEach(mg => {
           const exercises = EXERCISE_LIBRARY.filter(e => e.muscleGroup === mg);
-          lowerExercises.push(...exercises.slice(0, mg === 'legs' ? 3 : 2));
+          lowerExercises.push(...exercises.slice(0, mg === 'Legs' ? 3 : 2));
         });
         sessions.push(lowerExercises);
       }
     } else {
       // Push/Pull/Legs (6 sessions)
       // Push day
-      sessions.push(EXERCISE_LIBRARY.filter(e => ['chest', 'shoulders'].includes(e.muscleGroup)).slice(0, 6));
+      sessions.push(EXERCISE_LIBRARY.filter(e => ['Chest', 'Shoulders'].includes(e.muscleGroup)).slice(0, 6));
       // Pull day
-      sessions.push(EXERCISE_LIBRARY.filter(e => e.muscleGroup === 'back').slice(0, 6));
+      sessions.push(EXERCISE_LIBRARY.filter(e => e.muscleGroup === 'Back').slice(0, 6));
       // Legs day
-      sessions.push(EXERCISE_LIBRARY.filter(e => ['legs', 'core'].includes(e.muscleGroup)).slice(0, 6));
+      sessions.push(EXERCISE_LIBRARY.filter(e => ['Legs', 'Core'].includes(e.muscleGroup)).slice(0, 6));
 
       // Repeat the split for additional sessions
       while (sessions.length < sessionCount) {
@@ -512,12 +512,12 @@ function inferMovementPattern(exercise: Exercise): MovementPattern {
 
   // Push horizontal (bench, pushups)
   if ((name.includes('bench') || name.includes('press') || name.includes('pushup') || name.includes('push-up')) &&
-      (exercise.muscleGroup === 'chest' || name.includes('chest'))) {
+      (exercise.muscleGroup === 'Chest' || name.includes('chest'))) {
     return 'push_horizontal';
   }
 
   // Push vertical (overhead press)
-  if ((name.includes('press') || name.includes('raise')) && exercise.muscleGroup === 'shoulders') {
+  if ((name.includes('press') || name.includes('raise')) && exercise.muscleGroup === 'Shoulders') {
     return 'push_vertical';
   }
 
@@ -553,7 +553,7 @@ function inferEquipmentCategory(exercise: Exercise): EquipmentCategory {
   if (name.includes('band') || id.includes('band')) return 'band';
 
   // Default based on muscle group patterns
-  if (exercise.muscleGroup === 'legs' && name.includes('squat')) return 'barbell';
+  if (exercise.muscleGroup === 'Legs' && name.includes('squat')) return 'barbell';
   return 'dumbbell'; // Default fallback
 }
 
@@ -700,7 +700,7 @@ export function getQuickSubstitution(
  */
 export function getTopWeakPoint(
   history: WorkoutSession[],
-  experienceLevel: ExperienceLevel = 'intermediate'
+  experienceLevel: ExperienceLevel = 'Intermediate'
 ): string {
   const analysis = analyzeWeakPoints(history, experienceLevel);
   if (analysis.weakPoints.length === 0) {

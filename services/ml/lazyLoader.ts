@@ -10,10 +10,11 @@
  *   const result = await predictFatigue(model, history, dailyLogs);
  */
 
-import type { WorkoutSession, DailyLog } from '../../types';
+import type { WorkoutSession, DailyLog, MuscleGroup } from '../../types';
 import type { PredictionResult, PredictorConfig } from './fatiguePredictor';
 import type { BanditRecommendation, BanditUpdate } from './volumeBandit';
 import type { BanditState, DailyMLFeatures } from '../../types';
+import { EXERCISE_LIBRARY } from '../../constants';
 
 // Track loading state to prevent multiple loads
 let fatigueModulePromise: Promise<typeof import('./fatiguePredictor')> | null = null;
@@ -132,13 +133,16 @@ export async function getVolumeRecommendationAsync(
       loadFeatureExtraction()
     ]);
 
+    // Get muscle group from exercise library
+    const exercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
+    const muscleGroup: MuscleGroup = exercise?.muscleGroup || 'Chest';
+
     const context = features.extractBanditContext(
       history,
-      Object.values(dailyLogs),
-      exerciseId
+      Object.values(dailyLogs)
     );
 
-    return bandit.getVolumeRecommendation(banditState, context);
+    return bandit.getVolumeRecommendation(context, banditState, muscleGroup);
   } catch (error) {
     console.error('Failed to get volume recommendation:', error);
     return null;
@@ -172,7 +176,7 @@ export async function extractDailyFeaturesAsync(
 ): Promise<DailyMLFeatures | null> {
   try {
     const features = await loadFeatureExtraction();
-    return features.extractDailyFeatures(history, Object.values(dailyLogs), date);
+    return features.extractDailyFeatures(date, history, Object.values(dailyLogs));
   } catch (error) {
     console.error('Failed to extract features:', error);
     return null;

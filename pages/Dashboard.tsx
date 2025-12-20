@@ -126,30 +126,14 @@ const Dashboard = () => {
   // Phase 3: Periodization Status
   const periodizationStatus = useMemo(() => {
     if (history.length < 3) return null;
-    const dailyLogsArray = Object.values(dailyLogs).map(log => ({
-      date: new Date(log.date).getTime(),
-      sleepHours: log.sleepHours,
-      mood: log.mood,
-      stressLevel: log.stressLevel,
-      energyLevel: log.energyLevel,
-      notes: log.notes || '',
-      waterLitres: log.waterLitres
-    }));
+    const dailyLogsArray = Object.values(dailyLogs);
     return getPeriodizationStatus(history, dailyLogsArray, settings.experienceLevel);
   }, [history, dailyLogs, settings.experienceLevel]);
 
   // Phase 3: Recovery Status
   const quickRecoveryStatus = useMemo(() => {
     if (history.length < 2) return null;
-    const dailyLogsArray = Object.values(dailyLogs).map(log => ({
-      date: new Date(log.date).getTime(),
-      sleepHours: log.sleepHours,
-      mood: log.mood,
-      stressLevel: log.stressLevel,
-      energyLevel: log.energyLevel,
-      notes: log.notes || '',
-      waterLitres: log.waterLitres
-    }));
+    const dailyLogsArray = Object.values(dailyLogs);
     return getQuickRecoveryStatus(history, dailyLogsArray, settings.experienceLevel);
   }, [history, dailyLogs, settings.experienceLevel]);
 

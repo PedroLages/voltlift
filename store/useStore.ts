@@ -104,7 +104,7 @@ interface AppState {
   updateMeasurements: (date: string, measurements: Partial<any>) => void;
   getBodyweightTrend: (days?: number) => { date: string; weight: number }[];
   getLatestMeasurements: () => any | null;
-  syncData: () => Promise<void>;
+  syncData: (retryCount?: number) => Promise<void>;
   addBiometricPoint: (point: BiometricPoint) => void;
   setBodyMetricsGoal: (goal: Partial<import('../types').BodyMetricsGoals>) => void;
   getWeightGoalProgress: () => { progress: number; current: number; target: number; remaining: number; onTrack: boolean; predictedDate: Date | null } | null;
@@ -686,7 +686,7 @@ export const useStore = create<AppState>()(
                 return {
                   ...log,
                   exerciseId: newExerciseId,
-                  sets: [{ id: uuidv4(), reps: 0, weight: 0, completed: false, type: 'N' }],
+                  sets: [{ id: uuidv4(), reps: 0, weight: 0, completed: false, type: 'N' as SetType }],
                   notes: ''
                 };
             }
@@ -1269,7 +1269,7 @@ export const useStore = create<AppState>()(
                           ironCloud: {
                               ...state.settings.ironCloud,
                               enabled: state.settings.ironCloud?.enabled || false,
-                              lastSync: new Date().toISOString()
+                              lastSync: Date.now()
                           }
                       },
                       isSyncing: false,
@@ -1388,7 +1388,7 @@ export const useStore = create<AppState>()(
                       ironCloud: {
                           ...state.settings.ironCloud,
                           enabled: state.settings.ironCloud?.enabled || false,
-                          lastSync: new Date().toISOString()
+                          lastSync: Date.now()
                       }
                   }
               }));

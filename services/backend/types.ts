@@ -34,16 +34,16 @@ export interface BackendService {
     user: BackendUser | null;
 
     /** Email/password login */
-    login(email: string, password: string): Promise<AuthResult>;
+    login(email: string, password: string, rememberMe?: boolean): Promise<AuthResult>;
 
     /** Register new user with email/password */
-    register(email: string, password: string, name: string): Promise<AuthResult>;
+    register(email: string, password: string, name: string, rememberMe?: boolean): Promise<AuthResult>;
 
     /** Google OAuth login */
-    loginWithGoogle(): Promise<AuthResult>;
+    loginWithGoogle(rememberMe?: boolean): Promise<AuthResult>;
 
     /** Apple OAuth login */
-    loginWithApple(): Promise<AuthResult>;
+    loginWithApple(rememberMe?: boolean): Promise<AuthResult>;
 
     /** Logout current user */
     logout(): Promise<void>;

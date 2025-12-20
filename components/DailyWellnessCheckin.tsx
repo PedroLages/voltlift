@@ -100,7 +100,7 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
   const [sleepDataSource, setSleepDataSource] = useState<'manual' | 'healthkit'>('manual');
   const [isLoadingHealthData, setIsLoadingHealthData] = useState<boolean>(false);
 
-  const { dailyLogs, addDailyLog, updateDailyLog, settings, updateSettings } = useStore();
+  const { dailyLogs, logDailyBio, settings, updateSettings } = useStore();
 
   // Get today's date string
   const today = new Date().toISOString().split('T')[0];
@@ -154,20 +154,11 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
           // (Will be saved when user completes check-in)
           if (healthData.hrv || healthData.restingHR) {
             // Pre-populate these values so they get saved with the daily log
-            if (!existingLog) {
-              addDailyLog({
-                date: today,
-                sleepHours: healthData.sleepHours,
-                hrv: healthData.hrv,
-                restingHR: healthData.restingHR
-              });
-            } else {
-              updateDailyLog(today, {
-                sleepHours: healthData.sleepHours,
-                hrv: healthData.hrv,
-                restingHR: healthData.restingHR
-              });
-            }
+            logDailyBio(today, {
+              sleepHours: healthData.sleepHours,
+              hrv: healthData.hrv,
+              restingHR: healthData.restingHR
+            });
           }
         }
 
@@ -206,8 +197,7 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
         // Backfill daily logs with historical health data
         historicalData.forEach(data => {
           if (data.sleepHours > 0 && !dailyLogs[data.date]) {
-            addDailyLog({
-              date: data.date,
+            logDailyBio(data.date, {
               sleepHours: data.sleepHours,
               hrv: data.hrv,
               restingHR: data.restingHR
@@ -234,14 +224,8 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
       stressLevel: stressLevel || 3
     };
 
-    if (existingLog) {
-      updateDailyLog(today, wellnessData);
-    } else {
-      addDailyLog({
-        date: today,
-        ...wellnessData
-      });
-    }
+    // logDailyBio handles both add and update
+    logDailyBio(today, wellnessData);
 
     setStep('complete');
     setTimeout(() => {

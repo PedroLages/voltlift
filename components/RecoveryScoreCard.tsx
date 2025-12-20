@@ -49,7 +49,7 @@ export function RecoveryScoreCard({ onOpenWellnessCheckin, compact = false }: Re
   const [isExpanded, setIsExpanded] = useState(!compact);
   const [banditState] = useState<BanditState>(initializeBanditState());
 
-  const { workoutHistory, dailyLogs } = useStore();
+  const { history: workoutHistory, dailyLogs } = useStore();
 
   // Calculate recovery metrics from data
   const metrics = useMemo((): RecoveryMetrics => {
@@ -76,7 +76,7 @@ export function RecoveryScoreCard({ onOpenWellnessCheckin, compact = false }: Re
 
     // Calculate ACWR from the most recent features
     const latestFeature = features[features.length - 1];
-    const acwr = latestFeature?.acuteChronicRatio ?? 1.0;
+    const acwr = latestFeature?.acwr ?? 1.0;
 
     // Calculate overall recovery score (100 - fatigue as percentage)
     const recoveryScore = Math.round((1 - fatigueLevel) * 100);

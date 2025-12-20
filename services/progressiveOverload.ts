@@ -307,7 +307,7 @@ export function getSuggestion(
   // HEURISTIC 2: Intensity-Based Progression (Research-Backed Thresholds)
   // Start with personalized base rate, then adjust for intensity
   let progressionRate = baseProgressionRate;
-  let targetReps = [reps, reps + 1];
+  let targetReps: [number, number] = [reps, reps + 1];
 
   // Low intensity (<70%) + room to push → Use base rate or increase if conservative
   if (currentIntensity < 70 && rpe && rpe < 7 && recoveryScore >= 7) {

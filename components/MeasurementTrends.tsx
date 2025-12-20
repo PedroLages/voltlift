@@ -48,6 +48,10 @@ export const MeasurementTrends: React.FC = () => {
   const change = latestValue - firstValue;
   const changePercent = firstValue > 0 ? ((change / firstValue) * 100) : 0;
 
+  // Calculate min/max for summary cards
+  const maxValue = data.length > 0 ? Math.max(...data.map(d => d.value)) : 0;
+  const minValue = data.length > 0 ? Math.min(...data.map(d => d.value)) : 0;
+
   // Chart rendering
   const renderChart = () => {
     if (data.length === 0) {

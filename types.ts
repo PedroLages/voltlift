@@ -70,6 +70,7 @@ export interface WorkoutSession {
   name: string;
   startTime: number;
   endTime?: number;
+  completedAt?: number; // Alias for endTime - when the workout was completed
   logs: ExerciseLog[];
   status: 'active' | 'completed' | 'template' | 'draft';
   sourceTemplateId?: string; // Tracks which template spawned this session
@@ -105,6 +106,13 @@ export interface ExercisePRHistory {
   bestWeight?: PersonalRecord; // Best weight PR
   bestVolume?: PersonalRecord; // Best volume PR (total weight × reps)
   bestReps?: PersonalRecord; // Best reps PR (most reps at any weight)
+  // Aliases for service compatibility
+  weight?: PersonalRecord; // Alias for bestWeight
+  volume?: PersonalRecord; // Alias for bestVolume
+  reps?: PersonalRecord; // Alias for bestReps
+  estimated1RM?: number; // Calculated 1RM from bestWeight
+  best1RM?: number; // Alias for estimated1RM
+  history?: PersonalRecord[]; // Alias for records
 }
 
 export interface ProgramSession {
@@ -122,6 +130,7 @@ export interface Program {
   name: string;
   description: string;
   weeks: number;
+  durationWeeks?: number; // Alias for weeks
   sessions: ProgramSession[]; // Default frequency sessions
   // Metadata for filtering
   goal: ProgramGoal;
@@ -158,10 +167,16 @@ export interface DailyLog {
     sleepQuality?: number; // 1-5 scale (subjective sleep quality)
     proteinGrams?: number;
     waterLitres?: number;
+    waterOz?: number; // Alias for waterLitres in oz (for US users)
     stressLevel?: number; // 1-5 scale (life stress)
     bodyweight?: number; // Bodyweight in lbs or kg
     measurements?: BodyMeasurements; // Body measurements in inches/cm
     progressPhoto?: string; // Base64 encoded image or URL
+
+    // Mood and notes
+    mood?: number; // 1-5 scale (overall mood)
+    energyLevel?: number; // 1-5 scale (energy level)
+    notes?: string; // User notes for the day
 
     // ML Wellness Features (for fatigue prediction)
     muscleSoreness?: number;      // 1-5 scale (1 = none, 5 = extreme)

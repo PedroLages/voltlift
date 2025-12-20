@@ -138,7 +138,7 @@ export function exportPRsToCSV(
         pr.weight?.value || '',
         pr.volume?.value || '',
         pr.reps?.value || '',
-        pr.estimated1RM?.value?.toFixed(1) || '',
+        pr.estimated1RM?.toFixed(1) || '',
         pr.weight?.date ? new Date(pr.weight.date).toISOString().split('T')[0] : '',
       ].join(',')
     );

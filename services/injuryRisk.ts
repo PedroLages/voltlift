@@ -183,7 +183,7 @@ function detectVolumeSpikes(
   history: WorkoutSession[],
   weeksToAnalyze: number
 ): RiskFactor[] {
-  const muscleGroups: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'];
+  const muscleGroups: MuscleGroup[] = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
   const riskFactors: RiskFactor[] = [];
 
   muscleGroups.forEach(muscleGroup => {
@@ -230,8 +230,8 @@ function analyzeSleepDebt(
   const cutoffDate = Date.now() - (weeksToAnalyze * 7 * 24 * 60 * 60 * 1000);
 
   const recentLogs = dailyLogs
-    .filter(log => log.date >= cutoffDate && log.sleepHours !== undefined)
-    .sort((a, b) => a.date - b.date);
+    .filter(log => new Date(log.date).getTime() >= cutoffDate && log.sleepHours !== undefined)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (recentLogs.length < 7) return null;
 

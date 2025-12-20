@@ -89,25 +89,25 @@ const Analytics = () => {
       selectedExerciseId,
       selectedExercise.name,
       history,
-      settings.experienceLevel || 'intermediate',
+      settings.experienceLevel || 'Intermediate',
       8
     );
   }, [history, selectedExerciseId, settings.experienceLevel]);
 
   // 2. Prepare Data for Heatmap (Last 7 Days)
-  const muscleIntensity = useMemo(() => {
+  const muscleIntensity: Record<string, number> = useMemo(() => {
       const intensity: Record<string, number> = {};
       const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      
+
       const recentSessions = history.filter(h => h.startTime > oneWeekAgo && h.status === 'completed');
-      
+
       recentSessions.forEach(session => {
           session.logs.forEach(log => {
               const ex = EXERCISE_LIBRARY.find(e => e.id === log.exerciseId);
               if (ex) {
                   const completedSets = log.sets.filter(s => s.completed).length;
                   intensity[ex.muscleGroup] = (intensity[ex.muscleGroup] || 0) + completedSets;
-                  // Also count secondary? Maybe half value. 
+                  // Also count secondary? Maybe half value.
                   // For now, primary only for clearer viz.
               }
           });

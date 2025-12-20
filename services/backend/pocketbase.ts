@@ -78,6 +78,22 @@ export class PocketBaseBackend implements BackendService {
   }
 
   /**
+   * Convert PocketBase workout record to WorkoutSession
+   */
+  private toWorkoutSession(record: PBWorkout): WorkoutSession {
+    return {
+      id: record.id,
+      name: record.name,
+      startTime: record.startTime,
+      endTime: record.endTime,
+      status: record.status,
+      sourceTemplateId: record.sourceTemplateId,
+      logs: record.logs || [],
+      biometrics: record.biometrics,
+    };
+  }
+
+  /**
    * Authentication
    */
   auth = {
@@ -89,14 +105,14 @@ export class PocketBaseBackend implements BackendService {
       return this.currentUser;
     },
 
-    login: async (email: string, password: string): Promise<AuthResult> => {
+    login: async (email: string, password: string, _rememberMe?: boolean): Promise<AuthResult> => {
       const authData = await this.pb.collection('users').authWithPassword(email, password);
       const user = this.mapPBUser(authData.record);
       this.currentUser = user;
       return { user, token: authData.token };
     },
 
-    register: async (email: string, password: string, name: string): Promise<AuthResult> => {
+    register: async (email: string, password: string, name: string, _rememberMe?: boolean): Promise<AuthResult> => {
       await this.pb.collection('users').create({
         email,
         password,
@@ -111,7 +127,7 @@ export class PocketBaseBackend implements BackendService {
       return { user, token: authData.token };
     },
 
-    loginWithGoogle: async (): Promise<AuthResult> => {
+    loginWithGoogle: async (_rememberMe?: boolean): Promise<AuthResult> => {
       // PocketBase supports OAuth2, but requires backend configuration
       const authData = await this.pb.collection('users').authWithOAuth2({ provider: 'google' });
       const user = this.mapPBUser(authData.record);
@@ -119,7 +135,7 @@ export class PocketBaseBackend implements BackendService {
       return { user, token: authData.token };
     },
 
-    loginWithApple: async (): Promise<AuthResult> => {
+    loginWithApple: async (_rememberMe?: boolean): Promise<AuthResult> => {
       // PocketBase supports OAuth2 for Apple
       const authData = await this.pb.collection('users').authWithOAuth2({ provider: 'apple' });
       const user = this.mapPBUser(authData.record);
@@ -151,7 +167,7 @@ export class PocketBaseBackend implements BackendService {
         sort: '-startTime',
         filter: `user = "${userId}"`,
       });
-      return records.map(this.toWorkoutSession);
+      return records.map(r => this.toWorkoutSession(r));
     },
 
     getTemplates: async (): Promise<WorkoutSession[]> => {
@@ -159,7 +175,7 @@ export class PocketBaseBackend implements BackendService {
       const records = await this.pb.collection('workouts').getFullList<PBWorkout>({
         filter: `user = "${userId}" && status = "template"`,
       });
-      return records.map(this.toWorkoutSession);
+      return records.map(r => this.toWorkoutSession(r));
     },
 
     getHistory: async (): Promise<WorkoutSession[]> => {
@@ -168,7 +184,7 @@ export class PocketBaseBackend implements BackendService {
         sort: '-startTime',
         filter: `user = "${userId}" && status = "completed"`,
       });
-      return records.map(this.toWorkoutSession);
+      return records.map(r => this.toWorkoutSession(r));
     },
 
     create: async (workout: WorkoutSession): Promise<WorkoutSession> => {
@@ -214,19 +230,6 @@ export class PocketBaseBackend implements BackendService {
 
       return () => {
         this.pb.collection('workouts').unsubscribe('*');
-      };
-    },
-
-    toWorkoutSession: (record: PBWorkout): WorkoutSession => {
-      return {
-        id: record.id,
-        name: record.name,
-        startTime: record.startTime,
-        endTime: record.endTime,
-        status: record.status,
-        sourceTemplateId: record.sourceTemplateId,
-        logs: record.logs || [],
-        biometrics: record.biometrics,
       };
     },
   };

@@ -57,14 +57,20 @@ export interface VolumeRecommendation {
 export function calculateVolumeLandmarks(
   muscleGroup: MuscleGroup,
   history: WorkoutSession[],
-  experienceLevel: ExperienceLevel = 'intermediate'
+  experienceLevel: ExperienceLevel = 'Intermediate'
 ): VolumeLandmarks {
   // Get representative exercise for this muscle group
   const representativeExercise = getRepresentativeExercise(muscleGroup);
 
   if (!representativeExercise) {
-    // Fallback to research-based defaults
-    return getDefaultVolumeLandmarks(muscleGroup, experienceLevel);
+    // Fallback to research-based defaults with zero current volume
+    const defaults = getDefaultVolumeLandmarks(muscleGroup, experienceLevel);
+    return {
+      ...defaults,
+      current: 0,
+      status: 'undertrained' as const,
+      confidence: 0.2
+    };
   }
 
   // Analyze volume-performance correlation
@@ -144,7 +150,7 @@ export function calculateVolumeLandmarks(
 export function getVolumeRecommendation(
   muscleGroup: MuscleGroup,
   history: WorkoutSession[],
-  experienceLevel: ExperienceLevel = 'intermediate',
+  experienceLevel: ExperienceLevel = 'Intermediate',
   trainingPhase: 'accumulation' | 'intensification' | 'deload' = 'accumulation'
 ): VolumeRecommendation {
   const landmarks = calculateVolumeLandmarks(muscleGroup, history, experienceLevel);
@@ -233,10 +239,10 @@ export function getVolumeRecommendation(
  */
 export function getAllVolumeRecommendations(
   history: WorkoutSession[],
-  experienceLevel: ExperienceLevel = 'intermediate',
+  experienceLevel: ExperienceLevel = 'Intermediate',
   trainingPhase: 'accumulation' | 'intensification' | 'deload' = 'accumulation'
 ): VolumeRecommendation[] {
-  const muscleGroups: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'];
+  const muscleGroups: MuscleGroup[] = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
 
   return muscleGroups.map(muscleGroup =>
     getVolumeRecommendation(muscleGroup, history, experienceLevel, trainingPhase)
@@ -249,12 +255,12 @@ export function getAllVolumeRecommendations(
 function getRepresentativeExercise(muscleGroup: MuscleGroup) {
   // Find most common compound exercise for each muscle group
   const representatives = {
-    chest: 'barbell-bench-press',
-    back: 'barbell-row',
-    legs: 'barbell-squat',
-    shoulders: 'barbell-overhead-press',
-    arms: 'barbell-curl',
-    core: 'plank'
+    Chest: 'barbell-bench-press',
+    Back: 'barbell-row',
+    Legs: 'barbell-squat',
+    Shoulders: 'barbell-overhead-press',
+    Arms: 'barbell-curl',
+    Core: 'plank'
   };
 
   const exerciseId = representatives[muscleGroup];
@@ -352,7 +358,7 @@ function calculateLandmarkConfidence(
  */
 export function detectVolumeImbalances(
   history: WorkoutSession[],
-  experienceLevel: ExperienceLevel = 'intermediate'
+  experienceLevel: ExperienceLevel = 'Intermediate'
 ): {
   hasImbalance: boolean;
   imbalances: { muscleGroup: MuscleGroup; issue: string; severity: 'minor' | 'moderate' | 'severe' }[];
@@ -384,12 +390,12 @@ export function detectVolumeImbalances(
   });
 
   // Check for push/pull imbalance
-  const chestVolume = allRecommendations.find(r => r.muscleGroup === 'chest')?.currentVolume || 0;
-  const backVolume = allRecommendations.find(r => r.muscleGroup === 'back')?.currentVolume || 0;
+  const chestVolume = allRecommendations.find(r => r.muscleGroup === 'Chest')?.currentVolume || 0;
+  const backVolume = allRecommendations.find(r => r.muscleGroup === 'Back')?.currentVolume || 0;
 
   if (chestVolume > backVolume * 1.3) {
     imbalances.push({
-      muscleGroup: 'back',
+      muscleGroup: 'Back',
       issue: `Push/pull imbalance: Chest ${chestVolume} sets vs Back ${backVolume} sets`,
       severity: 'moderate'
     });

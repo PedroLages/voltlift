@@ -58,9 +58,8 @@ export default function SyncStatusIndicator() {
     }
   }, [syncStatus]);
 
-  // Don't show anything if not authenticated or if idle or if messages have faded
+  // Don't show anything if not authenticated or if messages have faded
   if (!isAuthenticated ||
-      syncStatus === 'idle' ||
       (syncStatus === 'synced' && !showSynced) ||
       (syncStatus === 'error' && !showError) ||
       (syncStatus === 'partial' && !showPartial)) {

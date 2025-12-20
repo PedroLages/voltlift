@@ -65,7 +65,7 @@ export interface MesocyclePlan {
 export function getPeriodizationStatus(
   history: WorkoutSession[],
   dailyLogs: DailyLog[],
-  experienceLevel: ExperienceLevel = 'intermediate',
+  experienceLevel: ExperienceLevel = 'Intermediate',
   lastDeloadDate?: number
 ): PeriodizationStatus {
   const now = Date.now();
@@ -150,7 +150,7 @@ export function getPeriodizationStatus(
  */
 export function generateMesocyclePlan(
   currentStatus: PeriodizationStatus,
-  experienceLevel: ExperienceLevel = 'intermediate'
+  experienceLevel: ExperienceLevel = 'Intermediate'
 ): MesocyclePlan {
   const now = Date.now();
   const phase = currentStatus.shouldTransitionPhase ? currentStatus.nextPhase : currentStatus.currentPhase;
@@ -223,11 +223,11 @@ export function generateMesocyclePlan(
  */
 function getDeloadFrequency(experienceLevel: ExperienceLevel): number {
   switch (experienceLevel) {
-    case 'beginner':
+    case 'Beginner':
       return 8; // Every 8 weeks
-    case 'intermediate':
+    case 'Intermediate':
       return 5; // Every 5 weeks
-    case 'advanced':
+    case 'Advanced':
       return 4; // Every 4 weeks
     default:
       return 5;
@@ -323,11 +323,11 @@ function getPhaseDuration(phase: TrainingPhase, experienceLevel: ExperienceLevel
 
   // Accumulation and intensification phases
   switch (experienceLevel) {
-    case 'beginner':
+    case 'Beginner':
       return 6; // Longer phases for beginners
-    case 'intermediate':
+    case 'Intermediate':
       return 4; // Standard 4-week blocks
-    case 'advanced':
+    case 'Advanced':
       return 3; // Shorter, more frequent phase changes
     default:
       return 4;

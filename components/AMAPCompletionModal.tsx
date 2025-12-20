@@ -8,7 +8,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, TrendingUp, CheckCircle2, AlertCircle, Zap, Brain } from 'lucide-react';
 import { getTrainingMaxSuggestion } from '../services/gnCoachingService';
-import { getAMAPProgression, getAMAPDescription } from '../utils/percentageCalculator';
+import {
+  getAMAPProgression,
+  getAMAPDescription,
+  GN_AMAP_SQUAT_PROGRESSION,
+  GN_AMAP_BENCH_PROGRESSION,
+  GN_AMAP_DEADLIFT_PROGRESSION
+} from '../utils/percentageCalculator';
 
 interface AMAPCompletionModalProps {
   isOpen: boolean;
@@ -56,15 +62,12 @@ const AMAPCompletionModal: React.FC<AMAPCompletionModalProps> = ({
   const [useCustom, setUseCustom] = useState(false);
 
   // Get standard AMAP progression for comparison
-  const standardProgression = getAMAPProgression(
-    exerciseId === 'e4' ? 'squat' : exerciseId === 'e1' ? 'bench' : 'deadlift',
-    amapReps
-  );
+  const amapTable = exerciseId === 'e4' ? GN_AMAP_SQUAT_PROGRESSION :
+                   exerciseId === 'e1' ? GN_AMAP_BENCH_PROGRESSION :
+                   GN_AMAP_DEADLIFT_PROGRESSION;
+  const standardProgression = getAMAPProgression(amapTable, amapReps);
   const standardTM = currentTM + standardProgression;
-  const standardDescription = getAMAPDescription(
-    exerciseId === 'e4' ? 'squat' : exerciseId === 'e1' ? 'bench' : 'deadlift',
-    amapReps
-  );
+  const standardDescription = getAMAPDescription(amapTable, amapReps);
 
   // Fetch AI suggestion on mount
   useEffect(() => {

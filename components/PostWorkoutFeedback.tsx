@@ -64,7 +64,7 @@ export function PostWorkoutFeedback({ workout, isOpen, onClose, onComplete }: Po
   const [painNotes, setPainNotes] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
 
-  const { dailyLogs, updateDailyLog, addDailyLog } = useStore();
+  const { dailyLogs, logDailyBio } = useStore();
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -79,15 +79,7 @@ export function PostWorkoutFeedback({ workout, isOpen, onClose, onComplete }: Po
     };
 
     // Update or create daily log with feedback
-    const existingLog = dailyLogs[today];
-    if (existingLog) {
-      updateDailyLog(today, feedbackData);
-    } else {
-      addDailyLog({
-        date: today,
-        ...feedbackData
-      });
-    }
+    logDailyBio(today, feedbackData);
 
     setStep('complete');
     setTimeout(() => {

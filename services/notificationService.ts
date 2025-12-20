@@ -40,8 +40,8 @@ export interface NotificationConfig {
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   const permission = await localNotifications.requestPermission();
-  // Convert 'prompt' to 'default' for NotificationPermission compatibility
-  return permission === 'prompt' ? 'default' : permission;
+  // Return 'granted' or 'denied' from local notifications
+  return permission;
 }
 
 /**

@@ -19,13 +19,13 @@ import { EXERCISE_LIBRARY } from '../../constants';
 // Constants
 // =============================================================================
 
-const MUSCLE_GROUPS: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'];
+const MUSCLE_GROUPS: MuscleGroup[] = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Cardio'];
 
 // Default MAV (Maximum Adaptive Volume) by experience level (sets/week)
 const DEFAULT_MAV: Record<string, Record<MuscleGroup, number>> = {
-  Beginner: { chest: 12, back: 14, legs: 14, shoulders: 10, arms: 10, core: 12 },
-  Intermediate: { chest: 16, back: 18, legs: 18, shoulders: 14, arms: 12, core: 14 },
-  Advanced: { chest: 20, back: 22, legs: 22, shoulders: 16, arms: 14, core: 16 },
+  Beginner: { Chest: 12, Back: 14, Legs: 14, Shoulders: 10, Arms: 10, Core: 12, Cardio: 0 },
+  Intermediate: { Chest: 16, Back: 18, Legs: 18, Shoulders: 14, Arms: 12, Core: 14, Cardio: 0 },
+  Advanced: { Chest: 20, Back: 22, Legs: 22, Shoulders: 16, Arms: 14, Core: 16, Cardio: 0 },
 };
 
 // Default values for UserSettings (extracted for clarity)
@@ -340,7 +340,7 @@ function getWorkoutsInRange(endDate: string, days: number, history: WorkoutSessi
 
 function calculateDailyVolumePerMuscle(workouts: WorkoutSession[]): Record<MuscleGroup, number> {
   const volume: Record<MuscleGroup, number> = {
-    chest: 0, back: 0, legs: 0, shoulders: 0, arms: 0, core: 0
+    Chest: 0, Back: 0, Legs: 0, Shoulders: 0, Arms: 0, Core: 0, Cardio: 0
   };
 
   for (const workout of workouts) {
@@ -662,15 +662,14 @@ function average(arr: number[]): number {
  */
 function createDefaultSettings(): UserSettings {
   return {
+    name: 'Default User',
     onboardingCompleted: true,
-    experienceLevel: DEFAULT_EXPERIENCE_LEVEL,
+    experienceLevel: DEFAULT_EXPERIENCE_LEVEL as 'Beginner' | 'Intermediate' | 'Advanced',
     personalRecords: {},
-    preferredUnits: DEFAULT_PREFERRED_UNITS,
-    restTimerEnabled: true,
-    defaultRestTime: DEFAULT_REST_TIME_SECONDS,
-    soundEnabled: true,
-    notificationsEnabled: false,
-    theme: DEFAULT_THEME,
-    activeProgram: null,
+    units: DEFAULT_PREFERRED_UNITS as 'kg' | 'lbs',
+    defaultRestTimer: DEFAULT_REST_TIME_SECONDS,
+    barWeight: 45,
+    availableEquipment: [],
+    goal: { type: 'General Fitness', targetPerWeek: 3 },
   };
 }

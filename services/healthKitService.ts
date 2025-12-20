@@ -11,8 +11,18 @@
  * - Resting heart rate (optional, for recovery tracking)
  */
 
-import { Health } from '@capgo/capacitor-health';
+import { Health as HealthBase } from '@capgo/capacitor-health';
 import { Capacitor } from '@capacitor/core';
+
+// Extended Health plugin interface for methods not in base types
+interface HealthPluginExtended {
+  isAvailable(): Promise<{ available: boolean }>;
+  requestPermission(options: { read: string[]; write: string[] }): Promise<void>;
+  queryData(options: { type: string; startDate: string; endDate: string }): Promise<{ data: any[] }>;
+}
+
+// Cast to extended interface for full functionality
+const Health = HealthBase as unknown as HealthPluginExtended;
 
 export interface HealthData {
   sleepHours: number;

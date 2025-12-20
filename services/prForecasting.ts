@@ -7,6 +7,7 @@
 
 import { WorkoutSession, ExperienceLevel } from '../types';
 import { extractExerciseTimeSeries, calculateTrend, PerformancePoint } from './analytics';
+import { EXERCISE_LIBRARY } from '../constants';
 
 /**
  * PR forecast for a specific exercise
@@ -48,7 +49,7 @@ export function forecastPR(
   exerciseId: string,
   exerciseName: string,
   history: WorkoutSession[],
-  experienceLevel: ExperienceLevel = 'intermediate',
+  experienceLevel: ExperienceLevel = 'Intermediate',
   weeksToProject: number = 8
 ): PRForecast | null {
   // Extract time series data (last 12 weeks)
@@ -164,9 +165,9 @@ function fitExponentialModel(
 
   // Initial guesses based on experience level
   const growthRates = {
-    beginner: 0.08,    // Fast gains
-    intermediate: 0.04, // Moderate gains
-    advanced: 0.02      // Slow, steady gains
+    Beginner: 0.08,    // Fast gains
+    Intermediate: 0.04, // Moderate gains
+    Advanced: 0.02      // Slow, steady gains
   };
 
   let bestModel: ExponentialModel = {
@@ -237,9 +238,9 @@ function calculateConfidence(
 
   // Factor 4: Experience level adjustment (0-10 points)
   const experienceScores = {
-    beginner: 10,      // More predictable linear gains
-    intermediate: 7,   // Moderate predictability
-    advanced: 4        // Harder to predict, slower gains
+    Beginner: 10,      // More predictable linear gains
+    Intermediate: 7,   // Moderate predictability
+    Advanced: 4        // Harder to predict, slower gains
   };
   confidence += experienceScores[experienceLevel];
 
@@ -309,21 +310,18 @@ function generateForecastReasoning(
 export function forecastMultipleExercises(
   exerciseIds: string[],
   history: WorkoutSession[],
-  experienceLevel: ExperienceLevel = 'intermediate'
+  experienceLevel: ExperienceLevel = 'Intermediate'
 ): PRForecast[] {
   const forecasts: PRForecast[] = [];
 
   exerciseIds.forEach(exerciseId => {
-    // Find exercise name from history
-    const exerciseLog = history
-      .flatMap(h => h.logs)
-      .find(log => log.exerciseId === exerciseId);
-
-    if (!exerciseLog) return;
+    // Find exercise name from library
+    const exercise = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
+    if (!exercise) return;
 
     const forecast = forecastPR(
       exerciseId,
-      exerciseLog.exerciseName,
+      exercise.name,
       history,
       experienceLevel,
       8
@@ -344,7 +342,7 @@ export function getQuickForecast(
   exerciseId: string,
   exerciseName: string,
   history: WorkoutSession[],
-  experienceLevel: ExperienceLevel = 'intermediate'
+  experienceLevel: ExperienceLevel = 'Intermediate'
 ): { predicted: number; confidence: string; weeks: number } | null {
   const forecast = forecastPR(exerciseId, exerciseName, history, experienceLevel, 4);
 
