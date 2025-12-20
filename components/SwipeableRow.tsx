@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Trash2, Copy } from 'lucide-react';
 
-interface SwipeableRowProps {
+export interface SwipeableRowProps {
   children: React.ReactNode;
   onDelete?: () => void;
   onDuplicate?: () => void;
   threshold?: number; // Distance in px to reveal actions
   disabled?: boolean;
+  key?: React.Key; // Allow React's special key prop
 }
 
 /**

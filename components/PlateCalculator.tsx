@@ -17,7 +17,7 @@ interface PlateCalculatorProps {
 }
 
 export const PlateCalculator: React.FC<PlateCalculatorProps> = ({
-  units = 'lbs',
+  units = 'lbs' as const,
   barWeight: initialBarWeight,
   onClose
 }) => {

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspens
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
 import { EXERCISE_LIBRARY } from '../constants';
-import { Check, Plus, MoreHorizontal, Timer, Sparkles, X, AlertTriangle, RefreshCw, Trash2, StickyNote, Trophy, ArrowRight, Calculator, ChevronDown, ChevronUp, Link as LinkIcon, Unlink, Heart, Copy, Play } from 'lucide-react';
+import { Check, Plus, MoreHorizontal, Timer, Sparkles, X, AlertTriangle, RefreshCw, Trash2, StickyNote, Trophy, ArrowRight, Calculator, ChevronDown, ChevronUp, Link as LinkIcon, Unlink, Heart, Copy, Play, Search } from 'lucide-react';
 import { getProgressiveOverloadTip } from '../services/geminiService';
 import { sendRestTimerAlert, sendPRCelebration } from '../services/notificationService';
 import { SetType } from '../types';
@@ -15,6 +15,8 @@ import SwipeableRow from '../components/SwipeableRow';
 import Toast from '../components/Toast';
 import { Skeleton } from '../components/Skeleton';
 import KeyboardToolbar from '../components/KeyboardToolbar';
+import { InAppVideoPlayer } from '../components/InAppVideoPlayer';
+import { SmartSwapModal } from '../components/SmartSwapModal';
 
 // Lazy load heavy components
 const PRCelebration = lazy(() => import('../components/PRCelebration'));
@@ -75,6 +77,16 @@ const WorkoutLogger = () => {
 
   // PR Celebration State (Enhanced Multi-PR Detection)
   const [activePRs, setActivePRs] = useState<{ prs: PRDetection[]; exerciseName: string } | null>(null);
+
+  // Video Player State
+  const [activeVideo, setActiveVideo] = useState<{ videoUrl: string; exerciseName: string } | null>(null);
+
+  // Smart Swap Modal State
+  const [smartSwapData, setSmartSwapData] = useState<{
+    logId: string;
+    currentExercise: typeof EXERCISE_LIBRARY[0];
+    suggestions: typeof EXERCISE_LIBRARY;
+  } | null>(null);
 
   // Track celebrated PRs in this workout session (to avoid duplicate celebrations)
   const [celebratedPRs, setCelebratedPRs] = useState<Set<string>>(new Set());
@@ -362,7 +374,7 @@ const WorkoutLogger = () => {
               if (detectedPRs.length > 0) {
                   // Filter out PRs that have already been celebrated in this workout session
                   const newPRs = detectedPRs.filter(pr => {
-                      const prKey = `${exerciseId}-${pr.type}-${pr.newValue}`;
+                      const prKey = `${exerciseId}-${pr.type}-${pr.value}`;
                       return !celebratedPRs.has(prKey);
                   });
 
@@ -374,7 +386,7 @@ const WorkoutLogger = () => {
                       // Mark these PRs as celebrated
                       const updatedCelebratedPRs = new Set(celebratedPRs);
                       newPRs.forEach(pr => {
-                          const prKey = `${exerciseId}-${pr.type}-${pr.newValue}`;
+                          const prKey = `${exerciseId}-${pr.type}-${pr.value}`;
                           updatedCelebratedPRs.add(prKey);
                       });
                       setCelebratedPRs(updatedCelebratedPRs);
@@ -384,10 +396,10 @@ const WorkoutLogger = () => {
                           // Send notification for the most significant PR
                           const primaryPR = newPRs[0];
                           const achievement = primaryPR.type === 'weight'
-                              ? `${primaryPR.newValue}${settings.units} x ${reps}`
+                              ? `${primaryPR.value}${settings.units} x ${reps}`
                               : primaryPR.type === 'reps'
                               ? `${reps} reps @ ${weight}${settings.units}`
-                              : `${primaryPR.newValue}${settings.units} volume`;
+                              : `${primaryPR.value}${settings.units} volume`;
 
                           sendPRCelebration(
                               newPRs.length > 1 ? `${newPRs.length} PRs` : primaryPR.type,
@@ -423,24 +435,48 @@ const WorkoutLogger = () => {
       const currentEx = EXERCISE_LIBRARY.find(e => e.id === exerciseId);
       if (!currentEx) return [];
 
-      return EXERCISE_LIBRARY.filter(e =>
+      // Get all exercise IDs already in the workout to exclude them
+      const exercisesInWorkout = activeWorkout?.logs.map(log => log.exerciseId) || [];
+
+      return getAllExercises().filter(e =>
           e.muscleGroup === currentEx.muscleGroup &&
           e.id !== exerciseId &&
+          !exercisesInWorkout.includes(e.id) && // Exclude exercises already in workout
           settings.availableEquipment.includes(e.equipment)
       );
   };
 
   const handleSwap = (logId: string, currentExerciseId: string) => {
       const subs = findSubstitutes(currentExerciseId);
-      const currentEx = EXERCISE_LIBRARY.find(e => e.id === currentExerciseId);
+      const currentEx = getAllExercises().find(e => e.id === currentExerciseId);
 
-      if (subs.length > 0) {
-          const suggestion = subs[0];
-          if(confirm(`Smart Swap: Replace ${currentEx?.name} with ${suggestion.name} based on your equipment?`)) {
-              swapExercise(logId, suggestion.id);
-          }
+      if (subs.length > 0 && currentEx) {
+          // Show custom Smart Swap modal instead of browser confirm
+          setSmartSwapData({
+              logId,
+              currentExercise: currentEx,
+              suggestions: subs,
+          });
       } else {
-          alert("No suitable substitutions found matching your available equipment.");
+          // No substitutes found - open exercise selector for manual selection
+          setSwapTargetLogId(logId);
+          setShowExerciseSelector(true);
+      }
+  };
+
+  const handleSmartSwapConfirm = (exerciseId: string) => {
+      if (smartSwapData) {
+          swapExercise(smartSwapData.logId, exerciseId);
+          setSmartSwapData(null);
+      }
+  };
+
+  const handleSmartSwapViewAll = () => {
+      if (smartSwapData) {
+          // Close modal and open exercise selector for more options
+          setSwapTargetLogId(smartSwapData.logId);
+          setShowExerciseSelector(true);
+          setSmartSwapData(null);
       }
   };
 
@@ -797,17 +833,18 @@ const WorkoutLogger = () => {
                             <VolumeWarningBadge warning={exerciseData[log.exerciseId].volumeWarning} />
                         )}
                     </div>
-                    {/* Form Video Link */}
-                    {exerciseDef?.videoUrl && (
-                        <a
-                            href={exerciseDef.videoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                    {/* Form Video Button */}
+                    {(exerciseDef?.customVideoUrl || exerciseDef?.videoUrl) && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const videoUrl = exerciseDef.customVideoUrl || exerciseDef.videoUrl!;
+                                setActiveVideo({ videoUrl, exerciseName: exerciseDef.name });
+                            }}
                             className="inline-flex items-center gap-1 text-[10px] text-primary font-bold uppercase border border-primary/50 px-2 py-1 bg-primary/10 hover:bg-primary hover:text-black transition-colors mt-1"
-                            onClick={(e) => e.stopPropagation()}
                         >
                             <Play size={10} /> Watch Form Video
-                        </a>
+                        </button>
                     )}
                     {prevBestSet && (
                         <p className="text-[10px] text-[#666] font-mono mt-1 uppercase">
@@ -1259,27 +1296,64 @@ const WorkoutLogger = () => {
               )}
             </div>
 
+            {/* STICKY Create New Exercise Button - Always Visible */}
+            <div className="p-3 border-b-2 border-primary/30 bg-[#0a0a0a]">
+              <button
+                onClick={() => setShowCreateExercise(true)}
+                className="w-full py-3 bg-primary text-black font-black uppercase italic tracking-wider text-sm hover:bg-white transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus size={18} />
+                Create New Exercise
+              </button>
+            </div>
+
             {/* Exercise List */}
             <div className="flex-1 overflow-y-auto p-2">
-              {getAllExercises()
-                .filter(ex => {
-                  // Filter by search query
-                  if (!exerciseSearchQuery) return true;
-                  const query = exerciseSearchQuery.toLowerCase();
+              {(() => {
+                const filteredExercises = getAllExercises()
+                  .filter(ex => {
+                    // Filter by search query
+                    if (!exerciseSearchQuery) return true;
+                    const query = exerciseSearchQuery.toLowerCase();
+                    return (
+                      ex.name.toLowerCase().includes(query) ||
+                      ex.muscleGroup.toLowerCase().includes(query) ||
+                      ex.equipment.toLowerCase().includes(query)
+                    );
+                  })
+                  .sort((a, b) => {
+                    const aFav = settings.favoriteExercises?.includes(a.id) ?? false;
+                    const bFav = settings.favoriteExercises?.includes(b.id) ?? false;
+                    if (aFav && !bFav) return -1;
+                    if (!aFav && bFav) return 1;
+                    return 0;
+                  });
+
+                // EMPTY STATE - No search results
+                if (filteredExercises.length === 0 && exerciseSearchQuery) {
                   return (
-                    ex.name.toLowerCase().includes(query) ||
-                    ex.muscleGroup.toLowerCase().includes(query) ||
-                    ex.equipment.toLowerCase().includes(query)
+                    <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                      <div className="mb-4 p-4 bg-[#1a1a1a] rounded-full border-2 border-[#333]">
+                        <Search className="text-[#666]" size={32} />
+                      </div>
+                      <h3 className="text-lg font-black italic uppercase text-white mb-2">
+                        No Results Found
+                      </h3>
+                      <p className="text-sm text-[#666] mb-6 max-w-xs">
+                        Can't find "<span className="text-primary font-bold">{exerciseSearchQuery}</span>"? Create it as a custom exercise.
+                      </p>
+                      <button
+                        onClick={() => setShowCreateExercise(true)}
+                        className="px-6 py-3 bg-primary text-black font-black uppercase italic tracking-wider text-sm hover:bg-white transition-colors flex items-center gap-2"
+                      >
+                        <Plus size={18} />
+                        Create "{exerciseSearchQuery.slice(0, 20)}{exerciseSearchQuery.length > 20 ? '...' : ''}"
+                      </button>
+                    </div>
                   );
-                })
-                .sort((a, b) => {
-                  const aFav = settings.favoriteExercises?.includes(a.id) ?? false;
-                  const bFav = settings.favoriteExercises?.includes(b.id) ?? false;
-                  if (aFav && !bFav) return -1;
-                  if (!aFav && bFav) return 1;
-                  return 0;
-                })
-                .map(ex => {
+                }
+
+                return filteredExercises.map(ex => {
                   const isFavorite = settings.favoriteExercises?.includes(ex.id) ?? false;
                   return (
                     <div
@@ -1342,16 +1416,8 @@ const WorkoutLogger = () => {
                       </button>
                     </div>
                   );
-                })}
-
-              {/* Create New Exercise Button */}
-              <button
-                onClick={() => setShowCreateExercise(true)}
-                className="w-full py-4 mt-2 border border-dashed border-[#444] text-[#666] hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
-              >
-                <Plus size={18} />
-                <span className="font-bold uppercase text-sm">Create New Exercise</span>
-              </button>
+                });
+              })()}
             </div>
           </div>
         </div>
@@ -1453,6 +1519,27 @@ const WorkoutLogger = () => {
         />
       )}
 
+      {/* In-App Video Player Modal */}
+      {activeVideo && (
+        <InAppVideoPlayer
+          videoUrl={activeVideo.videoUrl}
+          exerciseName={activeVideo.exerciseName}
+          onClose={() => setActiveVideo(null)}
+        />
+      )}
+
+      {/* Smart Swap Modal */}
+      {smartSwapData && (
+        <SmartSwapModal
+          currentExercise={smartSwapData.currentExercise}
+          suggestedExercise={smartSwapData.suggestions[0]}
+          allSuggestions={smartSwapData.suggestions}
+          onConfirm={handleSmartSwapConfirm}
+          onCancel={() => setSmartSwapData(null)}
+          onViewAll={handleSmartSwapViewAll}
+        />
+      )}
+
       {/* Undo Toast */}
       {undoStack && (
         <Toast
@@ -1490,14 +1577,12 @@ interface CreateExerciseModalProps {
 const MUSCLE_GROUPS = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'] as const;
 const EQUIPMENT_OPTIONS = ['Barbell', 'Dumbbell', 'Cable', 'Machine', 'Bodyweight', 'Kettlebell', 'Band', 'Other'] as const;
 const CATEGORIES = ['Compound', 'Isolation', 'Cardio', 'Machine', 'Bodyweight', 'Plyometric'] as const;
-const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'] as const;
-
 const CreateExerciseModal = ({ onClose, onCreate, defaultName = '' }: CreateExerciseModalProps) => {
   const [name, setName] = useState(defaultName);
   const [muscleGroup, setMuscleGroup] = useState<typeof MUSCLE_GROUPS[number]>('Chest');
   const [equipment, setEquipment] = useState<typeof EQUIPMENT_OPTIONS[number]>('Barbell');
   const [category, setCategory] = useState<typeof CATEGORIES[number]>('Compound');
-  const [difficulty, setDifficulty] = useState<typeof DIFFICULTIES[number]>('Intermediate');
+  const [customVideoUrl, setCustomVideoUrl] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1508,10 +1593,10 @@ const CreateExerciseModal = ({ onClose, onCreate, defaultName = '' }: CreateExer
       muscleGroup: muscleGroup as import('../types').MuscleGroup,
       equipment,
       category,
-      difficulty,
       formGuide: [],
       commonMistakes: [],
       tips: [],
+      customVideoUrl: customVideoUrl.trim() || undefined,
     });
   };
 
@@ -1613,27 +1698,21 @@ const CreateExerciseModal = ({ onClose, onCreate, defaultName = '' }: CreateExer
             </div>
           </div>
 
-          {/* Difficulty */}
+          {/* Custom Video URL */}
           <div>
             <label className="block text-[10px] text-[#666] font-mono uppercase mb-2">
-              Difficulty
+              Form Video URL (Optional)
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {DIFFICULTIES.map(diff => (
-                <button
-                  key={diff}
-                  type="button"
-                  onClick={() => setDifficulty(diff)}
-                  className={`py-2 px-3 text-xs font-bold uppercase transition-colors ${
-                    difficulty === diff
-                      ? 'bg-primary text-black'
-                      : 'bg-[#1a1a1a] text-[#666] hover:bg-[#222] hover:text-white'
-                  }`}
-                >
-                  {diff}
-                </button>
-              ))}
-            </div>
+            <input
+              type="url"
+              value={customVideoUrl}
+              onChange={(e) => setCustomVideoUrl(e.target.value)}
+              placeholder="https://youtube.com/watch?v=..."
+              className="w-full bg-[#0a0a0a] border border-[#333] text-white px-4 py-3 font-mono text-sm focus:border-primary focus:outline-none placeholder-[#444]"
+            />
+            <p className="text-[9px] text-[#666] mt-1.5 font-mono">
+              Add a YouTube link for exercise form guidance
+            </p>
           </div>
 
           {/* Submit */}
