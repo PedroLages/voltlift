@@ -48,7 +48,7 @@ import CollapsibleSection from '../components/CollapsibleSection';
 import QuickSettings from '../components/QuickSettings';
 import WeeklyGoalTracker from '../components/WeeklyGoalTracker';
 import { DailyWellnessCheckin } from '../components/DailyWellnessCheckin';
-import { isHealthKitAvailable, requestHealthPermissions } from '../services/healthKitService';
+import { isHealthKitAvailable, requestHealthPermissions, getSleepData, getHRVData, getRestingHRData } from '../services/healthKitService';
 
 // Tactical Section Header Component
 const TacticalHeader = ({ title, statusLabel, statusActive }: { title: string; statusLabel: string; statusActive: boolean }) => (
@@ -190,6 +190,11 @@ const Profile = () => {
     const checkHealthKit = async () => {
       const available = await isHealthKitAvailable();
       setHealthKitAvailable(available);
+
+      // If HealthKit is already enabled, fetch today's data
+      if (available && settings.healthKitEnabled) {
+        await fetchHealthKitData();
+      }
     };
     checkHealthKit();
   }, []);
@@ -200,9 +205,35 @@ const Profile = () => {
       const granted = await requestHealthPermissions();
       if (granted) {
         updateSettings({ healthKitEnabled: true });
+        // Fetch today's health data
+        await fetchHealthKitData();
       }
     } else {
       updateSettings({ healthKitEnabled: false });
+    }
+  };
+
+  // Fetch HealthKit data for today
+  const fetchHealthKitData = async () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    try {
+      const [sleepHours, hrv, restingHR] = await Promise.all([
+        getSleepData(today),
+        getHRVData(today),
+        getRestingHRData(today),
+      ]);
+
+      // Update daily log with HealthKit data
+      logDailyBio(today, {
+        sleepHours: sleepHours || undefined,
+        hrv: hrv || undefined,
+        restingHR: restingHR || undefined,
+      });
+
+      console.log('✅ HealthKit data fetched:', { sleepHours, hrv, restingHR });
+    } catch (error) {
+      console.error('Failed to fetch HealthKit data:', error);
     }
   };
 
