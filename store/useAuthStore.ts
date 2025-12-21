@@ -308,18 +308,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 }));
 
-// Timeout: If auth doesn't respond in 3 seconds, continue loading anyway
+// Timeout: If auth doesn't respond in 5 seconds, continue loading anyway
+// Increased timeout for local bundle loading (Firebase init takes longer)
 setTimeout(() => {
   const state = useAuthStore.getState();
   if (state.isAuthLoading) {
-    console.warn('⏱️  Auth check timed out after 2 seconds, continuing without auth...');
+    console.warn('⏱️  Auth check timed out after 5 seconds, continuing without auth...');
     useAuthStore.setState({
       isAuthLoading: false,
       isAuthenticated: false,
       user: null,
     });
   }
-}, 2000);
+}, 5000);
 
 // Listen for auth changes (including persistence restoration on app startup)
 backend.auth.onAuthChange(async (user) => {

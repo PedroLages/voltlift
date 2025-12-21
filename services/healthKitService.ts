@@ -64,13 +64,16 @@ export async function requestHealthPermissions(): Promise<boolean> {
     });
 
     // Check if at least one permission was granted
-    const granted = result.permissions.some(p => p.granted);
+    // Response format: { permissions: { READ_SLEEP: true, READ_HRV: true, ... } }
+    const permissionValues = Object.values(result.permissions);
+    const granted = permissionValues.some(value => value === true);
 
     if (!granted) {
       console.warn('No health permissions granted');
       return false;
     }
 
+    console.log('✅ HealthKit permissions granted successfully');
     return true;
   } catch (error) {
     console.error('HealthKit permission request failed:', error);
