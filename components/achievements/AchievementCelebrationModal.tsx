@@ -36,7 +36,7 @@ export function AchievementCelebrationModal({
     setIsAnimating(false);
     setShowConfetti(false);
     return undefined;
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !achievement) return null;
 

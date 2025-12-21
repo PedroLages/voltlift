@@ -11,12 +11,12 @@ import {
   updateStreak,
   getRankForXP,
   getXPToNextLevel,
-  checkAchievementProgress,
+  checkAchievements,
   processWorkoutCompletion,
   createInitialGamificationState,
   IRON_RANKS,
-  type GamificationState,
 } from '../gamification';
+import type { GamificationState } from '../../types';
 import type { WorkoutSession, ExerciseLog } from '../../types';
 
 // Helper to get relative dates (future-proof test dates)
@@ -269,12 +269,12 @@ describe('getRankForXP', () => {
   test('should return first rank for 0 XP', () => {
     const rank = getRankForXP(0);
     expect(rank.level).toBe(1);
-    expect(rank.name).toBe('NOVICE');
+    expect(rank.name).toBe('ROOKIE');
   });
 
   test('should return correct rank for each tier', () => {
-    expect(getRankForXP(0).name).toBe('NOVICE');
-    expect(getRankForXP(500).name).toBe('APPRENTICE');
+    expect(getRankForXP(0).name).toBe('ROOKIE');
+    expect(getRankForXP(500).name).toBe('REGULAR');
     expect(getRankForXP(1500).name).toBe('WARRIOR');
     expect(getRankForXP(4000).name).toBe('CHAMPION');
     expect(getRankForXP(10000).name).toBe('LEGEND');
@@ -288,9 +288,9 @@ describe('getRankForXP', () => {
   });
 
   test('should handle boundary values correctly', () => {
-    expect(getRankForXP(499).name).toBe('NOVICE'); // Just before threshold
-    expect(getRankForXP(500).name).toBe('APPRENTICE'); // At threshold
-    expect(getRankForXP(501).name).toBe('APPRENTICE'); // Just after
+    expect(getRankForXP(499).name).toBe('ROOKIE'); // Just before threshold
+    expect(getRankForXP(500).name).toBe('REGULAR'); // At threshold
+    expect(getRankForXP(501).name).toBe('REGULAR'); // Just after
   });
 });
 
@@ -444,9 +444,9 @@ describe('processWorkoutCompletion', () => {
 
     const result = processWorkoutCompletion(state, workout, 1, 3000);
 
-    expect(result.newState.xpTransactions).toHaveLength(1);
-    expect(result.newState.xpTransactions[0].amount).toBe(result.xpEarned.totalXP);
-    expect(result.newState.xpTransactions[0].reason).toBe('Workout Completed');
+    expect(result.newState.xpHistory).toHaveLength(1);
+    expect(result.newState.xpHistory[0].amount).toBe(result.xpEarned.totalXP);
+    expect(result.newState.xpHistory[0].reason).toBe('Workout Completed');
   });
 
   test('should maintain streak correctly', () => {
