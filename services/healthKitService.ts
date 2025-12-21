@@ -15,7 +15,7 @@
  * Supports: sleep, hrv, resting-heart-rate, heart-rate, and 25+ other metrics
  */
 
-import { CapacitorHealthExtended } from '@flomentumsolutions/capacitor-health-extended';
+import { Health } from '@flomentumsolutions/capacitor-health-extended';
 import { Capacitor } from '@capacitor/core';
 
 export interface HealthData {
@@ -34,7 +34,7 @@ export async function isHealthKitAvailable(): Promise<boolean> {
   }
 
   try {
-    const result = await CapacitorHealthExtended.isHealthAvailable();
+    const result = await Health.isHealthAvailable();
     return result.available;
   } catch (error) {
     console.error('HealthKit availability check failed:', error);
@@ -54,7 +54,7 @@ export async function isHealthKitAvailable(): Promise<boolean> {
  */
 export async function requestHealthPermissions(): Promise<boolean> {
   try {
-    const result = await CapacitorHealthExtended.requestHealthPermissions({
+    const result = await Health.requestHealthPermissions({
       permissions: [
         'READ_SLEEP',
         'READ_HRV',
@@ -87,7 +87,7 @@ export async function requestHealthPermissions(): Promise<boolean> {
 export async function getSleepData(date: string): Promise<number> {
   try {
     // Query aggregated sleep data for the day
-    const result = await CapacitorHealthExtended.queryAggregated({
+    const result = await Health.queryAggregated({
       dataType: 'sleep',
       startDate: `${date}T00:00:00.000Z`,
       endDate: `${date}T23:59:59.999Z`,
@@ -121,7 +121,7 @@ export async function getSleepData(date: string): Promise<number> {
 export async function getHRVData(date: string): Promise<number | undefined> {
   try {
     // Query latest HRV sample (typically morning measurement)
-    const result = await CapacitorHealthExtended.queryLatestSample({
+    const result = await Health.queryLatestSample({
       dataType: 'hrv'
     });
 
@@ -152,7 +152,7 @@ export async function getHRVData(date: string): Promise<number | undefined> {
 export async function getRestingHRData(date: string): Promise<number | undefined> {
   try {
     // Query latest resting HR sample
-    const result = await CapacitorHealthExtended.queryLatestSample({
+    const result = await Health.queryLatestSample({
       dataType: 'resting-heart-rate'
     });
 
