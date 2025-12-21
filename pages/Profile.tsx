@@ -29,7 +29,9 @@ import {
   Radio,
   Crosshair,
   Brain,
-  Heart
+  Heart,
+  Award,
+  Trophy
 } from 'lucide-react';
 import { saveImageToDB, getImageFromDB } from '../utils/db';
 import { EXERCISE_LIBRARY } from '../constants';
@@ -49,6 +51,8 @@ import QuickSettings from '../components/QuickSettings';
 import WeeklyGoalTracker from '../components/WeeklyGoalTracker';
 import { DailyWellnessCheckin } from '../components/DailyWellnessCheckin';
 import { isHealthKitAvailable, requestHealthPermissions, getSleepData, getHRVData, getRestingHRData } from '../services/healthKitService';
+import { AchievementsGrid } from '../components/achievements';
+import { ACHIEVEMENTS } from '../services/gamification';
 
 // Tactical Section Header Component
 const TacticalHeader = ({ title, statusLabel, statusActive }: { title: string; statusLabel: string; statusActive: boolean }) => (
@@ -129,7 +133,7 @@ const MilitaryToggle = ({ enabled, onToggle, label }: { enabled: boolean; onTogg
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData, resetAllData, dailyLogs } = useStore();
+  const { settings, updateSettings, history, customExerciseVisuals, saveExerciseVisual, syncStatus, syncData, resetAllData, dailyLogs, gamification, logDailyBio } = useStore();
   const { isAuthenticated, user, logout } = useAuthStore();
 
   // State
@@ -360,6 +364,10 @@ const Profile = () => {
     sess.logs.forEach(l => l.sets.forEach(s => { if(s.completed) vol += s.weight * s.reps; }));
     return acc + vol;
   }, 0);
+
+  // Achievement stats
+  const unlockedAchievementsCount = gamification?.unlockedAchievements?.length || 0;
+  const totalAchievements = ACHIEVEMENTS.length;
 
   const toggleEquipment = (eq: string) => {
     const current = settings.availableEquipment;
@@ -723,6 +731,29 @@ const Profile = () => {
       {showYearInReview && (
         <YearInReview year={new Date().getFullYear()} onClose={() => setShowYearInReview(false)} />
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════════════
+          SECTION GROUP: COMBAT RECORD
+          Achievements, badges, and progress milestones
+      ═══════════════════════════════════════════════════════════════════════════════ */}
+      <div className="mt-10 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+          <h2 className="text-[10px] font-black italic uppercase tracking-[0.3em] text-primary/80">⌜ Combat Record ⌟</h2>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+        </div>
+      </div>
+
+      {/* Achievements */}
+      <CollapsibleSection
+        title="Achievement Vault"
+        icon={<Award size={18} className="text-primary" />}
+        defaultExpanded={false}
+        summary={`${unlockedAchievementsCount}/${totalAchievements} unlocked`}
+        tier="high"
+      >
+        <AchievementsGrid />
+      </CollapsibleSection>
 
       {/* ═══════════════════════════════════════════════════════════════════════════════
           SECTION GROUP: BIOMETRICS & RECOVERY
