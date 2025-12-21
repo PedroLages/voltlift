@@ -77,8 +77,21 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
     stressLevel: 3,
   });
 
-  // Calculate result from inputs (no need for separate state)
-  const result = useMemo(() => calculateReadinessScore(inputs), [inputs]);
+  // Calculate result from inputs with error handling
+  const result = useMemo(() => {
+    try {
+      return calculateReadinessScore(inputs);
+    } catch (error) {
+      console.error('Readiness calculation failed:', error);
+      // Fallback to neutral score
+      return {
+        score: 70,
+        category: 'yellow' as const,
+        recommendation: 'Unable to calculate readiness. Proceed with caution.',
+        adjustmentFactor: 1.0,
+      };
+    }
+  }, [inputs]);
 
   const handleInputChange = (metric: ReadinessMetric, value: number) => {
     setInputs({ ...inputs, [metric]: value });
@@ -97,8 +110,21 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
       sorenessLevel: 3,
       stressLevel: 3,
     };
-    const defaultResult = calculateReadinessScore(defaultInputs);
-    onSubmit(defaultInputs, defaultResult);
+
+    try {
+      const defaultResult = calculateReadinessScore(defaultInputs);
+      onSubmit(defaultInputs, defaultResult);
+    } catch (error) {
+      console.error('Readiness calculation failed on skip:', error);
+      // Fallback to neutral score
+      onSubmit(defaultInputs, {
+        score: 70,
+        category: 'yellow' as const,
+        recommendation: 'Unable to calculate readiness. Proceed with caution.',
+        adjustmentFactor: 1.0,
+      });
+    }
+
     onClose();
   };
 

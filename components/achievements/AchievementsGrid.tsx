@@ -135,6 +135,8 @@ export function AchievementsGrid({ compact = false }: AchievementsGridProps) {
             <button
               key={category}
               onClick={() => setFilter(category)}
+              aria-label={`Filter by ${category} achievements - ${categoryUnlocked} of ${categoryAchievements.length} unlocked`}
+              aria-pressed={isActive}
               className={`
                 px-3 py-1.5 border-2 transition-all text-xs font-bold uppercase flex items-center gap-2
                 ${isActive
