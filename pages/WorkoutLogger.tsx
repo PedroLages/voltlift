@@ -1568,9 +1568,11 @@ const WorkoutLogger = () => {
       )}
 
       {/* Workout Completion Modal */}
-      {showCompletionModal && (
+      {showCompletionModal && activeWorkout && (
         <Suspense fallback={<div />}>
           <WorkoutCompletionModal
+            workout={activeWorkout}
+            settings={settings}
             onFinish={handleCompleteWorkout}
             onSaveDraft={handleSaveDraft}
             onCancel={handleDiscardWorkout}
