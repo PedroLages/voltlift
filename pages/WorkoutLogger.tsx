@@ -11,8 +11,11 @@ import { formatTime } from '../utils/formatters';
 import { calculatePlateLoading, formatWeight } from '../utils/conversions';
 import { AISuggestionBadge, VolumeWarningBadge, RecoveryScore } from '../components/AISuggestionBadge';
 import { checkAllPRs, PRDetection } from '../services/strengthScore';
+import { checkAchievements, awardXP } from '../services/gamification';
+import { Achievement } from '../types';
 import SwipeableRow from '../components/SwipeableRow';
 import Toast from '../components/Toast';
+import { AchievementToast } from '../components/AchievementToast';
 import { Skeleton } from '../components/Skeleton';
 import KeyboardToolbar from '../components/KeyboardToolbar';
 import { InAppVideoPlayer } from '../components/InAppVideoPlayer';
@@ -27,9 +30,10 @@ const WorkoutCompletionModal = lazy(() => import('../components/WorkoutCompletio
 const AMAPCompletionModal = lazy(() => import('../components/AMAPCompletionModal'));
 const CycleCompletionModal = lazy(() => import('../components/CycleCompletionModal'));
 const PostWorkoutFeedback = lazy(() => import('../components/PostWorkoutFeedback'));
+const AchievementCelebrationModal = lazy(() => import('../components/achievements/AchievementCelebrationModal'));
 
 const WorkoutLogger = () => {
-  const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning, undoStack, restoreLastDeleted, clearUndoStack, toggleFavoriteExercise, getAllExercises, createCustomExercise, customExercises } = useStore();
+  const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning, undoStack, restoreLastDeleted, clearUndoStack, toggleFavoriteExercise, getAllExercises, createCustomExercise, customExercises, gamification, updateGamification } = useStore();
   const navigate = useNavigate();
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [showCreateExercise, setShowCreateExercise] = useState(false);
@@ -79,6 +83,10 @@ const WorkoutLogger = () => {
 
   // PR Celebration State (Enhanced Multi-PR Detection)
   const [activePRs, setActivePRs] = useState<{ prs: PRDetection[]; exerciseName: string } | null>(null);
+
+  // Achievement Celebration State
+  const [activeAchievement, setActiveAchievement] = useState<Achievement | null>(null);
+  const [achievementToast, setAchievementToast] = useState<Achievement | null>(null);
 
   // Video Player State
   const [activeVideo, setActiveVideo] = useState<{ videoUrl: string; exerciseName: string } | null>(null);
@@ -404,6 +412,41 @@ const WorkoutLogger = () => {
                               achievement
                           );
                       }
+
+                      // Check for newly unlocked achievements after PR
+                      if (gamification) {
+                          const newlyUnlocked = checkAchievements(gamification);
+                          if (newlyUnlocked.length > 0) {
+                              // Show first achievement celebration (will show more after closing)
+                              const firstAchievement = newlyUnlocked[0];
+
+                              // Update gamification state with unlocked achievements
+                              let updatedGamification = { ...gamification };
+                              for (const achievement of newlyUnlocked) {
+                                  updatedGamification = awardXP(
+                                      updatedGamification,
+                                      achievement.xpReward,
+                                      'achievement',
+                                      `Unlocked: ${achievement.name}`
+                                  );
+                                  updatedGamification.unlockedAchievements = [
+                                      ...updatedGamification.unlockedAchievements,
+                                      {
+                                          achievementId: achievement.id,
+                                          unlockedAt: Date.now(),
+                                          xpAwarded: achievement.xpReward,
+                                      },
+                                  ];
+                              }
+                              updateGamification(updatedGamification);
+
+                              // Show toast notification immediately
+                              setAchievementToast(firstAchievement);
+
+                              // Show celebration modal for first achievement
+                              setActiveAchievement(firstAchievement);
+                          }
+                      }
                   }
               }
           }
@@ -672,6 +715,26 @@ const WorkoutLogger = () => {
                 autoCloseDuration={5000}
             />
           </Suspense>
+      )}
+
+      {/* Achievement Celebration Modal */}
+      {activeAchievement && (
+          <Suspense fallback={<div />}>
+            <AchievementCelebrationModal
+                isOpen={true}
+                onClose={() => setActiveAchievement(null)}
+                achievement={activeAchievement}
+            />
+          </Suspense>
+      )}
+
+      {/* Achievement Toast Notification */}
+      {achievementToast && (
+          <AchievementToast
+              achievement={achievementToast}
+              onClose={() => setAchievementToast(null)}
+              duration={4000}
+          />
       )}
 
       {/* Plate Calculator Modal */}

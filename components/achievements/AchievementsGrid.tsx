@@ -20,7 +20,7 @@ type CategoryFilter = 'all' | Achievement['category'];
 
 const CATEGORY_ICONS: Record<Achievement['category'], React.ReactNode> = {
   workout: <Target className="w-4 h-4" />,
-  pr: <Trophy className="w-4 h-4" />,
+  strength: <Trophy className="w-4 h-4" />,
   streak: <Flame className="w-4 h-4" />,
   volume: <Zap className="w-4 h-4" />,
   milestone: <Star className="w-4 h-4" />,
@@ -31,7 +31,11 @@ export function AchievementsGrid({ compact = false }: AchievementsGridProps) {
   const { gamification } = useStore();
 
   // Get unlocked achievement IDs
-  const unlockedIds = gamification?.unlockedAchievements || [];
+  const unlockedIds = useMemo(() => {
+    return new Set(
+      gamification?.unlockedAchievements?.map(a => a.achievementId) || []
+    );
+  }, [gamification?.unlockedAchievements]);
 
   // Filter achievements by category
   const filteredAchievements = useMemo(() => {
@@ -42,7 +46,7 @@ export function AchievementsGrid({ compact = false }: AchievementsGridProps) {
   // Calculate progress for each achievement
   const getAchievementProgress = (achievement: Achievement): number => {
     if (!gamification) return 0;
-    if (unlockedIds.includes(achievement.id)) return 1;
+    if (unlockedIds.has(achievement.id)) return 1;
 
     const { type, value } = achievement.requirement;
 
@@ -64,7 +68,7 @@ export function AchievementsGrid({ compact = false }: AchievementsGridProps) {
 
   // Stats
   const totalAchievements = ACHIEVEMENTS.length;
-  const unlockedCount = unlockedIds.length;
+  const unlockedCount = unlockedIds.size;
   const completionPercentage = Math.round((unlockedCount / totalAchievements) * 100);
 
   // Get unique categories
@@ -125,7 +129,7 @@ export function AchievementsGrid({ compact = false }: AchievementsGridProps) {
           const categoryAchievements = category === 'all'
             ? ACHIEVEMENTS
             : ACHIEVEMENTS.filter(a => a.category === category);
-          const categoryUnlocked = categoryAchievements.filter(a => unlockedIds.includes(a.id)).length;
+          const categoryUnlocked = categoryAchievements.filter(a => unlockedIds.has(a.id)).length;
 
           return (
             <button
@@ -156,7 +160,7 @@ export function AchievementsGrid({ compact = false }: AchievementsGridProps) {
       {/* Achievements Grid */}
       <div className={`grid gap-3 ${compact ? 'grid-cols-4 sm:grid-cols-6' : 'grid-cols-1 sm:grid-cols-2'}`}>
         {filteredAchievements.map((achievement) => {
-          const isUnlocked = unlockedIds.includes(achievement.id);
+          const isUnlocked = unlockedIds.has(achievement.id);
           const progress = getAchievementProgress(achievement);
 
           return (

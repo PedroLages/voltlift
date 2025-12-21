@@ -6,24 +6,56 @@ import { Plus, ChevronRight, Dumbbell, PenTool, Trash2, Play, CalendarRange, X, 
 import { Program, WorkoutSession } from '../types';
 import { EXERCISE_LIBRARY } from '../constants';
 import EmptyState from '../components/EmptyState';
+import { ReadinessCheckModal } from '../components/ReadinessCheckModal';
+import { ReadinessInputs, ReadinessResult } from '../services/readinessScore';
 
 // Lazy load heavy components
 const TemplateEditor = lazy(() => import('../components/TemplateEditor'));
 
 const Lift = () => {
   const navigate = useNavigate();
-  const { templates, programs, startWorkout, deleteTemplate, duplicateTemplate, activateProgram, settings } = useStore();
+  const { templates, programs, startWorkout, deleteTemplate, duplicateTemplate, activateProgram, settings, logDailyBio } = useStore();
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<WorkoutSession | null>(null);
 
-  const handleStartTemplate = (id: string) => {
-    startWorkout(id);
+  // Readiness check state
+  const [showReadinessCheck, setShowReadinessCheck] = useState(false);
+  const [pendingWorkoutTemplate, setPendingWorkoutTemplate] = useState<string | null>(null);
+
+  const handleReadinessSubmit = (inputs: ReadinessInputs, result: ReadinessResult) => {
+    // Store readiness check in daily log
+    const today = new Date().toISOString().split('T')[0];
+    logDailyBio(today, {
+      sleepQuality: inputs.sleepQuality,
+      perceivedRecovery: inputs.perceivedRecovery,
+      muscleSoreness: inputs.sorenessLevel,
+      stressLevel: inputs.stressLevel,
+    });
+
+    // Start the workout
+    if (pendingWorkoutTemplate) {
+      startWorkout(pendingWorkoutTemplate);
+    } else {
+      startWorkout();
+    }
+
+    // Navigate to workout logger
     navigate('/workout');
+
+    // Reset state
+    setPendingWorkoutTemplate(null);
+  };
+
+  const handleStartTemplate = (id: string) => {
+    // Show readiness check before starting
+    setPendingWorkoutTemplate(id);
+    setShowReadinessCheck(true);
   };
 
   const handleQuickStart = () => {
-    startWorkout();
-    navigate('/workout');
+    // Show readiness check before starting
+    setPendingWorkoutTemplate(null);
+    setShowReadinessCheck(true);
   };
 
   const handleEditTemplate = (e: React.MouseEvent, template: WorkoutSession) => {
@@ -247,8 +279,8 @@ const Lift = () => {
                     <button
                       onClick={() => {
                         if (nextTemplate) {
-                          startWorkout(nextTemplate.id);
-                          navigate('/workout');
+                          setPendingWorkoutTemplate(nextTemplate.id);
+                          setShowReadinessCheck(true);
                         }
                       }}
                       className="flex-1 bg-primary text-black py-4 font-black italic uppercase text-lg tracking-wider hover:bg-white transition-colors shadow-[0_4px_20px_rgba(204,255,0,0.3)] hover:shadow-[0_4px_30px_rgba(204,255,0,0.5)] flex items-center justify-center gap-2 group"
@@ -393,6 +425,16 @@ const Lift = () => {
           />
         </Suspense>
       )}
+
+      {/* Readiness Check Modal */}
+      <ReadinessCheckModal
+        isOpen={showReadinessCheck}
+        onClose={() => {
+          setShowReadinessCheck(false);
+          setPendingWorkoutTemplate(null);
+        }}
+        onSubmit={handleReadinessSubmit}
+      />
 
     </div>
   );

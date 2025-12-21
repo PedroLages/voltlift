@@ -7,11 +7,15 @@
  *
  * Data imported:
  * - Sleep duration (for recovery score calculation)
- * - Heart rate variability (optional, for fatigue detection)
- * - Resting heart rate (optional, for recovery tracking)
+ * - Heart rate variability (for fatigue detection)
+ * - Resting heart rate (for recovery tracking)
+ * - Heart rate (for workout intensity)
+ *
+ * Uses: @flomentumsolutions/capacitor-health-extended
+ * Supports: sleep, hrv, resting-heart-rate, heart-rate, and 25+ other metrics
  */
 
-import { Health } from '@capgo/capacitor-health';
+import { Health } from '@flomentumsolutions/capacitor-health-extended';
 import { Capacitor } from '@capacitor/core';
 
 export interface HealthData {
@@ -30,7 +34,7 @@ export async function isHealthKitAvailable(): Promise<boolean> {
   }
 
   try {
-    const result = await Health.isAvailable();
+    const result = await Health.isHealthAvailable();
     return result.available;
   } catch (error) {
     console.error('HealthKit availability check failed:', error);
@@ -41,13 +45,35 @@ export async function isHealthKitAvailable(): Promise<boolean> {
 /**
  * Request permissions to read health data
  * Call this during onboarding or when user enables the feature
+ *
+ * Requests permissions for:
+ * - READ_SLEEP - Sleep duration and quality
+ * - READ_HRV - Heart rate variability (recovery indicator)
+ * - READ_RESTING_HEART_RATE - Resting heart rate (fitness indicator)
+ * - READ_HEART_RATE - Active heart rate (workout intensity)
  */
 export async function requestHealthPermissions(): Promise<boolean> {
   try {
-    await Health.requestPermission({
-      read: ['sleep', 'heart_rate_variability_sdnn', 'resting_heart_rate'],
-      write: [] // We only read, never write
+    const result = await Health.requestHealthPermissions({
+      permissions: [
+        'READ_SLEEP',
+        'READ_HRV',
+        'READ_RESTING_HEART_RATE',
+        'READ_HEART_RATE'
+      ]
     });
+
+    // Check if at least one permission was granted
+    // Response format: { permissions: { READ_SLEEP: true, READ_HRV: true, ... } }
+    const permissionValues = Object.values(result.permissions);
+    const granted = permissionValues.some(value => value === true);
+
+    if (!granted) {
+      console.warn('No health permissions granted');
+      return false;
+    }
+
+    console.log('✅ HealthKit permissions granted successfully');
     return true;
   } catch (error) {
     console.error('HealthKit permission request failed:', error);
@@ -63,25 +89,25 @@ export async function requestHealthPermissions(): Promise<boolean> {
  */
 export async function getSleepData(date: string): Promise<number> {
   try {
-    const result = await Health.queryData({
-      type: 'sleep',
+    // Query aggregated sleep data for the day
+    const result = await Health.queryAggregated({
+      dataType: 'sleep',
       startDate: `${date}T00:00:00.000Z`,
-      endDate: `${date}T23:59:59.999Z`
+      endDate: `${date}T23:59:59.999Z`,
+      bucket: 'day'
     });
 
-    if (!result.data || result.data.length === 0) {
+    if (!result.samples || result.samples.length === 0) {
       return 0; // No sleep data available
     }
 
-    // Sum all sleep sessions for this date
-    const totalMinutes = result.data.reduce((sum: number, session: any) => {
-      const start = new Date(session.startDate).getTime();
-      const end = new Date(session.endDate).getTime();
-      const minutes = (end - start) / (1000 * 60);
-      return sum + minutes;
+    // Get total sleep minutes for the day
+    const totalMinutes = result.samples.reduce((sum, sample) => {
+      return sum + (sample.value || 0);
     }, 0);
 
-    return Math.round((totalMinutes / 60) * 10) / 10; // Round to 1 decimal place
+    // Convert minutes to hours with 1 decimal place
+    return Math.round((totalMinutes / 60) * 10) / 10;
   } catch (error) {
     console.error('Failed to fetch sleep data:', error);
     return 0;
@@ -97,22 +123,22 @@ export async function getSleepData(date: string): Promise<number> {
  */
 export async function getHRVData(date: string): Promise<number | undefined> {
   try {
-    const result = await Health.queryData({
-      type: 'heart_rate_variability_sdnn',
-      startDate: `${date}T00:00:00.000Z`,
-      endDate: `${date}T23:59:59.999Z`
+    // Query latest HRV sample (typically morning measurement)
+    const result = await Health.queryLatestSample({
+      dataType: 'hrv'
     });
 
-    if (!result.data || result.data.length === 0) {
+    if (!result.sample || !result.sample.value) {
       return undefined;
     }
 
-    // Calculate average HRV for the day
-    const avgHRV = result.data.reduce((sum: number, reading: any) => {
-      return sum + reading.value;
-    }, 0) / result.data.length;
+    // Check if sample is from the requested date
+    const sampleDate = new Date(result.sample.timestamp).toISOString().split('T')[0];
+    if (sampleDate !== date) {
+      return undefined; // Sample not from requested date
+    }
 
-    return Math.round(avgHRV);
+    return Math.round(result.sample.value);
   } catch (error) {
     console.error('Failed to fetch HRV data:', error);
     return undefined;
@@ -128,22 +154,22 @@ export async function getHRVData(date: string): Promise<number | undefined> {
  */
 export async function getRestingHRData(date: string): Promise<number | undefined> {
   try {
-    const result = await Health.queryData({
-      type: 'resting_heart_rate',
-      startDate: `${date}T00:00:00.000Z`,
-      endDate: `${date}T23:59:59.999Z`
+    // Query latest resting HR sample
+    const result = await Health.queryLatestSample({
+      dataType: 'resting-heart-rate'
     });
 
-    if (!result.data || result.data.length === 0) {
+    if (!result.sample || !result.sample.value) {
       return undefined;
     }
 
-    // Calculate average resting HR for the day
-    const avgRHR = result.data.reduce((sum: number, reading: any) => {
-      return sum + reading.value;
-    }, 0) / result.data.length;
+    // Check if sample is from the requested date
+    const sampleDate = new Date(result.sample.timestamp).toISOString().split('T')[0];
+    if (sampleDate !== date) {
+      return undefined; // Sample not from requested date
+    }
 
-    return Math.round(avgRHR);
+    return Math.round(result.sample.value);
   } catch (error) {
     console.error('Failed to fetch resting HR data:', error);
     return undefined;

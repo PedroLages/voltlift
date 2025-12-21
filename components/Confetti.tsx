@@ -1,146 +1,120 @@
-import React, { useEffect, useRef } from 'react';
+/**
+ * Confetti Component
+ *
+ * Lightweight confetti explosion effect for celebrations
+ * Industrial-style particles with VoltLift neon aesthetic
+ */
+
+import React, { useEffect, useState } from 'react';
 
 interface ConfettiProps {
   active: boolean;
-  duration?: number; // Milliseconds (default: 3000)
-  particleCount?: number; // Number of confetti pieces (default: 50)
+  onComplete?: () => void;
+  particleCount?: number;
+  duration?: number;
 }
 
 interface Particle {
+  id: number;
   x: number;
   y: number;
-  vx: number; // Velocity X
-  vy: number; // Velocity Y
   rotation: number;
-  rotationSpeed: number;
-  size: number;
+  scale: number;
   color: string;
-  gravity: number;
+  delay: number;
 }
 
-export const Confetti: React.FC<ConfettiProps> = ({
+const COLORS = [
+  '#ccff00', // primary neon yellow-green
+  '#ffffff', // white
+  '#22c55e', // green
+  '#eab308', // yellow
+];
+
+/**
+ * Explosive confetti effect for achievement unlocks
+ *
+ * Usage:
+ * ```tsx
+ * <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
+ * ```
+ */
+export function Confetti({
   active,
+  onComplete,
+  particleCount = 50,
   duration = 3000,
-  particleCount = 50
-}) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const animationFrameRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number | null>(null);
+}: ConfettiProps) {
+  const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
     if (!active) {
-      // Clear canvas and stop animation
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      if (canvasRef.current) {
-        const ctx = canvasRef.current.getContext('2d');
-        if (ctx) {
-          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        }
-      }
-      particlesRef.current = [];
-      startTimeRef.current = null;
+      setParticles([]);
       return;
     }
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    // Generate random particles
+    const newParticles: Particle[] = Array.from({ length: particleCount }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100, // 0-100% of screen width
+      y: -10, // Start above screen
+      rotation: Math.random() * 360,
+      scale: 0.5 + Math.random() * 0.5, // 0.5-1.0x
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      delay: Math.random() * 200, // Stagger start times
+    }));
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    setParticles(newParticles);
 
-    // Set canvas size to window size
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Clean up after animation completes
+    const timer = setTimeout(() => {
+      setParticles([]);
+      onComplete?.();
+    }, duration);
 
-    // Initialize particles
-    const colors = ['#ccff00', '#ffffff', '#ff6b6b', '#4ecdc4', '#ffe66d', '#00d9ff'];
-    const particles: Particle[] = [];
+    return () => clearTimeout(timer);
+  }, [active, particleCount, duration, onComplete]);
 
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: -20, // Start above screen
-        vx: (Math.random() - 0.5) * 8, // Horizontal velocity
-        vy: Math.random() * -10 - 5, // Initial upward velocity
-        rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 10,
-        size: Math.random() * 10 + 5,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        gravity: Math.random() * 0.3 + 0.2
-      });
-    }
-
-    particlesRef.current = particles;
-    startTimeRef.current = Date.now();
-
-    // Animation loop
-    const animate = () => {
-      if (!canvas || !ctx) return;
-
-      const now = Date.now();
-      const elapsed = startTimeRef.current ? now - startTimeRef.current : 0;
-
-      // Stop animation after duration
-      if (elapsed > duration) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        animationFrameRef.current = null;
-        return;
-      }
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Update and draw particles
-      particlesRef.current.forEach(particle => {
-        // Update physics
-        particle.vy += particle.gravity; // Apply gravity
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-        particle.rotation += particle.rotationSpeed;
-
-        // Bounce off sides
-        if (particle.x < 0 || particle.x > canvas.width) {
-          particle.vx *= -0.8;
-          particle.x = Math.max(0, Math.min(canvas.width, particle.x));
-        }
-
-        // Don't render if off-screen
-        if (particle.y > canvas.height + 50) return;
-
-        // Draw confetti piece (rectangle)
-        ctx.save();
-        ctx.translate(particle.x, particle.y);
-        ctx.rotate((particle.rotation * Math.PI) / 180);
-        ctx.fillStyle = particle.color;
-        ctx.fillRect(-particle.size / 2, -particle.size / 4, particle.size, particle.size / 2);
-        ctx.restore();
-      });
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    // Cleanup on unmount
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [active, duration, particleCount]);
-
-  if (!active) return null;
+  if (!active || particles.length === 0) return null;
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-[100]"
-      style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%' }}
-    />
+    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
+      {particles.map((particle) => (
+        <div
+          key={particle.id}
+          className="absolute w-3 h-3 animate-confetti-fall"
+          style={{
+            left: `${particle.x}%`,
+            top: `${particle.y}%`,
+            transform: `rotate(${particle.rotation}deg) scale(${particle.scale})`,
+            backgroundColor: particle.color,
+            animationDelay: `${particle.delay}ms`,
+            animationDuration: `${duration}ms`,
+            clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)', // Octagon shape
+            boxShadow: `0 0 10px ${particle.color}80`,
+          }}
+        />
+      ))}
+
+      {/* CSS Animation */}
+      <style>{`
+        @keyframes confetti-fall {
+          0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100vh) rotate(720deg);
+            opacity: 0;
+          }
+        }
+
+        .animate-confetti-fall {
+          animation: confetti-fall 3s ease-in forwards;
+        }
+      `}</style>
+    </div>
   );
-};
+}
 
 export default Confetti;

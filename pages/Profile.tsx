@@ -180,6 +180,11 @@ const Profile = () => {
     loadProfilePicture();
   }, [settings.profilePictureUrl]);
 
+  // Debug auth state
+  useEffect(() => {
+    console.log('[Profile] Auth state:', { isAuthenticated, user: user ? { id: user.id, email: user.email, name: user.name } : null });
+  }, [isAuthenticated, user]);
+
   // Check HealthKit availability on mount
   useEffect(() => {
     const checkHealthKit = async () => {
