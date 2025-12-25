@@ -338,10 +338,17 @@ GitHub Actions automatically run code and security reviews on all pull requests.
 - Tailwind CSS styling
 
 ### Known Issues (P0)
-- Workout session state management needs fixing
-- Set logging not properly persisting
-- Rest timer not implemented
-- IndexedDB integration incomplete
+
+**All P0 issues have been tested and resolved!** ✅
+
+Comprehensive testing on 2025-12-25 verified:
+
+- ✅ Workout session state persists correctly through page refresh
+- ✅ Exercise logs and set data persist correctly (weight, reps, RPE all preserved)
+- ✅ Rest timer is fully implemented with countdown, +30s, and skip controls
+- ✅ IndexedDB integration is complete (`VoltLiftAssets` database with `visuals` store)
+
+See [TESTING_SESSION_2025-12-25.md](TESTING_SESSION_2025-12-25.md) and [BUG_RESOLUTION.md](BUG_RESOLUTION.md) for details.
 
 ### Next Steps
-See TODOS.md P0 section for immediate priorities
+See TODOS.md for current development priorities

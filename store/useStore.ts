@@ -182,7 +182,6 @@ export const useStore = create<AppState>()(
       lastLevelUp: false,
 
       startWorkout: (templateId) => {
-        console.log('🟢 [DEBUG] startWorkout called with templateId:', templateId);
         let newWorkout: WorkoutSession;
 
         if (templateId) {
@@ -246,20 +245,7 @@ export const useStore = create<AppState>()(
           };
         }
 
-        console.log('🟢 [DEBUG] New workout created:', {
-          workoutId: newWorkout.id,
-          workoutName: newWorkout.name,
-          status: newWorkout.status,
-          logCount: newWorkout.logs?.length || 0,
-          logs: newWorkout.logs
-        });
-
         set({ activeWorkout: newWorkout, restTimerStart: null, activeBiometrics: [] });
-
-        console.log('✅ [DEBUG] Workout set in store, verifying:', {
-          activeWorkoutExists: !!get().activeWorkout,
-          logCount: get().activeWorkout?.logs?.length
-        });
       },
 
       finishWorkout: () => {
@@ -475,20 +461,11 @@ export const useStore = create<AppState>()(
       },
 
       addExerciseToActive: (exerciseId) => {
-        console.log('🔵 [DEBUG] addExerciseToActive called with exerciseId:', exerciseId);
         const { activeWorkout } = get();
 
         if (!activeWorkout) {
-          console.log('🔴 [DEBUG] No active workout - cannot add exercise!');
           return;
         }
-
-        console.log('🔵 [DEBUG] Current workout before adding exercise:', {
-          workoutId: activeWorkout.id,
-          workoutName: activeWorkout.name,
-          currentLogCount: activeWorkout.logs.length,
-          currentLogs: activeWorkout.logs
-        });
 
         const newLog: ExerciseLog = {
           id: uuidv4(),
@@ -498,32 +475,12 @@ export const useStore = create<AppState>()(
           ]
         };
 
-        console.log('🔵 [DEBUG] Creating new log:', newLog);
-
         set({
           activeWorkout: {
             ...activeWorkout,
             logs: [...activeWorkout.logs, newLog]
           }
         });
-
-        // Verify it was added
-        const updatedWorkout = get().activeWorkout;
-        console.log('✅ [DEBUG] After adding exercise:', {
-          logCount: updatedWorkout?.logs.length,
-          allLogs: updatedWorkout?.logs,
-          lastLog: updatedWorkout?.logs[updatedWorkout.logs.length - 1]
-        });
-
-        // Check localStorage
-        const storage = localStorage.getItem('voltlift-storage');
-        if (storage) {
-          const parsed = JSON.parse(storage);
-          console.log('💾 [DEBUG] localStorage state after add:', {
-            logCount: parsed.state.activeWorkout?.logs?.length,
-            logs: parsed.state.activeWorkout?.logs
-          });
-        }
       },
 
       updateSet: (exerciseIndex, setIndex, updates) => {
@@ -1628,14 +1585,6 @@ export const useStore = create<AppState>()(
               lastLevelUp,
               ...rest
           } = state;
-
-          console.log('💾 [DEBUG] partialize - Persisting state:', {
-            activeWorkoutExists: !!rest.activeWorkout,
-            activeWorkoutId: rest.activeWorkout?.id,
-            activeWorkoutName: rest.activeWorkout?.name,
-            logCount: rest.activeWorkout?.logs?.length || 0,
-            logs: rest.activeWorkout?.logs
-          });
 
           return rest;
       },
