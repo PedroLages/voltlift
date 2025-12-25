@@ -64,7 +64,7 @@ interface AppState {
   
   // Actions
   startWorkout: (templateId?: string) => void;
-  finishWorkout: () => void;
+  finishWorkout: () => WorkoutSession | null;
   saveDraft: () => void;
   resumeWorkout: (draftId: string) => void;
   cancelWorkout: () => void;
@@ -182,6 +182,7 @@ export const useStore = create<AppState>()(
       lastLevelUp: false,
 
       startWorkout: (templateId) => {
+        console.log('🟢 [DEBUG] startWorkout called with templateId:', templateId);
         let newWorkout: WorkoutSession;
 
         if (templateId) {
@@ -244,12 +245,26 @@ export const useStore = create<AppState>()(
             logs: []
           };
         }
+
+        console.log('🟢 [DEBUG] New workout created:', {
+          workoutId: newWorkout.id,
+          workoutName: newWorkout.name,
+          status: newWorkout.status,
+          logCount: newWorkout.logs?.length || 0,
+          logs: newWorkout.logs
+        });
+
         set({ activeWorkout: newWorkout, restTimerStart: null, activeBiometrics: [] });
+
+        console.log('✅ [DEBUG] Workout set in store, verifying:', {
+          activeWorkoutExists: !!get().activeWorkout,
+          logCount: get().activeWorkout?.logs?.length
+        });
       },
 
       finishWorkout: () => {
         const { activeWorkout, history, settings, programs, activeBiometrics } = get();
-        if (!activeWorkout) return;
+        if (!activeWorkout) return null;
 
         const completedWorkout: WorkoutSession = {
           ...activeWorkout,
@@ -411,6 +426,9 @@ export const useStore = create<AppState>()(
 
         // Auto Sync on finish
         get().syncData();
+
+        // Return the completed workout for immediate use
+        return completedWorkout;
       },
 
       saveDraft: () => {
@@ -457,8 +475,20 @@ export const useStore = create<AppState>()(
       },
 
       addExerciseToActive: (exerciseId) => {
+        console.log('🔵 [DEBUG] addExerciseToActive called with exerciseId:', exerciseId);
         const { activeWorkout } = get();
-        if (!activeWorkout) return;
+
+        if (!activeWorkout) {
+          console.log('🔴 [DEBUG] No active workout - cannot add exercise!');
+          return;
+        }
+
+        console.log('🔵 [DEBUG] Current workout before adding exercise:', {
+          workoutId: activeWorkout.id,
+          workoutName: activeWorkout.name,
+          currentLogCount: activeWorkout.logs.length,
+          currentLogs: activeWorkout.logs
+        });
 
         const newLog: ExerciseLog = {
           id: uuidv4(),
@@ -468,12 +498,32 @@ export const useStore = create<AppState>()(
           ]
         };
 
+        console.log('🔵 [DEBUG] Creating new log:', newLog);
+
         set({
           activeWorkout: {
             ...activeWorkout,
             logs: [...activeWorkout.logs, newLog]
           }
         });
+
+        // Verify it was added
+        const updatedWorkout = get().activeWorkout;
+        console.log('✅ [DEBUG] After adding exercise:', {
+          logCount: updatedWorkout?.logs.length,
+          allLogs: updatedWorkout?.logs,
+          lastLog: updatedWorkout?.logs[updatedWorkout.logs.length - 1]
+        });
+
+        // Check localStorage
+        const storage = localStorage.getItem('voltlift-storage');
+        if (storage) {
+          const parsed = JSON.parse(storage);
+          console.log('💾 [DEBUG] localStorage state after add:', {
+            logCount: parsed.state.activeWorkout?.logs?.length,
+            logs: parsed.state.activeWorkout?.logs
+          });
+        }
       },
 
       updateSet: (exerciseIndex, setIndex, updates) => {
@@ -485,22 +535,19 @@ export const useStore = create<AppState>()(
         const newSets = [...currentExercise.sets];
         newSets[setIndex] = { ...newSets[setIndex], ...updates };
         
+        // Auto-fill next set with SAME weight (straight sets pattern)
+        // Progressive overload applies between workouts, not within the same workout
         if (updates.completed === true && setIndex < newSets.length - 1) {
             const currentSet = newSets[setIndex];
             const nextSet = newSets[setIndex + 1];
 
+            // Only auto-fill if next set is empty (weight = 0)
             if (!nextSet.completed && nextSet.weight === 0) {
-                let nextWeight = currentSet.weight;
-                let nextReps = currentSet.reps;
-
-                if (currentSet.reps >= 10) {
-                   nextWeight += 5; 
-                }
-                
+                // Use SAME weight and reps for all working sets (straight sets)
                 newSets[setIndex + 1] = {
                     ...nextSet,
-                    weight: nextWeight,
-                    reps: nextReps 
+                    weight: currentSet.weight,  // Same weight for straight sets
+                    reps: currentSet.reps       // Same rep target
                 };
             }
         }
@@ -1564,7 +1611,7 @@ export const useStore = create<AppState>()(
     },
     {
       name: 'voltlift-storage',
-      version: 5, // Increment when schema changes
+      version: 6, // Increment when schema changes
       partialize: (state) => {
           const {
               customExerciseVisuals,
@@ -1581,6 +1628,15 @@ export const useStore = create<AppState>()(
               lastLevelUp,
               ...rest
           } = state;
+
+          console.log('💾 [DEBUG] partialize - Persisting state:', {
+            activeWorkoutExists: !!rest.activeWorkout,
+            activeWorkoutId: rest.activeWorkout?.id,
+            activeWorkoutName: rest.activeWorkout?.name,
+            logCount: rest.activeWorkout?.logs?.length || 0,
+            logs: rest.activeWorkout?.logs
+          });
+
           return rest;
       },
       migrate: (persistedState: any, version: number) => {
@@ -1628,6 +1684,15 @@ export const useStore = create<AppState>()(
             gamification: persistedState.gamification
               ? { ...initialState, ...persistedState.gamification }
               : initialState,
+          };
+        }
+
+        // Version 6: Update templates to include PRD (Periodization) program templates
+        if (version < 6) {
+          console.log('[Migration v6] Updating templates with PRD program workouts');
+          return {
+            ...persistedState,
+            templates: INITIAL_TEMPLATES, // Refresh templates to pick up PRD Phase 1 & 2 templates
           };
         }
 
