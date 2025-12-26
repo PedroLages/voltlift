@@ -162,9 +162,22 @@ Falls back gracefully when `GEMINI_API_KEY` is not set.
 ## Documentation
 
 ### Project Docs (in `/docs`)
+
+Documentation is organized into subdirectories for easy navigation:
+
+**Core Documentation:**
 - `competitive-analysis.md`: Research on top workout apps (Strong, Hevy, Boostcamp, Setgraph)
 - `feature-requirements.md`: Detailed feature specifications and requirements
 - `user-flows.md`: User journeys, personas, and interaction patterns
+- `design-principles.md`: S-tier mobile-first design standards
+
+**Organized by Category:**
+
+- `/docs/bug-fixes/`: Bug reports, investigations, and resolutions
+- `/docs/testing/`: Test plans, results, and QA documentation
+- `/docs/features/`: Feature implementation docs (HealthKit, REST timer, Settings UX, etc.)
+- `/docs/reviews/`: Design reviews and UX evaluation reports
+- `/docs/summaries/`: Project milestones, week recaps, and achievement summaries
 
 ### Development Roadmap
 - `TODOS.md`: Prioritized feature backlog (P0-P4) with status tracking
