@@ -29,7 +29,9 @@ import {
   Radio,
   Crosshair,
   Brain,
-  Heart
+  Heart,
+  Trophy,
+  X
 } from 'lucide-react';
 import { saveImageToDB, getImageFromDB } from '../utils/db';
 import { EXERCISE_LIBRARY } from '../constants';
@@ -145,6 +147,7 @@ const Profile = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showWellnessCheckin, setShowWellnessCheckin] = useState(false);
   const [healthKitAvailable, setHealthKitAvailable] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'training' | 'biometrics' | 'ai' | 'data'>('overview');
 
   // Validate image URL
   const isValidImageUrl = (url: string | null): url is string => {
@@ -560,8 +563,296 @@ const Profile = () => {
         </div>
       </div>
 
+      {/* Settings Search Bar */}
+      <div className="mb-8 relative">
+        <div className="absolute -top-1 -left-1 w-4 h-4 border-l-2 border-t-2 border-primary pointer-events-none z-10"></div>
+        <div className="absolute -top-1 -right-1 w-4 h-4 border-r-2 border-t-2 border-primary pointer-events-none z-10"></div>
+        <div className="absolute -bottom-1 -left-1 w-4 h-4 border-l-2 border-b-2 border-primary pointer-events-none z-10"></div>
+        <div className="absolute -bottom-1 -right-1 w-4 h-4 border-r-2 border-b-2 border-primary pointer-events-none z-10"></div>
+
+        <div className="relative">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
+          <input
+            type="search"
+            placeholder="SEARCH SETTINGS..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-4 bg-[#0a0a0a] border-2 border-[#222] text-primary font-mono text-sm uppercase tracking-wider placeholder:text-[#444] focus:border-primary focus:outline-none transition-colors min-h-[56px]"
+            aria-label="Search settings"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#666] hover:text-primary transition-colors"
+              aria-label="Clear search"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+
+        {searchQuery && (
+          <div className="absolute left-0 right-0 top-full mt-2 bg-[#0a0a0a] border-2 border-primary p-3 z-20 max-h-64 overflow-y-auto">
+            <div className="text-[10px] font-mono text-[#666] uppercase tracking-wider mb-2">
+              SEARCH RESULTS FOR "{searchQuery}"
+            </div>
+            <div className="text-xs text-[#999] font-mono">
+              {/* Search functionality will filter CollapsibleSections below */}
+              Filtering settings...
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Quick Settings Dashboard */}
+      <section className="mb-12">
+        <div className="relative mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="absolute -left-2 -top-2 w-3 h-3 border-l-2 border-t-2 border-primary"></div>
+              <div className="absolute -right-2 -top-2 w-3 h-3 border-r-2 border-t-2 border-primary"></div>
+              <h2 className="text-xs font-black italic uppercase tracking-[0.2em] text-white px-4 py-2 bg-[#0a0a0a]">
+                QUICK CONFIG
+              </h2>
+              <div className="absolute -left-2 -bottom-2 w-3 h-3 border-l-2 border-b-2 border-primary"></div>
+              <div className="absolute -right-2 -bottom-2 w-3 h-3 border-r-2 border-b-2 border-primary"></div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+            <span className="text-[9px] font-mono uppercase tracking-wider text-primary">
+              READY
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {/* Units Quick Toggle */}
+          <button
+            onClick={() => updateSettings({ units: settings.units === 'kg' ? 'lbs' : 'kg' })}
+            className="bg-[#0a0a0a] border-l-2 border-primary p-4 hover:bg-[#111] transition-colors relative"
+            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)' }}
+            aria-label={`Switch units to ${settings.units === 'kg' ? 'pounds' : 'kilograms'}`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <Target size={16} className="text-primary" />
+              <div className="text-xs font-mono text-primary uppercase tracking-wider">
+                {settings.units.toUpperCase()}
+              </div>
+            </div>
+            <div className="text-[10px] text-[#666] uppercase tracking-[0.15em] font-mono">UNITS</div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 bg-primary/20" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+          </button>
+
+          {/* Rest Timer Quick Access */}
+          <button
+            onClick={() => {
+              const timers = [60, 90, 120, 180, 240, 300];
+              const currentIndex = timers.indexOf(settings.defaultRestTimer);
+              const nextIndex = (currentIndex + 1) % timers.length;
+              updateSettings({ defaultRestTimer: timers[nextIndex] });
+            }}
+            className="bg-[#0a0a0a] border-l-2 border-primary p-4 hover:bg-[#111] transition-colors relative"
+            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)' }}
+            aria-label={`Change rest timer (currently ${settings.defaultRestTimer} seconds)`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <Clock size={16} className="text-primary" />
+              <div className="text-xs font-mono text-primary uppercase tracking-wider">
+                {settings.defaultRestTimer}S
+              </div>
+            </div>
+            <div className="text-[10px] text-[#666] uppercase tracking-[0.15em] font-mono">REST TIMER</div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 bg-primary/20" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+          </button>
+
+          {/* AI Coach Toggle */}
+          <button
+            onClick={() => updateSettings({
+              aiCoach: {
+                enabled: !settings.aiCoach?.enabled,
+                showReasoning: settings.aiCoach?.showReasoning ?? true,
+                aggressiveness: settings.aiCoach?.aggressiveness ?? 'moderate',
+                autoApplyTM: settings.aiCoach?.autoApplyTM ?? false
+              }
+            })}
+            className="bg-[#0a0a0a] border-l-2 border-primary p-4 hover:bg-[#111] transition-colors relative"
+            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)' }}
+            aria-label={`${settings.aiCoach?.enabled ? 'Disable' : 'Enable'} AI Coach`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <Brain size={16} className={settings.aiCoach?.enabled ? 'text-primary' : 'text-[#666]'} />
+              <div className={`text-xs font-mono uppercase tracking-wider ${settings.aiCoach?.enabled ? 'text-primary' : 'text-[#666]'}`}>
+                {settings.aiCoach?.enabled ? 'ON' : 'OFF'}
+              </div>
+            </div>
+            <div className="text-[10px] text-[#666] uppercase tracking-[0.15em] font-mono">AI COACH</div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 bg-primary/20" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+          </button>
+
+          {/* Auto-Progression Toggle */}
+          <button
+            onClick={() => updateSettings({
+              autoProgression: {
+                enabled: !settings.autoProgression?.enabled,
+                upperBodyIncrement: settings.autoProgression?.upperBodyIncrement || (settings.units === 'kg' ? 2.5 : 5),
+                lowerBodyIncrement: settings.autoProgression?.lowerBodyIncrement || (settings.units === 'kg' ? 5 : 10)
+              }
+            })}
+            className="bg-[#0a0a0a] border-l-2 border-primary p-4 hover:bg-[#111] transition-colors relative"
+            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)' }}
+            aria-label={`${settings.autoProgression?.enabled ? 'Disable' : 'Enable'} auto-progression`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <TrendingUp size={16} className={settings.autoProgression?.enabled ? 'text-primary' : 'text-[#666]'} />
+              <div className={`text-xs font-mono uppercase tracking-wider ${settings.autoProgression?.enabled ? 'text-primary' : 'text-[#666]'}`}>
+                {settings.autoProgression?.enabled ? 'ON' : 'OFF'}
+              </div>
+            </div>
+            <div className="text-[10px] text-[#666] uppercase tracking-[0.15em] font-mono">AUTO ++</div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 bg-primary/20" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+          </button>
+
+          {/* Cloud Sync Toggle */}
+          <button
+            onClick={toggleIronCloud}
+            className="bg-[#0a0a0a] border-l-2 border-primary p-4 hover:bg-[#111] transition-colors relative"
+            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)' }}
+            aria-label={`${settings.ironCloud?.enabled ? 'Disable' : 'Enable'} cloud sync`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <Cloud size={16} className={settings.ironCloud?.enabled ? 'text-primary' : 'text-[#666]'} />
+              <div className={`text-xs font-mono uppercase tracking-wider ${settings.ironCloud?.enabled ? 'text-primary' : 'text-[#666]'}`}>
+                {settings.ironCloud?.enabled ? 'ON' : 'OFF'}
+              </div>
+            </div>
+            <div className="text-[10px] text-[#666] uppercase tracking-[0.15em] font-mono">CLOUD SYNC</div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 bg-primary/20" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+          </button>
+
+          {/* Plate Config Link */}
+          <button
+            onClick={() => setShowPlateConfig(!showPlateConfig)}
+            className="bg-[#0a0a0a] border-l-2 border-primary p-4 hover:bg-[#111] transition-colors relative"
+            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)' }}
+            aria-label="Configure available plates"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <Settings size={16} className="text-primary" />
+              <div className="text-xs font-mono text-primary uppercase tracking-wider">
+                {showPlateConfig ? 'HIDE' : 'SHOW'}
+              </div>
+            </div>
+            <div className="text-[10px] text-[#666] uppercase tracking-[0.15em] font-mono">PLATES</div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 bg-primary/20" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+          </button>
+        </div>
+
+        {/* Plate Configuration (shown when toggled) */}
+        {showPlateConfig && (
+          <div className="mt-3 p-4 bg-[#0a0a0a] border border-[#1a1a1a]">
+            <div className="text-xs font-black uppercase text-white tracking-wider mb-3">PLATE INVENTORY</div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {(settings.units === 'kg'
+                ? [25, 20, 15, 10, 5, 2.5, 1.25]
+                : [45, 35, 25, 10, 5, 2.5]
+              ).map(plate => {
+                const currentPlates = settings.availablePlates?.[settings.units] || [];
+                const isChecked = currentPlates.length === 0 || currentPlates.includes(plate);
+                return (
+                  <label
+                    key={plate}
+                    className={`flex items-center gap-3 p-3 border cursor-pointer transition-all min-h-[48px] ${
+                      isChecked ? 'border-primary bg-primary/5' : 'border-[#222] bg-[#0a0a0a] hover:border-[#333]'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        const defaultPlates = settings.units === 'kg'
+                          ? [25, 20, 15, 10, 5, 2.5, 1.25]
+                          : [45, 35, 25, 10, 5, 2.5];
+
+                        let newPlates: number[];
+                        if (currentPlates.length === 0) {
+                          newPlates = e.target.checked ? defaultPlates : defaultPlates.filter(p => p !== plate);
+                        } else {
+                          newPlates = e.target.checked
+                            ? [...currentPlates, plate].sort((a, b) => b - a)
+                            : currentPlates.filter(p => p !== plate);
+                        }
+
+                        updateSettings({
+                          availablePlates: {
+                            ...settings.availablePlates,
+                            [settings.units]: newPlates
+                          }
+                        });
+                      }}
+                      className="w-6 h-6 accent-primary"
+                      aria-label={`${plate} ${settings.units} plate`}
+                    />
+                    <span className="text-sm font-mono text-white">{plate} {settings.units}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Tab Navigation */}
+      <section className="mb-8 sticky top-0 z-20 bg-black pb-4 -mx-6 px-6">
+        <div className="relative">
+          <div className="absolute -top-1 -left-1 w-3 h-3 border-l-2 border-t-2 border-primary"></div>
+          <div className="absolute -top-1 -right-1 w-3 h-3 border-r-2 border-t-2 border-primary"></div>
+
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-1 min-w-max bg-[#0a0a0a] border-2 border-[#222] p-1">
+              {[
+                { id: 'overview', label: 'OVERVIEW', icon: User },
+                { id: 'training', label: 'TRAINING', icon: Target },
+                { id: 'biometrics', label: 'BIOMETRICS', icon: Activity },
+                { id: 'ai', label: 'AI', icon: Brain },
+                { id: 'data', label: 'DATA', icon: Shield }
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                    className={`flex-1 px-4 py-3 font-black italic uppercase tracking-[0.15em] text-[10px] flex items-center justify-center gap-2 transition-all min-h-[48px] relative overflow-hidden group ${
+                      isActive
+                        ? 'bg-primary text-black'
+                        : 'bg-[#000] text-[#666] hover:text-primary hover:bg-[#0a0a0a]'
+                    }`}
+                    style={isActive ? { clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%)' } : undefined}
+                    aria-label={`Switch to ${tab.label} settings`}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    {!isActive && (
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-10 bg-gradient-to-r from-transparent via-primary to-transparent pointer-events-none"></div>
+                    )}
+                    <Icon size={12} />
+                    <span>{tab.label}</span>
+                    {isActive && (
+                      <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-black/30" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="absolute -bottom-1 -left-1 w-3 h-3 border-l-2 border-b-2 border-primary"></div>
+          <div className="absolute -bottom-1 -right-1 w-3 h-3 border-r-2 border-b-2 border-primary"></div>
+        </div>
+      </section>
+
       {/* Account Section */}
-      {isAuthenticated && user && (
+      {isAuthenticated && user && activeTab === 'overview' && (
         <section className="mb-12">
           <TacticalHeader title="⌜AUTHENTICATION⌟" statusLabel="VERIFIED" statusActive={true} />
 
@@ -594,9 +885,12 @@ const Profile = () => {
         </section>
       )}
 
-      {/* Control Matrix - Redesigned Quick Settings */}
-      <section className="mb-12">
-        <TacticalHeader title="⌜CONTROL MATRIX⌟" statusLabel="OPERATIONAL" statusActive={true} />
+      {/* OVERVIEW TAB CONTENT */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Control Matrix - Redesigned Quick Settings */}
+          <section className="mb-12">
+            <TacticalHeader title="⌜CONTROL MATRIX⌟" statusLabel="OPERATIONAL" statusActive={true} />
 
         <div className="space-y-3">
           {/* Units */}
@@ -705,29 +999,45 @@ const Profile = () => {
 
             <WeeklyGoalTracker />
 
-            {totalWorkouts >= 10 && (
+            <div className="grid grid-cols-1 gap-3 mt-4">
               <button
-                onClick={() => setShowYearInReview(true)}
-                className="w-full mt-4 py-3 border-2 border-[#222] hover:border-primary text-white hover:text-primary text-xs font-black italic uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all min-h-[48px] group"
-                aria-label="View year in review"
+                onClick={() => navigate('/achievements')}
+                className="w-full py-3 border-2 border-[#222] hover:border-primary text-white hover:text-primary text-xs font-black italic uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all min-h-[48px] group"
+                aria-label="View achievements"
               >
-                <Calendar size={14} className="group-hover:rotate-12 transition-transform" />
-                <span>TACTICAL REVIEW {new Date().getFullYear()}</span>
+                <Trophy size={14} className="group-hover:scale-110 transition-transform" />
+                <span>TROPHIES & ACHIEVEMENTS</span>
               </button>
-            )}
+
+              {totalWorkouts >= 10 && (
+                <button
+                  onClick={() => setShowYearInReview(true)}
+                  className="w-full py-3 border-2 border-[#222] hover:border-primary text-white hover:text-primary text-xs font-black italic uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all min-h-[48px] group"
+                  aria-label="View year in review"
+                >
+                  <Calendar size={14} className="group-hover:rotate-12 transition-transform" />
+                  <span>TACTICAL REVIEW {new Date().getFullYear()}</span>
+                </button>
+              )}
+            </div>
           </>
         )}
       </section>
 
-      {/* Year in Review Modal */}
-      {showYearInReview && (
-        <YearInReview year={new Date().getFullYear()} onClose={() => setShowYearInReview(false)} />
+          {/* Year in Review Modal */}
+          {showYearInReview && (
+            <YearInReview year={new Date().getFullYear()} onClose={() => setShowYearInReview(false)} />
+          )}
+        </>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════════════════
-          SECTION GROUP: BIOMETRICS & RECOVERY
-          Body tracking, health data, and recovery monitoring
-      ═══════════════════════════════════════════════════════════════════════════════ */}
+      {/* BIOMETRICS TAB CONTENT */}
+      {activeTab === 'biometrics' && (
+        <>
+          {/* ═══════════════════════════════════════════════════════════════════════════════
+              SECTION GROUP: BIOMETRICS & RECOVERY
+              Body tracking, health data, and recovery monitoring
+          ═══════════════════════════════════════════════════════════════════════════════ */}
       <div className="mt-10 mb-4">
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
@@ -844,11 +1154,16 @@ const Profile = () => {
           )}
         </div>
       </CollapsibleSection>
+        </>
+      )}
 
-      {/* ═══════════════════════════════════════════════════════════════════════════════
-          SECTION GROUP: COMMUNICATIONS
-          Cloud sync, notifications, and data transfer
-      ═══════════════════════════════════════════════════════════════════════════════ */}
+      {/* DATA TAB CONTENT */}
+      {activeTab === 'data' && (
+        <>
+          {/* ═══════════════════════════════════════════════════════════════════════════════
+              SECTION GROUP: COMMUNICATIONS
+              Cloud sync, notifications, and data transfer
+          ═══════════════════════════════════════════════════════════════════════════════ */}
       <div className="mt-10 mb-4">
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
@@ -920,11 +1235,16 @@ const Profile = () => {
           )}
         </div>
       </CollapsibleSection>
+        </>
+      )}
 
-      {/* ═══════════════════════════════════════════════════════════════════════════════
-          SECTION GROUP: HARDWARE & CALIBRATION
-          Training equipment settings, progression rules, and gym setup
-      ═══════════════════════════════════════════════════════════════════════════════ */}
+      {/* TRAINING TAB CONTENT */}
+      {activeTab === 'training' && (
+        <>
+          {/* ═══════════════════════════════════════════════════════════════════════════════
+              SECTION GROUP: HARDWARE & CALIBRATION
+              Training equipment settings, progression rules, and gym setup
+          ═══════════════════════════════════════════════════════════════════════════════ */}
       <div className="mt-10 mb-4">
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
@@ -1262,11 +1582,16 @@ const Profile = () => {
           ))}
         </div>
       </CollapsibleSection>
+        </>
+      )}
 
-      {/* ═══════════════════════════════════════════════════════════════════════════════
-          SECTION GROUP: INTELLIGENCE SYSTEMS
-          AI coaching, visual generation, and smart features
-      ═══════════════════════════════════════════════════════════════════════════════ */}
+      {/* AI TAB CONTENT */}
+      {activeTab === 'ai' && (
+        <>
+          {/* ═══════════════════════════════════════════════════════════════════════════════
+              SECTION GROUP: INTELLIGENCE SYSTEMS
+              AI coaching, visual generation, and smart features
+          ═══════════════════════════════════════════════════════════════════════════════ */}
       <div className="mt-10 mb-4">
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
@@ -1594,20 +1919,25 @@ const Profile = () => {
           )}
         </div>
       </CollapsibleSection>
+        </>
+      )}
 
-      {/* Notification Settings Section */}
-      <section id="notifications" className="mt-12">
-        <TacticalHeader title="⌜ALERT SYSTEM⌟" statusLabel="MONITORING" statusActive={true} />
-        <NotificationSettings />
-      </section>
+      {/* DATA TAB CONTENT (continued) */}
+      {activeTab === 'data' && (
+        <>
+          {/* Notification Settings Section */}
+          <section id="notifications" className="mt-12">
+            <TacticalHeader title="⌜ALERT SYSTEM⌟" statusLabel="MONITORING" statusActive={true} />
+            <NotificationSettings />
+          </section>
 
-      {/* Data Export Section */}
-      <section className="mt-12">
-        <TacticalHeader title="⌜DATA EXTRACTION⌟" statusLabel="READY" statusActive={false} />
-        <DataExport />
-      </section>
+          {/* Data Export Section */}
+          <section className="mt-12">
+            <TacticalHeader title="⌜DATA EXTRACTION⌟" statusLabel="READY" statusActive={false} />
+            <DataExport />
+          </section>
 
-      {/* Danger Zone - NUKE ZONE */}
+          {/* Danger Zone - NUKE ZONE */}
       <section className="mt-16 mb-10">
         <div className="relative mb-6">
           <div className="flex items-center gap-3">
@@ -1656,6 +1986,8 @@ const Profile = () => {
           </div>
         </div>
       </section>
+        </>
+      )}
 
       {/* Daily Wellness Check-in Modal */}
       <DailyWellnessCheckin
