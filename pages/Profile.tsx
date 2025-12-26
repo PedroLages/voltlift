@@ -149,6 +149,35 @@ const Profile = () => {
   const [healthKitAvailable, setHealthKitAvailable] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'training' | 'biometrics' | 'ai' | 'data'>('overview');
 
+  // Settings search index - map section titles to keywords for search
+  const searchableSettings = useMemo(() => [
+    { title: 'Biometric Scanner', keywords: ['body', 'weight', 'measurements', 'bodyweight', 'metrics', 'photos', 'progress', 'tracking'], tab: 'biometrics' },
+    { title: 'Health Data', keywords: ['healthkit', 'health', 'apple', 'connect', 'integration', 'sync'], tab: 'biometrics' },
+    { title: 'Rest Timer Settings', keywords: ['rest', 'timer', 'compound', 'isolation', 'cardio', 'break', 'recovery'], tab: 'training' },
+    { title: 'Progressive Overload', keywords: ['progressive', 'overload', 'weight', 'reps', 'increase', 'strength', 'gains'], tab: 'training' },
+    { title: 'AI Coach Settings', keywords: ['ai', 'coach', 'suggestions', 'automation', 'smart', 'assistant'], tab: 'ai' },
+    { title: 'Units & Measurements', keywords: ['units', 'kg', 'lbs', 'pounds', 'kilograms', 'weight', 'measurement'], tab: 'training' },
+    { title: 'Cloud Sync', keywords: ['cloud', 'sync', 'iron', 'backup', 'firebase', 'online'], tab: 'data' },
+    { title: 'Import/Export', keywords: ['import', 'export', 'backup', 'restore', 'data', 'transfer'], tab: 'data' },
+    { title: 'Reset Data', keywords: ['reset', 'delete', 'clear', 'remove', 'data', 'factory'], tab: 'data' },
+    { title: 'Plate Calculator', keywords: ['plate', 'calculator', 'barbell', 'loading', 'weights'], tab: 'training' },
+    { title: 'Experience Level', keywords: ['experience', 'level', 'beginner', 'intermediate', 'advanced', 'skill'], tab: 'overview' },
+    { title: 'Available Equipment', keywords: ['equipment', 'barbell', 'dumbbell', 'machine', 'cable', 'gym'], tab: 'training' },
+    { title: 'Wellness Tracking', keywords: ['wellness', 'sleep', 'stress', 'energy', 'recovery', 'daily'], tab: 'biometrics' },
+    { title: 'Gamification', keywords: ['gamification', 'xp', 'level', 'achievements', 'rank', 'progress'], tab: 'overview' },
+  ], []);
+
+  // Filter settings based on search query
+  const filteredSettings = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+
+    const query = searchQuery.toLowerCase();
+    return searchableSettings.filter(setting =>
+      setting.title.toLowerCase().includes(query) ||
+      setting.keywords.some(keyword => keyword.includes(query))
+    );
+  }, [searchQuery, searchableSettings]);
+
   // Validate image URL
   const isValidImageUrl = (url: string | null): url is string => {
     if (!url) return false;
@@ -594,12 +623,33 @@ const Profile = () => {
         {searchQuery && (
           <div className="absolute left-0 right-0 top-full mt-2 bg-[#0a0a0a] border-2 border-primary p-3 z-20 max-h-64 overflow-y-auto">
             <div className="text-[10px] font-mono text-[#666] uppercase tracking-wider mb-2">
-              SEARCH RESULTS FOR "{searchQuery}"
+              {filteredSettings.length} RESULT{filteredSettings.length !== 1 ? 'S' : ''} FOR "{searchQuery}"
             </div>
-            <div className="text-xs text-[#999] font-mono">
-              {/* Search functionality will filter CollapsibleSections below */}
-              Filtering settings...
-            </div>
+            {filteredSettings.length > 0 ? (
+              <div className="space-y-2">
+                {filteredSettings.map((setting, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setActiveTab(setting.tab as any);
+                      setSearchQuery('');
+                    }}
+                    className="w-full text-left p-2 bg-[#111] hover:bg-[#1a1a1a] border border-[#222] hover:border-primary/50 transition-colors group"
+                  >
+                    <div className="text-xs font-bold text-white uppercase tracking-wide mb-1 group-hover:text-primary transition-colors">
+                      {setting.title}
+                    </div>
+                    <div className="text-[10px] text-[#666] font-mono uppercase tracking-wider">
+                      {setting.tab} → {setting.keywords.slice(0, 3).join(', ')}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-[#666] font-mono italic">
+                No settings found matching "{searchQuery}"
+              </div>
+            )}
           </div>
         )}
       </div>
