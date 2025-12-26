@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense, flushSync } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
 import { EXERCISE_LIBRARY } from '../constants';
@@ -33,10 +33,30 @@ const PostWorkoutFeedback = lazy(() => import('../components/PostWorkoutFeedback
 const AchievementCelebrationModal = lazy(() => import('../components/achievements/AchievementCelebrationModal'));
 
 const WorkoutLogger = () => {
-  const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning, undoStack, restoreLastDeleted, clearUndoStack, toggleFavoriteExercise, getAllExercises, createCustomExercise, customExercises, gamification, updateGamification } = useStore();
+  const { activeWorkout, finishWorkout, saveDraft, cancelWorkout, updateSet, addSet, duplicateSet, removeSet, addExerciseToActive, settings, history, swapExercise, updateExerciseLog, removeExerciseLog, getExerciseHistory, restTimerStart, restDuration, startRestTimer, stopRestTimer, getRestTimerForExercise, toggleSuperset, updateActiveWorkout, addBiometricPoint, getProgressiveSuggestion, getVolumeWarning, undoStack, restoreLastDeleted, clearUndoStack, toggleFavoriteExercise, getAllExercises, createCustomExercise, customExercises, gamification, updateGamification } = useStore();
   const navigate = useNavigate();
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [showCreateExercise, setShowCreateExercise] = useState(false);
+  const modalClosingRef = useRef(false);
+
+  // DEBUG: Log modal state changes
+  useEffect(() => {
+    console.log('[WorkoutLogger] showExerciseSelector changed to:', showExerciseSelector);
+  }, [showExerciseSelector]);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showExerciseSelector) {
+        setShowExerciseSelector(false);
+        setExerciseSearchQuery('');
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showExerciseSelector]);
+
   const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
   const [swapTargetLogId, setSwapTargetLogId] = useState<string | null>(null);
   const [pendingSwap, setPendingSwap] = useState<{ logId: string; exerciseId: string; exerciseName: string } | null>(null);
@@ -280,12 +300,13 @@ const WorkoutLogger = () => {
 
   const handleCompleteWorkout = () => {
     // Call finishWorkout first - it sets endTime and adds to history
-    finishWorkout();
+    // CRITICAL FIX: Use the return value instead of history[0]
+    // finishWorkout() uses set() which batches state updates
+    // so history[0] won't be updated immediately
+    const completedWorkout = finishWorkout();
     setShowCompletionModal(false);
 
-    // Get the completed workout from history[0] (most recent)
-    // This ensures we have the workout WITH endTime set
-    const completedWorkout = history[0];
+    // Store the completed workout reference for modals
     if (completedWorkout) {
       setCompletedWorkoutRef({ ...completedWorkout });
     }
@@ -366,8 +387,9 @@ const WorkoutLogger = () => {
       updateSet(exerciseIndex, setIndex, { completed });
 
       if (completed) {
-          // Trigger Global Rest Timer
-          startRestTimer(settings.defaultRestTimer || 90);
+          // Trigger Per-Exercise Rest Timer (uses category-specific defaults)
+          const restTime = getRestTimerForExercise(exerciseId);
+          startRestTimer(restTime);
 
           // Enhanced Multi-PR Detection (Alpha Progression strategy)
           const prHistory = settings.personalRecords[exerciseId];
@@ -775,7 +797,10 @@ const WorkoutLogger = () => {
 
       {/* Rest Timer Overlay */}
       {restTimerStart !== null && (
-          <div className={`fixed bottom-4 left-4 right-4 bg-[#0a0a0a] border ${timeLeft === 0 ? 'border-primary animate-pulse' : 'border-[#333]'} p-0 z-40 shadow-2xl overflow-hidden animate-slide-up rounded`}>
+          <div
+            data-testid="rest-timer"
+            className={`fixed bottom-4 left-4 right-4 bg-[#0a0a0a] border ${timeLeft === 0 ? 'border-primary animate-pulse' : 'border-[#333]'} p-0 z-40 shadow-2xl overflow-hidden animate-slide-up rounded`}
+          >
               {/* Progress Bar Background */}
               <div
                 className="absolute top-0 left-0 bottom-0 bg-[#222] transition-all duration-500 ease-linear z-0"
@@ -790,7 +815,7 @@ const WorkoutLogger = () => {
                   >
                       <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${timeLeft === 0 ? 'bg-primary' : 'bg-[#ccff00] animate-pulse'}`}></div>
-                          <span className={`text-sm font-black italic font-mono ${timeLeft === 0 ? 'text-primary' : 'text-white'}`}>
+                          <span data-testid="rest-timer-countdown" className={`text-sm font-black italic font-mono ${timeLeft === 0 ? 'text-primary' : 'text-white'}`}>
                               {timeLeft === 0 ? "GO!" : formatTime(timeLeft)}
                           </span>
                       </div>
@@ -803,7 +828,7 @@ const WorkoutLogger = () => {
                           <div className={`w-3 h-3 rounded-full ${timeLeft === 0 ? 'bg-primary' : 'bg-[#ccff00] animate-pulse'}`}></div>
                           <div>
                               <span className="text-[10px] font-bold text-[#888] uppercase tracking-widest block mb-0.5">Recovery Mode</span>
-                              <span className={`text-3xl font-black italic font-mono leading-none ${timeLeft === 0 ? 'text-primary' : 'text-white'}`}>
+                              <span data-testid="rest-timer-countdown" className={`text-3xl font-black italic font-mono leading-none ${timeLeft === 0 ? 'text-primary' : 'text-white'}`}>
                                   {timeLeft === 0 ? "GO!" : formatTime(timeLeft)}
                               </span>
                           </div>
@@ -825,6 +850,16 @@ const WorkoutLogger = () => {
                             aria-label="Add 30 seconds"
                            >
                                <span className="text-[10px] font-bold">+30</span>
+                           </button>
+                           <button
+                            onClick={() => {
+                                const newDuration = Math.max(15, restDuration - 15);
+                                startRestTimer(newDuration);
+                            }}
+                            className="w-10 h-10 bg-black border border-[#333] text-white hover:text-primary hover:border-primary flex items-center justify-center rounded transition-colors"
+                            aria-label="Subtract 15 seconds"
+                           >
+                               <span className="text-[10px] font-bold">-15</span>
                            </button>
                            <button
                             onClick={() => stopRestTimer()}
@@ -1361,7 +1396,19 @@ const WorkoutLogger = () => {
 
         {/* Add Exercise Button */}
         <button
-          onClick={(e) => { e.stopPropagation(); setSwapTargetLogId(null); setShowExerciseSelector(true); }}
+          onClick={(e) => {
+            e.stopPropagation();
+
+            // Prevent reopening if modal was just closed
+            if (modalClosingRef.current) {
+              console.log('[ADD EXERCISE BUTTON] Blocked - modal recently closed');
+              return;
+            }
+
+            console.log('[ADD EXERCISE BUTTON] Clicked - opening modal');
+            setSwapTargetLogId(null);
+            setShowExerciseSelector(true);
+          }}
           className="w-full py-6 border border-[#333] bg-[#0a0a0a] text-[#666] font-bold uppercase tracking-widest hover:border-primary hover:text-primary transition-colors flex flex-col items-center justify-center gap-2"
         >
           <Plus size={24} />
@@ -1370,12 +1417,22 @@ const WorkoutLogger = () => {
       </div>
 
       {/* Exercise Selector Modal */}
-      {showExerciseSelector && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center animate-fade-in backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exercise-selector-title"
+        className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center animate-fade-in backdrop-blur-sm"
+        style={{
+          display: showExerciseSelector ? 'flex' : 'none',
+          pointerEvents: showExerciseSelector ? 'auto' : 'none',
+          visibility: showExerciseSelector ? 'visible' : 'hidden',
+          opacity: showExerciseSelector ? 1 : 0
+        }}
+      >
           <div className="bg-[#111] w-full h-full sm:max-w-md sm:h-[90vh] border-t border-[#333] flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-[#333] flex justify-between items-center">
-              <h2 className="volt-header text-xl text-white">
+              <h2 id="exercise-selector-title" className="volt-header text-xl text-white">
                   {swapTargetLogId ? 'SWAP MOVEMENT' : 'SELECT MOVEMENT'}
               </h2>
               <button
@@ -1383,7 +1440,8 @@ const WorkoutLogger = () => {
                   setShowExerciseSelector(false);
                   setExerciseSearchQuery('');
                 }}
-                className="text-white"
+                aria-label="Close exercise selector"
+                className="text-white hover:text-primary transition-colors"
               >
                 <X size={24} />
               </button>
@@ -1497,6 +1555,7 @@ const WorkoutLogger = () => {
                       {/* Exercise Info */}
                       <button
                         onClick={() => {
+                          // Match the exact pattern from Create Exercise handler (lines 1574-1583)
                           if (swapTargetLogId) {
                             // If workout came from a template, show options modal
                             if (activeWorkout?.sourceTemplateId) {
@@ -1505,11 +1564,11 @@ const WorkoutLogger = () => {
                               // No template, just swap for this session
                               swapExercise(swapTargetLogId, ex.id);
                             }
+                            setSwapTargetLogId(null);
                           } else {
                             addExerciseToActive(ex.id);
                           }
                           setShowExerciseSelector(false);
-                          setSwapTargetLogId(null);
                           setExerciseSearchQuery('');
                         }}
                         className="flex-1 text-left py-4 pr-4 flex justify-between items-center"
@@ -1539,8 +1598,7 @@ const WorkoutLogger = () => {
               })()}
             </div>
           </div>
-        </div>
-      )}
+      </div>
 
       {/* Create Exercise Modal */}
       {showCreateExercise && (
@@ -1568,9 +1626,11 @@ const WorkoutLogger = () => {
       )}
 
       {/* Workout Completion Modal */}
-      {showCompletionModal && (
+      {showCompletionModal && activeWorkout && (
         <Suspense fallback={<div />}>
           <WorkoutCompletionModal
+            workout={activeWorkout}
+            settings={settings}
             onFinish={handleCompleteWorkout}
             onSaveDraft={handleSaveDraft}
             onCancel={handleDiscardWorkout}
