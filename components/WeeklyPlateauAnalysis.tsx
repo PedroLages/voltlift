@@ -26,11 +26,11 @@ interface WeeklyPlateauAnalysisProps {
 }
 
 export function WeeklyPlateauAnalysis({ className = '' }: WeeklyPlateauAnalysisProps) {
-  const { workoutHistory, settings } = useStore();
+  const { history, settings } = useStore();
 
   // Analyze all exercises for plateaus and trends
   const analysisData = useMemo(() => {
-    const completedWorkouts = workoutHistory.filter(w => w.status === 'completed');
+    const completedWorkouts = (history || []).filter(w => w.status === 'completed');
 
     if (completedWorkouts.length === 0) {
       return { exercises: [], weakPoints: [], hasData: false };
@@ -65,7 +65,7 @@ export function WeeklyPlateauAnalysis({ className = '' }: WeeklyPlateauAnalysisP
       weakPoints,
       hasData: exercises.length > 0
     };
-  }, [workoutHistory]);
+  }, [history]);
 
   if (!analysisData.hasData) {
     return (
