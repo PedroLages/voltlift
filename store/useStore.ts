@@ -126,6 +126,7 @@ interface AppState {
   checkDeloadNeeded: () => { shouldDeload: boolean; reasoning: string };
 
   // Data Management
+  ensureInitialization: () => void; // Ensures templates/programs exist after migration
   resetAllData: () => void;
 
   // Gamification Actions
@@ -668,6 +669,11 @@ export const useStore = create<AppState>()(
             availableEquipment: equipment,
             onboardingCompleted: true
           },
+          // CRITICAL FIX: Explicitly set templates and programs to trigger Zustand persist
+          // Zustand persist only writes to localStorage on set() calls, not initial state
+          // Without this, users would have 0 templates and 0 programs after onboarding
+          templates: state.templates.length > 0 ? state.templates : INITIAL_TEMPLATES,
+          programs: state.programs.length > 0 ? state.programs : INITIAL_PROGRAMS,
           settingsNeedsSync: true
         }));
         // Sync to cloud so settings persist across devices
@@ -1568,6 +1574,24 @@ export const useStore = create<AppState>()(
       },
 
       // Data Management
+      ensureInitialization: () => {
+          const state = get();
+
+          // CRITICAL FIX: Always call set() to force persist after migration
+          // Zustand persist migrations update in-memory state but don't write to localStorage
+          // This ensures migrated state is persisted even if templates/programs already exist in memory
+          const templates = (!state.templates || state.templates.length === 0) ? INITIAL_TEMPLATES : state.templates;
+          const programs = (!state.programs || state.programs.length === 0) ? INITIAL_PROGRAMS : state.programs;
+
+          console.log(`[Store Init] Ensuring persist: ${templates.length} templates, ${programs.length} programs`);
+
+          // Always call set() to trigger persist (even if templates/programs exist in memory)
+          set({
+              templates,
+              programs,
+          });
+      },
+
       resetAllData: () => {
           const { settings } = get();
           set({
@@ -1599,7 +1623,7 @@ export const useStore = create<AppState>()(
     },
     {
       name: 'voltlift-storage',
-      version: 6, // Increment when schema changes
+      version: 7, // Increment when schema changes
       partialize: (state) => {
           const {
               customExerciseVisuals,
@@ -1673,6 +1697,18 @@ export const useStore = create<AppState>()(
           return {
             ...persistedState,
             templates: INITIAL_TEMPLATES, // Refresh templates to pick up PRD Phase 1 & 2 templates
+          };
+        }
+
+        // Version 7: CRITICAL FIX - Ensure templates and programs exist for all users
+        // Before this fix, Zustand persist didn't write templates/programs on initial load
+        // This left users with 0 templates and 0 programs, breaking program functionality
+        if (version < 7) {
+          console.log('[Migration v7] Ensuring templates and programs exist');
+          return {
+            ...persistedState,
+            templates: persistedState.templates?.length > 0 ? persistedState.templates : INITIAL_TEMPLATES,
+            programs: persistedState.programs?.length > 0 ? persistedState.programs : INITIAL_PROGRAMS,
           };
         }
 

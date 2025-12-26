@@ -115,7 +115,6 @@ const BottomNav = () => {
       </div>
 
       <LinkItem to="/history" icon={<Calendar size={22} />} label="LOGS" active={isActive('/history')} />
-      <LinkItem to="/achievements" icon={<Trophy size={22} />} label="TROPHIES" active={isActive('/achievements')} />
       <LinkItem to="/profile" icon={<User size={22} />} label="YOU" active={isActive('/profile')} />
     </nav>
   );
@@ -241,7 +240,7 @@ const AppContent = () => {
 }
 
 const App = () => {
-  const { loadVisuals } = useStore();
+  const { loadVisuals, ensureInitialization } = useStore();
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
@@ -259,6 +258,12 @@ const App = () => {
 
     // Check auth status on startup
     checkAuth();
+
+    // CRITICAL: Ensure templates/programs exist (fixes migration persistence bug)
+    // Zustand persist migrations update in-memory state but don't auto-persist to localStorage
+    // This call forces a set() which persists the migrated state
+    ensureInitialization();
+
     // Hydrate heavy assets from IndexedDB on startup
     loadVisuals();
 
