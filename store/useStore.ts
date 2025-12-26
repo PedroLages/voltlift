@@ -101,6 +101,8 @@ interface AppState {
 
   // Phase 4 Actions
   logDailyBio: (date: string, data: Partial<DailyLog>) => void;
+  addDailyLog: (data: Partial<DailyLog> & { date: string }) => void;
+  updateDailyLog: (date: string, data: Partial<DailyLog>) => void;
   updateBodyweight: (date: string, weight: number) => void;
   updateMeasurements: (date: string, measurements: Partial<any>) => void;
   getBodyweightTrend: (days?: number) => { date: string; weight: number }[];
@@ -1088,6 +1090,16 @@ export const useStore = create<AppState>()(
               pendingSyncDailyLogs: newPendingDailyLogs
           }));
           get().syncData();
+      },
+
+      // Aliases for wellness check-in compatibility
+      addDailyLog: (data) => {
+          const { date, ...rest } = data;
+          get().logDailyBio(date, rest);
+      },
+
+      updateDailyLog: (date, data) => {
+          get().logDailyBio(date, data);
       },
 
       updateBodyweight: (date, weight) => {

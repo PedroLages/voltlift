@@ -95,7 +95,7 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 animate-fade-in motion-reduce:animate-none"
+      className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4 animate-fade-in motion-reduce:animate-none"
       role="dialog"
       aria-modal="true"
       aria-labelledby="workout-completion-title"

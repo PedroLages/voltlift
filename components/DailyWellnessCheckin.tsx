@@ -450,7 +450,7 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
   const StepIcon = currentStep.icon;
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
       <div className="bg-zinc-950 rounded-2xl w-full max-w-md overflow-hidden border border-zinc-800">
         {/* Header */}
         <div className="relative p-4 border-b border-zinc-800">
