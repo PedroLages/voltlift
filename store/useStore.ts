@@ -79,6 +79,7 @@ interface AppState {
   createCustomExercise: (exercise: Omit<Exercise, 'id'>) => string;
   deleteCustomExercise: (exerciseId: string) => void;
   getAllExercises: () => Exercise[];
+  getRestTimerForExercise: (exerciseId: string) => number;
   updateSettings: (settings: Partial<UserSettings>) => void;
   completeOnboarding: (name: string, goal: Goal, experience: 'Beginner' | 'Intermediate' | 'Advanced', equipment: string[]) => void;
   saveExerciseVisual: (exerciseId: string, url: string) => void;
@@ -625,6 +626,36 @@ export const useStore = create<AppState>()(
       getAllExercises: () => {
         const state = get();
         return [...EXERCISE_LIBRARY, ...state.customExercises];
+      },
+
+      getRestTimerForExercise: (exerciseId: string): number => {
+        const { settings } = get();
+        const exercise = get().getAllExercises().find(e => e.id === exerciseId);
+
+        if (!exercise) return settings.defaultRestTimer || 90;
+
+        // 1. Check per-exercise custom rest time (Phase 2 - not yet implemented)
+        // if (exercise.customRestTime) {
+        //   return exercise.customRestTime;
+        // }
+
+        // 2. Check category-specific defaults
+        const categoryDefaults = settings.restTimerOptions?.customRestTimes;
+        if (categoryDefaults) {
+          switch (exercise.category) {
+            case 'Compound':
+              return categoryDefaults.compound || settings.defaultRestTimer || 90;
+            case 'Isolation':
+              return categoryDefaults.isolation || settings.defaultRestTimer || 90;
+            case 'Cardio':
+              return categoryDefaults.cardio || settings.defaultRestTimer || 90;
+            default:
+              break;
+          }
+        }
+
+        // 3. Fall back to global default
+        return settings.defaultRestTimer || 90;
       },
 
       completeOnboarding: (name, goal, experience, equipment) => {
@@ -1650,3 +1681,8 @@ export const useStore = create<AppState>()(
     }
   )
 );
+
+// Expose store to window for testing
+if (typeof window !== 'undefined' && localStorage.getItem('TESTING_MODE') === 'true') {
+  (window as any).useStore = useStore;
+}

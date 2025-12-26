@@ -3074,3 +3074,10 @@ export const INITIAL_PROGRAMS: Program[] = [
         ]
     }
 ];
+
+// Expose templates and programs on window for E2E testing
+if (typeof window !== 'undefined' && localStorage.getItem('TESTING_MODE') === 'true') {
+  (window as any).__INITIAL_TEMPLATES__ = INITIAL_TEMPLATES;
+  (window as any).__INITIAL_PROGRAMS__ = INITIAL_PROGRAMS;
+  console.log(`[TEST] Exposed ${INITIAL_TEMPLATES.length} templates and ${INITIAL_PROGRAMS.length} programs on window`);
+}
