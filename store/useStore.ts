@@ -18,6 +18,10 @@ import {
   WorkoutXPResult,
 } from '../services/gamification';
 
+/**
+ * Represents an undoable action (set or exercise deletion)
+ * Used by the undo stack to restore deleted items during active workouts
+ */
 interface UndoableAction {
   type: 'set' | 'exercise';
   data: any;
@@ -27,37 +31,157 @@ interface UndoableAction {
   timestamp: number;
 }
 
+/**
+ * VoltLift Global Application State
+ *
+ * Manages all app state via Zustand with localStorage persistence.
+ * State is automatically synced to cloud via backend abstraction layer.
+ *
+ * @see types.ts for complete type definitions
+ * @see services/backend/ for cloud sync implementation
+ */
 interface AppState {
+  /**
+   * User settings and preferences
+   * Includes name, units, goals, experience level, equipment, personal records, and active program
+   * @see UserSettings type definition
+   */
   settings: UserSettings;
+
+  /**
+   * Workout history (completed sessions only)
+   *
+   * IMPORTANT: Property was renamed from `workoutHistory` to `history` in v7 migration
+   * @see Migration v7 (line 1715) for rename details
+   * @see WorkoutSession type with status: 'completed'
+   * @example
+   * history.filter(w => w.status === 'completed')
+   */
   history: WorkoutSession[];
+
+  /**
+   * Workout templates for quick start
+   *
+   * Templates are WorkoutSession objects with status: 'template'
+   * Starting a workout from a template creates a copy with sourceTemplateId tracking
+   * @see WorkoutSession type with status: 'template'
+   * @see startWorkout() action for template usage
+   */
   templates: WorkoutSession[];
+
+  /**
+   * Multi-week workout programs
+   *
+   * Programs contain sequences of sessions (templateIds) with progression logic
+   * Active program state tracked in settings.activeProgram
+   * @see Program type definition
+   * @see activateProgram() action
+   */
   programs: Program[];
+
+  /**
+   * Currently active workout session (null when not training)
+   *
+   * Set to null when workout is finished, saved as draft, or cancelled
+   * @see startWorkout(), finishWorkout(), saveDraft(), cancelWorkout() actions
+   */
   activeWorkout: WorkoutSession | null;
+
+  /**
+   * User-created custom exercises
+   * Combined with EXERCISE_LIBRARY via getAllExercises() helper
+   * @see getAllExercises() for merged library
+   */
   customExercises: Exercise[];
+
+  /**
+   * AI-generated exercise form diagrams
+   * Maps exerciseId → base64 image URL
+   * Stored in IndexedDB (VoltLiftAssets.visuals)
+   * @see saveExerciseVisual(), loadVisuals() actions
+   */
   customExerciseVisuals: Record<string, string>;
 
-  // Phase 4: Bio-Feedback & Cloud
+  /**
+   * Daily wellness and biometric logs
+   *
+   * Keyed by ISO date string (YYYY-MM-DD format)
+   * Used for smart defaults and progressive overload suggestions
+   * @example
+   * dailyLogs['2025-12-26'] = { sleepHours: 7, muscleSoreness: 3, ... }
+   * @see DailyLog type definition
+   * @see logDailyBio(), addDailyLog(), updateDailyLog() actions
+   */
   dailyLogs: Record<string, DailyLog>;
+
+  /**
+   * Cloud sync status indicator
+   * - 'synced': All data synced to cloud
+   * - 'syncing': Sync in progress
+   * - 'offline': No internet connection
+   * - 'error': Sync failed
+   * - 'partial': Some items failed to sync
+   */
   syncStatus: 'synced' | 'syncing' | 'offline' | 'error' | 'partial';
+
+  /**
+   * Heart rate data points collected during active workout
+   * Saved to completed workout on finishWorkout()
+   * @see BiometricPoint type definition
+   * @see addBiometricPoint() action
+   */
   activeBiometrics: BiometricPoint[];
 
-  // Dirty tracking for incremental sync
+  /**
+   * Dirty tracking for incremental cloud sync
+   *
+   * Tracks which items need to be synced to backend
+   * Sets are cleared after successful sync
+   * @see syncData() action for sync implementation
+   */
   pendingSyncWorkouts: Set<string>;
   pendingSyncTemplates: Set<string>;
   pendingSyncPrograms: Set<string>;
   pendingSyncDailyLogs: Set<string>;
   settingsNeedsSync: boolean;
-  isSyncing: boolean; // Lock to prevent concurrent syncs
 
-  // Undo Stack for deletions
+  /**
+   * Sync lock to prevent concurrent sync operations
+   * Set to true during syncData() execution
+   */
+  isSyncing: boolean;
+
+  /**
+   * Undo stack for restoring deleted sets/exercises during active workout
+   * Limited to single most recent deletion
+   * @see restoreLastDeleted(), clearUndoStack() actions
+   */
   undoStack: UndoableAction | null;
 
-  // Global Rest Timer State
+  /**
+   * Rest timer state
+   * restTimerStart: Timestamp when timer started (null if not active)
+   * restDuration: Target rest duration in seconds
+   * @see startRestTimer(), stopRestTimer() actions
+   */
   restTimerStart: number | null;
   restDuration: number;
 
-  // Gamification State
+  /**
+   * Gamification system state
+   *
+   * Tracks XP, level, streaks, and unlocked achievements
+   * Updated automatically on workout completion
+   * @see GamificationState type definition
+   * @see services/gamification.ts for XP calculation
+   */
   gamification: GamificationState;
+
+  /**
+   * Last workout rewards (cleared after modals are shown)
+   * Used to display XP gains and level ups after workout completion
+   * @see clearLastWorkoutRewards() action
+   */
   lastWorkoutXP: WorkoutXPResult | null;
   lastAchievements: Achievement[];
   lastLevelUp: boolean;
@@ -101,6 +225,8 @@ interface AppState {
 
   // Phase 4 Actions
   logDailyBio: (date: string, data: Partial<DailyLog>) => void;
+  addDailyLog: (data: Partial<DailyLog> & { date: string }) => void;
+  updateDailyLog: (date: string, data: Partial<DailyLog>) => void;
   updateBodyweight: (date: string, weight: number) => void;
   updateMeasurements: (date: string, measurements: Partial<any>) => void;
   getBodyweightTrend: (days?: number) => { date: string; weight: number }[];
@@ -1088,6 +1214,16 @@ export const useStore = create<AppState>()(
               pendingSyncDailyLogs: newPendingDailyLogs
           }));
           get().syncData();
+      },
+
+      // Aliases for wellness check-in compatibility
+      addDailyLog: (data) => {
+          const { date, ...rest } = data;
+          get().logDailyBio(date, rest);
+      },
+
+      updateDailyLog: (date, data) => {
+          get().logDailyBio(date, data);
       },
 
       updateBodyweight: (date, weight) => {

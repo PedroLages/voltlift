@@ -320,8 +320,13 @@ const WorkoutLogger = () => {
 
   const handleXPCelebrationClose = () => {
     setShowXPCelebration(false);
-    // Then show post-workout feedback modal
-    setShowPostWorkoutFeedback(true);
+    // Then show post-workout feedback modal if we have a completed workout
+    if (completedWorkoutRef) {
+      setShowPostWorkoutFeedback(true);
+    } else {
+      // If no completed workout ref, navigate to history
+      navigate('/history');
+    }
   };
 
   const handleFeedbackComplete = () => {
@@ -707,7 +712,7 @@ const WorkoutLogger = () => {
         )}
 
         {/* Default "No Session" UI when no modals are active */}
-        {!showXPCelebration && !showPostWorkoutFeedback && (
+        {!showXPCelebration && !showPostWorkoutFeedback && !completedWorkoutRef && (
           <div className="flex flex-col items-center justify-center h-screen p-6 text-center bg-background">
             <h2 className="volt-header text-3xl mb-4 text-white">NO SESSION ACTIVE</h2>
             <p className="text-[#666] mb-8 font-mono text-xs uppercase">Select a protocol to begin tracking.</p>

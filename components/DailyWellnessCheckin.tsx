@@ -180,6 +180,36 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
 
   if (!isOpen) return null;
 
+  // P0: Use Yesterday's Data - Quick action to pre-fill with yesterday's values
+  const handleUseYesterdayData = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayLog = dailyLogs[yesterdayStr];
+
+    if (yesterdayLog) {
+      // Pre-fill all values from yesterday
+      setMuscleSoreness(yesterdayLog.muscleSoreness || 3);
+      setPerceivedRecovery(yesterdayLog.perceivedRecovery || 3);
+      setPerceivedEnergy(yesterdayLog.perceivedEnergy || 3);
+      setSleepHours(yesterdayLog.sleepHours || 7);
+      setSleepQuality(yesterdayLog.sleepQuality || 3);
+      setStressLevel(yesterdayLog.stressLevel || 3);
+
+      // Auto-save with yesterday's data
+      handleSave();
+    } else {
+      // No yesterday data, use reasonable defaults
+      setMuscleSoreness(3);
+      setPerceivedRecovery(3);
+      setPerceivedEnergy(3);
+      setSleepHours(7);
+      setSleepQuality(3);
+      setStressLevel(3);
+      handleSave();
+    }
+  };
+
   const handleEnableHealthKit = async () => {
     const granted = await requestHealthPermissions();
 
@@ -244,9 +274,8 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
     }
 
     setStep('complete');
-    setTimeout(() => {
-      onComplete();
-    }, 1500);
+    // P0: Removed auto-close delay - user can dismiss via X or clicking outside
+    onComplete(); // Complete immediately
   };
 
   const goToNextStep = () => {
@@ -450,10 +479,21 @@ export function DailyWellnessCheckin({ isOpen, onClose, onComplete }: DailyWelln
   const StepIcon = currentStep.icon;
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
       <div className="bg-zinc-950 rounded-2xl w-full max-w-md overflow-hidden border border-zinc-800">
         {/* Header */}
         <div className="relative p-4 border-b border-zinc-800">
+          {/* P0: Use Yesterday's Data button */}
+          {step !== 'complete' && (
+            <button
+              onClick={handleUseYesterdayData}
+              className="absolute left-4 top-4 px-3 py-1.5 text-xs font-bold bg-[#ccff00]/10 text-[#ccff00] border border-[#ccff00]/30 rounded hover:bg-[#ccff00]/20 transition-colors"
+              title="Pre-fill with yesterday's data"
+            >
+              Use Yesterday
+            </button>
+          )}
+
           <button
             onClick={onClose}
             className="absolute right-4 top-4 p-2 text-gray-400 hover:text-white"

@@ -12,6 +12,7 @@ import VolumeBreakdownTable from '../components/VolumeBreakdownTable';
 import DetailedInsights from '../components/DetailedInsights';
 import RPETrendsChart from '../components/RPETrendsChart';
 import WeeklyPlateauAnalysis from '../components/WeeklyPlateauAnalysis';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import {
   getExerciseProgression,
   getVolumeProgression,
@@ -231,7 +232,9 @@ const Analytics = () => {
         <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest mb-4 flex items-center gap-2">
           <TrendingUp size={14} /> Weekly Progress Analysis
         </h3>
-        <WeeklyPlateauAnalysis />
+        <ErrorBoundary componentName="Weekly Progress Analysis">
+          <WeeklyPlateauAnalysis />
+        </ErrorBoundary>
       </div>
 
       {/* Muscle Heatmap Section */}

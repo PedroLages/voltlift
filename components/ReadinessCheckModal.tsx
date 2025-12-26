@@ -16,6 +16,7 @@ import {
 } from '../services/readinessScore';
 import { getAngularClipPath } from '../utils/achievementUtils';
 import { MetricSlider } from './readiness/MetricSlider';
+import { useStore } from '../store/useStore';
 
 interface ReadinessCheckModalProps {
   isOpen: boolean;
@@ -70,11 +71,18 @@ const METRICS: MetricConfig[] = [
 ];
 
 export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessCheckModalProps) {
+  // P1: Smart defaults - Use yesterday's data if available
+  const { dailyLogs } = useStore();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayLog = dailyLogs[yesterdayStr];
+
   const [inputs, setInputs] = useState<ReadinessInputs>({
-    sleepQuality: 3,
-    perceivedRecovery: 3,
-    sorenessLevel: 3,
-    stressLevel: 3,
+    sleepQuality: yesterdayLog?.sleepQuality || 3,
+    perceivedRecovery: yesterdayLog?.perceivedRecovery || 3,
+    sorenessLevel: yesterdayLog?.muscleSoreness || 3,
+    stressLevel: yesterdayLog?.stressLevel || 3,
   });
 
   // Calculate result from inputs with error handling
@@ -135,7 +143,7 @@ export function ReadinessCheckModal({ isOpen, onClose, onSubmit }: ReadinessChec
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"
       onClick={handleSkip}
       role="dialog"
       aria-modal="true"

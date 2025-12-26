@@ -90,9 +90,32 @@ export function PostWorkoutFeedback({ workout, isOpen, onClose, onComplete }: Po
     }
 
     setStep('complete');
+    // P0: Reduced auto-close delay from 2s to 1.5s
     setTimeout(() => {
       onComplete();
-    }, 2000);
+    }, 1500);
+  };
+
+  // P0: Quick Rate - Instantly submit with moderate ratings (3/5)
+  const handleQuickRate = () => {
+    const feedbackData = {
+      workoutDifficulty: 3,
+      workoutSatisfaction: 3,
+      hadPainOrDiscomfort: false,
+      notes: ''
+    };
+
+    const existingLog = dailyLogs[today];
+    if (existingLog) {
+      updateDailyLog(today, feedbackData);
+    } else {
+      addDailyLog({
+        date: today,
+        ...feedbackData
+      });
+    }
+
+    onComplete(); // Skip completion animation, go straight to dismiss
   };
 
   const goToNextStep = () => {
@@ -338,10 +361,21 @@ export function PostWorkoutFeedback({ workout, isOpen, onClose, onComplete }: Po
   const StepIcon = currentStep.icon;
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
       <div className="bg-zinc-950 rounded-2xl w-full max-w-md overflow-hidden border border-zinc-800 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="relative p-4 border-b border-zinc-800 sticky top-0 bg-zinc-950">
+          {/* P0: Quick Rate button */}
+          {step !== 'complete' && (
+            <button
+              onClick={handleQuickRate}
+              className="absolute left-4 top-4 px-3 py-1.5 text-xs font-bold bg-[#ccff00]/10 text-[#ccff00] border border-[#ccff00]/30 rounded hover:bg-[#ccff00]/20 transition-colors"
+              title="Quick rate 3/5 (moderate)"
+            >
+              Quick Rate
+            </button>
+          )}
+
           <button
             onClick={onClose}
             className="absolute right-4 top-4 p-2 text-gray-400 hover:text-white"
