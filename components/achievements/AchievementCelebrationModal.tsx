@@ -29,9 +29,7 @@ export function AchievementCelebrationModal({
     if (isOpen) {
       setIsAnimating(true);
       setShowConfetti(true); // Trigger confetti on open
-      // Auto-close after 4 seconds
-      const timer = setTimeout(onClose, 4000);
-      return () => clearTimeout(timer);
+      // P0: Removed 4-second auto-close - let user control dismissal
     }
     setIsAnimating(false);
     setShowConfetti(false);
