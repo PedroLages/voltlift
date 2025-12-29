@@ -6,46 +6,61 @@
  */
 
 /**
- * Play a loud boxing bell sound (3-tone bell like boxing matches)
- * This is MUCH louder and more noticeable than default notification sounds
+ * Play a loud boxing bell sound (real audio file)
+ * Uses the actual boxing bell MP3 from /public/sounds/
+ * Falls back to synthetic sound if audio file fails to load
  */
 export function playBoxingBell(): void {
+  try {
+    // Try to play the real boxing bell audio file
+    const audio = new Audio('/sounds/boxing-bell.mp3');
+    audio.volume = 1.0; // Maximum volume
+
+    audio.play().catch((error) => {
+      console.warn('Failed to play boxing bell audio file, using fallback:', error);
+      playBoxingBellSynthetic();
+    });
+  } catch (error) {
+    console.warn('Failed to initialize boxing bell audio, using fallback:', error);
+    playBoxingBellSynthetic();
+  }
+}
+
+/**
+ * Synthetic boxing bell fallback (3-tone bell using Web Audio API)
+ * Used if the audio file fails to load
+ */
+function playBoxingBellSynthetic(): void {
   try {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
     // Create 3 bell tones (like a boxing round bell)
     const playBellTone = (frequency: number, startTime: number, duration: number) => {
-      // Oscillator for the bell tone
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
 
-      // Bell-like sound (use triangle wave for metallic quality)
       oscillator.type = 'triangle';
       oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
 
-      // Envelope: Quick attack, sustained, then decay
       gainNode.gain.setValueAtTime(0, audioContext.currentTime + startTime);
-      gainNode.gain.linearRampToValueAtTime(0.8, audioContext.currentTime + startTime + 0.01); // Loud attack
+      gainNode.gain.linearRampToValueAtTime(0.8, audioContext.currentTime + startTime + 0.01);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + startTime + duration);
 
       oscillator.start(audioContext.currentTime + startTime);
       oscillator.stop(audioContext.currentTime + startTime + duration);
     };
 
-    // Three bell strikes (like boxing bell: DING-DING-DING)
-    playBellTone(800, 0, 0.3);      // First strike (higher pitch)
-    playBellTone(800, 0.35, 0.3);   // Second strike
-    playBellTone(800, 0.7, 0.5);    // Third strike (longer)
+    // Three bell strikes (DING-DING-DING)
+    playBellTone(800, 0, 0.3);
+    playBellTone(800, 0.35, 0.3);
+    playBellTone(800, 0.7, 0.5);
 
-    // Close audio context after sound completes
-    setTimeout(() => {
-      audioContext.close();
-    }, 1500);
+    setTimeout(() => audioContext.close(), 1500);
   } catch (error) {
-    console.warn('Failed to play boxing bell sound:', error);
+    console.warn('Failed to play synthetic boxing bell:', error);
   }
 }
 
