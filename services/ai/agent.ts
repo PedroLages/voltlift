@@ -328,7 +328,7 @@ async function executePlan(
           isOnline: navigator.onLine,
         });
 
-        if (orchestration.useLLM && llmClient.isAvailable()) {
+        if (orchestration.useLLM && llmClient.checkAvailability()) {
           const prompt = compilePrompt('ai_coach', {
             userName: plan.context.user.name,
             experienceLevel: plan.context.user.experienceLevel,
@@ -447,7 +447,7 @@ export async function getQuickCoachingResponse(
     { query: query.substring(0, 50), intent: classifyIntent(query) },
     async () => {
       // Simple LLM call without full agent pipeline
-      if (llmClient.isAvailable()) {
+      if (llmClient.checkAvailability()) {
         const prompt = compilePrompt('ai_coach', {
           userName: context.user.name,
           experienceLevel: context.user.experienceLevel,

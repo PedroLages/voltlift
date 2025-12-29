@@ -6,11 +6,11 @@
  * - Error handling with retries and fallbacks
  * - Token tracking and cost management
  * - Rate limiting
+ *
+ * SECURITY: This client now proxies all AI requests through our backend API
+ * to keep API keys secure on the server side.
  */
 
-/// <reference types="vite/client" />
-
-import { GoogleGenAI } from '@google/genai';
 import {
   LLMConfig,
   LLMProvider,
@@ -22,11 +22,17 @@ import {
 } from './types';
 
 // =============================================================================
+// Backend API Configuration
+// =============================================================================
+
+const API_ENDPOINT = '/api/ai/suggestions';
+
+// =============================================================================
 // LLM Client
 // =============================================================================
 
 class LLMClient {
-  private client: GoogleGenAI | null = null;
+  private isAvailable: boolean = true;
   private tokenUsage: TokenUsage[] = [];
   private budget: TokenBudget = {
     dailyLimit: 100000, // ~$0.30/day for Flash
@@ -36,25 +42,14 @@ class LLMClient {
   };
 
   constructor() {
-    this.initializeClient();
     this.loadUsageFromStorage();
   }
 
   /**
-   * Initialize the Gemini client
+   * Check if LLM is available (backend API is available)
    */
-  private initializeClient(): void {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (apiKey) {
-      this.client = new GoogleGenAI({ apiKey });
-    }
-  }
-
-  /**
-   * Check if LLM is available
-   */
-  isAvailable(): boolean {
-    return this.client !== null;
+  checkAvailability(): boolean {
+    return this.isAvailable;
   }
 
   /**
@@ -185,7 +180,7 @@ class LLMClient {
   }
 
   /**
-   * Generate text completion
+   * Generate text completion (via secure backend API)
    */
   async generateText(
     prompt: CompiledPrompt,
@@ -197,16 +192,6 @@ class LLMClient {
       ...DEFAULT_LLM_CONFIG['gemini-flash'],
       ...config,
     };
-
-    // Check if LLM is available
-    if (!this.client) {
-      return {
-        success: false,
-        error: 'LLM not available (no API key)',
-        source: 'fallback',
-        latency: Date.now() - startTime,
-      };
-    }
 
     // Check budget
     if (!this.isWithinBudget()) {
@@ -224,20 +209,38 @@ class LLMClient {
     let lastError: Error | null = null;
     for (let attempt = 0; attempt <= effectiveConfig.retries; attempt++) {
       try {
+        // Call backend API with timeout
         const response = await Promise.race([
-          this.client.models.generateContent({
-            model: modelName,
-            contents: prompt.userPrompt,
-            config: {
-              systemInstruction: prompt.systemPrompt,
-              maxOutputTokens: effectiveConfig.maxTokens,
-              temperature: effectiveConfig.temperature,
+          fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
             },
+            body: JSON.stringify({
+              type: 'generic',
+              data: {
+                prompt: prompt.systemPrompt
+                  ? `${prompt.systemPrompt}\n\n${prompt.userPrompt}`
+                  : prompt.userPrompt,
+                maxTokens: effectiveConfig.maxTokens,
+                temperature: effectiveConfig.temperature,
+              },
+            }),
           }),
           this.timeout(effectiveConfig.timeout),
         ]);
 
-        const text = response.text || '';
+        if (!response.ok) {
+          throw new Error(`API error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'API request failed');
+        }
+
+        const text = data.result || '';
         const tokensUsed = prompt.tokenEstimate + Math.ceil(text.length / 4);
 
         // Track usage
@@ -329,7 +332,8 @@ class LLMClient {
   }
 
   /**
-   * Generate image (using Gemini image model)
+   * Generate image (currently not supported via backend API)
+   * TODO: Add image generation endpoint to backend API if needed
    */
   async generateImage(
     prompt: string,
@@ -337,52 +341,12 @@ class LLMClient {
   ): Promise<AIResponse<string>> {
     const startTime = Date.now();
 
-    if (!this.client) {
-      return {
-        success: false,
-        error: 'LLM not available',
-        source: 'fallback',
-        latency: Date.now() - startTime,
-      };
-    }
-
-    try {
-      const response = await this.client.models.generateContent({
-        model: 'gemini-2.0-flash-preview-image-generation',
-        contents: { parts: [{ text: prompt }] },
-        config: {
-          responseModalities: ['image', 'text'],
-        },
-      });
-
-      if (response.candidates?.[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData) {
-            const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-            return {
-              success: true,
-              data: dataUrl,
-              source: 'llm',
-              latency: Date.now() - startTime,
-            };
-          }
-        }
-      }
-
-      return {
-        success: false,
-        error: 'No image in response',
-        source: 'fallback',
-        latency: Date.now() - startTime,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: (error as Error).message,
-        source: 'fallback',
-        latency: Date.now() - startTime,
-      };
-    }
+    return {
+      success: false,
+      error: 'Image generation not currently supported via backend API',
+      source: 'fallback',
+      latency: Date.now() - startTime,
+    };
   }
 
   /**

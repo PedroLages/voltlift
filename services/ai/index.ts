@@ -152,7 +152,7 @@ export async function getProgressiveOverloadSuggestion(params: {
       recoveryScore: localSuggestion.recoveryScore,
     },
     async () => {
-      if (!llmClient.isAvailable()) {
+      if (!llmClient.checkAvailability()) {
         return {
           success: true,
           data: baseResponse,
@@ -273,7 +273,7 @@ export async function explainSuggestion(params: {
   }
 
   // If offline or LLM unavailable, return fallback immediately
-  if (!navigator.onLine || !llmClient.isAvailable()) {
+  if (!navigator.onLine || !llmClient.checkAvailability()) {
     return {
       success: true,
       data: fallbackExplanation,
@@ -411,7 +411,7 @@ export async function getFormGuide(params: {
     'form_guide',
     { exerciseId, question: question.substring(0, 50) },
     async () => {
-      if (!llmClient.isAvailable()) {
+      if (!llmClient.checkAvailability()) {
         return {
           success: true,
           data: getFormGuideFallback(exercise),
@@ -531,7 +531,7 @@ export async function generateWorkoutSummary(params: {
     'workout_summary',
     { workoutId: workout.id },
     async () => {
-      if (!llmClient.isAvailable()) {
+      if (!llmClient.checkAvailability()) {
         return {
           success: true,
           data: fallbackSummary,
@@ -604,7 +604,7 @@ export async function getMotivation(params: {
     'motivation',
     { streak: streak || 0, goal: settings.goal.type },
     async () => {
-      if (!llmClient.isAvailable()) {
+      if (!llmClient.checkAvailability()) {
         return {
           success: true,
           data: fallback,
@@ -693,7 +693,7 @@ export async function getCoachingResponse(params: {
   return {
     success: true,
     data: response,
-    source: llmClient.isAvailable() ? 'llm' : 'fallback',
+    source: llmClient.checkAvailability() ? 'llm' : 'fallback',
     latency: Date.now() - startTime,
   };
 }
@@ -742,7 +742,7 @@ export async function generateExerciseVisual(params: {
     'exercise_visual',
     { exerciseId, size },
     async () => {
-      if (!llmClient.isAvailable()) {
+      if (!llmClient.checkAvailability()) {
         return {
           success: false,
           error: 'LLM not available',
@@ -783,7 +783,7 @@ export function getAIStatus(): {
 } {
   return {
     initialized,
-    llmAvailable: llmClient.isAvailable(),
+    llmAvailable: llmClient.checkAvailability(),
     cacheSize: aiCache.getStats().size,
     usageStats: llmClient.getUsageStats(),
   };
