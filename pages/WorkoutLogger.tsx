@@ -706,6 +706,8 @@ const WorkoutLogger = () => {
           <Suspense fallback={<div />}>
             <PostWorkoutFeedback
               workout={completedWorkoutRef}
+              isOpen={showPostWorkoutFeedback}
+              onClose={handleFeedbackComplete}
               onComplete={handleFeedbackComplete}
             />
           </Suspense>
