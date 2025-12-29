@@ -1219,7 +1219,7 @@ const WorkoutLogger = () => {
                             inputMode="decimal"
                             enterKeyHint="next"
                             min="0"
-                            step="0.5"
+                            step="0.25"
                             className="w-full bg-black border-b-2 border-primary/30 p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-primary/50"
                             onClick={(e) => e.stopPropagation()}
                             disabled={set.completed}
@@ -1266,7 +1266,7 @@ const WorkoutLogger = () => {
                             inputMode="decimal"
                             enterKeyHint="next"
                             min="0"
-                            step="0.5"
+                            step="0.25"
                             className="w-full bg-black border-b-2 border-[#333] p-2 text-center text-lg font-bold text-white focus:border-primary outline-none placeholder-[#333]"
                             onClick={(e) => e.stopPropagation()}
                             disabled={set.completed}
