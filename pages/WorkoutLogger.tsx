@@ -9,6 +9,7 @@ import { sendRestTimerAlert, sendPRCelebration } from '../services/notificationS
 import { SetType } from '../types';
 import { formatTime } from '../utils/formatters';
 import { calculatePlateLoading, formatWeight } from '../utils/conversions';
+import { playBoxingBell } from '../utils/audioAlerts';
 import { AISuggestionBadge, VolumeWarningBadge, RecoveryScore } from '../components/AISuggestionBadge';
 import { checkAllPRs, PRDetection } from '../services/strengthScore';
 import { checkAchievements, awardXP } from '../services/gamification';
@@ -194,32 +195,6 @@ const WorkoutLogger = () => {
     };
   }, []);
 
-  // Audio Oscillator for Beep
-  const playTimerSound = () => {
-    try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContext) return;
-
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
-
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-
-        osc.start();
-        osc.stop(ctx.currentTime + 0.5);
-    } catch (e) {
-        console.error("Audio Playback Error", e);
-    }
-  };
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -239,8 +214,8 @@ const WorkoutLogger = () => {
               if (remaining <= 0) {
                   // Timer Finished
                   if (remaining === 0) {
-                      playTimerSound();
-                      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                      playBoxingBell(); // Loud boxing bell sound (DING-DING-DING)
+                      if (navigator.vibrate) navigator.vibrate([500, 200, 500]); // Stronger vibration
 
                       // Send rest timer notification (only once per timer session)
                       if (!notificationSent && settings.notifications?.enabled && settings.notifications?.restTimerAlerts) {
