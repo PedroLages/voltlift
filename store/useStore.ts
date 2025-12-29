@@ -514,13 +514,31 @@ export const useStore = create<AppState>()(
         // Count PRs hit (only weight PRs count as "true" PRs for gamification)
         const prsHit = newPRsDetected.filter(pr => pr.type === 'weight').length;
 
-        // Process workout through gamification system
-        const gamificationResult = processWorkoutCompletion(
-          get().gamification,
-          completedWorkout,
-          prsHit,
-          workoutVolume
-        );
+        // Process workout through gamification system with error handling
+        let gamificationResult;
+        try {
+          gamificationResult = processWorkoutCompletion(
+            get().gamification,
+            completedWorkout,
+            prsHit,
+            workoutVolume
+          );
+        } catch (error) {
+          console.error('Gamification calculation failed:', error);
+          // Fallback: Create minimal XP result to prevent black screen
+          const fallbackXP: WorkoutXPResult = {
+            baseXP: 50,
+            bonuses: [],
+            totalXP: 50,
+            breakdown: 'Error calculating XP - using fallback value'
+          };
+          gamificationResult = {
+            newState: get().gamification,
+            xpEarned: fallbackXP,
+            newAchievements: [],
+            leveledUp: false
+          };
+        }
         // =========== END GAMIFICATION ===========
 
         set({
